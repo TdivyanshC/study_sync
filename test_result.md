@@ -131,15 +131,18 @@ backend:
 
   - task: "Socket.IO WebSocket server"
     implemented: true
-    working: "NA"
+    working: false
     file: "server.py"
-    stuck_count: 0
+    stuck_count: 1
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Socket.IO server integrated with FastAPI, needs testing for real-time events"
+      - working: false
+        agent: "testing"
+        comment: "Socket.IO server code is correctly implemented but WebSocket connections fail due to Kubernetes ingress configuration not supporting WebSocket protocol upgrades. This is an infrastructure issue, not a code issue. The server needs proper ingress annotations for WebSocket support."
 
   - task: "Study session API endpoints"
     implemented: true
