@@ -161,15 +161,18 @@ backend:
 
   - task: "Real-time session broadcasting"
     implemented: true
-    working: "NA"
+    working: false
     file: "server.py"
-    stuck_count: 0
+    stuck_count: 1
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Socket.IO events implemented: session_started, session_stopped, room joining"
+      - working: false
+        agent: "testing"
+        comment: "Socket.IO event handlers are correctly implemented in the backend code, but real-time broadcasting cannot be tested due to WebSocket connection failures. The issue is infrastructure-related (Kubernetes ingress not supporting WebSocket protocol upgrades), not code-related. The broadcasting logic is sound and will work once WebSocket connections are properly configured."
 
 frontend:
   - task: "Expo Router navigation setup"
