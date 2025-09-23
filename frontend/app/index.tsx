@@ -21,7 +21,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Colors } from '../constants/Colors';
 import { GlobalStyles } from '../constants/Theme';
-import { useStudyStore, useTimer } from '../hooks/useStudySession';
+import { useStudyStore, useTimer, useAppInitialization } from '../hooks/useStudySession';
+import NotificationBanner from '../components/NotificationBanner';
 
 const { width } = Dimensions.get('window');
 
