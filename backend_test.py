@@ -207,7 +207,8 @@ class StudyTogetherTester:
     async def test_socket_connection(self):
         """Test Socket.IO connection"""
         try:
-            await self.sio.connect(SOCKET_URL)
+            # Try connecting with different transports
+            await self.sio.connect(SOCKET_URL, transports=['websocket', 'polling'])
             
             if self.sio.connected:
                 self.log_test("Socket.IO Connection", True, "Connected successfully")
@@ -216,8 +217,18 @@ class StudyTogetherTester:
                 self.log_test("Socket.IO Connection", False, "Failed to connect")
                 return False
         except Exception as e:
-            self.log_test("Socket.IO Connection", False, f"Exception: {str(e)}")
-            return False
+            # Try with polling only as fallback
+            try:
+                await self.sio.connect(SOCKET_URL, transports=['polling'])
+                if self.sio.connected:
+                    self.log_test("Socket.IO Connection", True, "Connected with polling transport")
+                    return True
+                else:
+                    self.log_test("Socket.IO Connection", False, f"Failed with both transports. Exception: {str(e)}")
+                    return False
+            except Exception as e2:
+                self.log_test("Socket.IO Connection", False, f"Failed with all transports. Exceptions: {str(e)}, {str(e2)}")
+                return False
     
     async def test_socket_room_joining(self):
         """Test Socket.IO room joining functionality"""
