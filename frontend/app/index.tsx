@@ -310,6 +310,22 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     alignItems: 'center',
   },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginTop: 4,
+  },
+  connectionStatus: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  connectionText: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginLeft: 4,
+  },
   statsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
