@@ -280,9 +280,10 @@ metadata:
 test_plan:
   current_focus:
     - "Socket.IO WebSocket server"
-    - "Study session API endpoints"
     - "Real-time session broadcasting"
-  stuck_tasks: []
+  stuck_tasks:
+    - "Socket.IO WebSocket server"
+    - "Real-time session broadcasting"
   test_all: false
   test_priority: "high_first"
 
