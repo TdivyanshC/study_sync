@@ -136,10 +136,16 @@ const WeeklyGraph = ({ hours }: { hours: number }) => {
 };
 
 export default function HomeScreen() {
+  // Initialize the app (Socket.IO, load sessions)
+  useAppInitialization();
+  
   const { 
     currentSession, 
     stats, 
-    isTimerRunning, 
+    isTimerRunning,
+    isConnectedToSocket,
+    notification,
+    hideNotification,
     startSession, 
     stopSession, 
     takeBreak, 
@@ -175,11 +181,36 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={GlobalStyles.safeArea}>
       <StatusBar style="light" backgroundColor={Colors.background} />
+      
+      {/* Notification Banner */}
+      <NotificationBanner
+        message={notification.message}
+        type={notification.type}
+        visible={notification.visible}
+        onHide={hideNotification}
+      />
+      
       <ScrollView style={GlobalStyles.container} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
           <Text style={GlobalStyles.title}>Study Together</Text>
-          <Text style={GlobalStyles.textSecondary}>Stay focused, stay connected</Text>
+          <View style={styles.statusRow}>
+            <Text style={GlobalStyles.textSecondary}>Stay focused, stay connected</Text>
+            {/* Connection Status Indicator */}
+            <View style={styles.connectionStatus}>
+              <Ionicons 
+                name={isConnectedToSocket ? 'wifi' : 'wifi-outline'} 
+                size={16} 
+                color={isConnectedToSocket ? Colors.success : Colors.textMuted} 
+              />
+              <Text style={[
+                styles.connectionText, 
+                { color: isConnectedToSocket ? Colors.success : Colors.textMuted }
+              ]}>
+                {isConnectedToSocket ? 'Live' : 'Offline'}
+              </Text>
+            </View>
+          </View>
         </View>
 
         {/* Weekly Analysis Graph */}
@@ -215,7 +246,7 @@ export default function HomeScreen() {
           
           {currentSession && (
             <Text style={[GlobalStyles.textSecondary, { textAlign: 'center', marginBottom: 20 }]}>
-              {currentSession.isBreak ? 'On Break' : 'Studying'}
+              {currentSession.isBreak ? 'On Break 💤' : 'Studying 📚'}
             </Text>
           )}
 
