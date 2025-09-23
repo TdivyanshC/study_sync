@@ -3,8 +3,27 @@ import { create } from 'zustand';
 import { apiService, StudySession as ApiStudySession } from '../services/apiService';
 import { socketService } from '../services/socketService';
 
-// Mock user ID for now (in a real app, this would come from auth)
-const MOCK_USER_ID = 'user_' + Math.random().toString(36).substr(2, 9);
+// Enhanced character progression system
+export const getCharacterLevel = (totalHours: number) => {
+  const levels = [
+    { name: 'Beginner Scholar', level: 1, icon: '🎓', minXP: 0, maxXP: 999, color: '#3b82f6' },
+    { name: 'Focused Knight', level: 2, icon: '⚔️', minXP: 1000, maxXP: 2499, color: '#8b5cf6' },
+    { name: 'Master Sage', level: 3, icon: '🧙‍♂️', minXP: 2500, maxXP: 4999, color: '#06d6a0' },
+    { name: 'Legendary Mentor', level: 4, icon: '👑', minXP: 5000, maxXP: 9999, color: '#f59e0b' },
+    { name: 'Cosmic Scholar', level: 5, icon: '🌟', minXP: 10000, maxXP: 19999, color: '#ef4444' },
+  ];
+
+  // Calculate XP from hours (1 hour = 100 XP)
+  const xp = Math.floor(totalHours * 100);
+  
+  for (let i = levels.length - 1; i >= 0; i--) {
+    if (xp >= levels[i].minXP) {
+      return { ...levels[i], currentXP: xp };
+    }
+  }
+  
+  return { ...levels[0], currentXP: xp };
+};
 
 export interface StudySession {
   id: string;
