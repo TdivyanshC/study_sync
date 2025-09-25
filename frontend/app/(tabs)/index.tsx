@@ -11,18 +11,19 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { 
-  useSharedValue, 
-  useAnimatedStyle, 
-  withRepeat, 
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
   withTiming,
   interpolate,
   Easing,
 } from 'react-native-reanimated';
-import { Colors } from '../constants/Colors';
-import { GlobalStyles } from '../constants/Theme';
-import { useStudyStore, useTimer, useAppInitialization } from '../hooks/useStudySession';
-import NotificationBanner from '../components/NotificationBanner';
+import { Colors } from '../../constants/Colors';
+import { GlobalStyles } from '../../constants/Theme';
+import { useStudyStore, useTimer, useAppInitialization } from '../../hooks/useStudySession';
+import NotificationBanner from '../../components/NotificationBanner';
+import { router } from 'expo-router';
 
 const { width } = Dimensions.get('window');
 
@@ -64,10 +65,10 @@ const FireAnimation = ({ isActive }: { isActive: boolean }) => {
 
   return (
     <Animated.View style={animatedStyle}>
-      <Ionicons 
-        name="flame" 
-        size={32} 
-        color={isActive ? Colors.fire : Colors.textMuted} 
+      <Ionicons
+        name="flame"
+        size={32}
+        color={isActive ? Colors.fire : Colors.textMuted}
       />
     </Animated.View>
   );
@@ -95,10 +96,10 @@ const ClockAnimation = ({ isRunning }: { isRunning: boolean }) => {
 
   return (
     <Animated.View style={animatedStyle}>
-      <Ionicons 
-        name="time" 
-        size={28} 
-        color={isRunning ? Colors.primary : Colors.textMuted} 
+      <Ionicons
+        name="time"
+        size={28}
+        color={isRunning ? Colors.primary : Colors.textMuted}
       />
     </Animated.View>
   );
@@ -107,7 +108,7 @@ const ClockAnimation = ({ isRunning }: { isRunning: boolean }) => {
 // Weekly graph placeholder
 const WeeklyGraph = ({ hours }: { hours: number }) => {
   const mockData = [3, 5, 2, 7, 4, 6, 8]; // Mock weekly data
-  
+
   return (
     <View style={styles.graphContainer}>
       <Text style={[GlobalStyles.subtitle, { textAlign: 'center', marginBottom: 20 }]}>
@@ -116,14 +117,14 @@ const WeeklyGraph = ({ hours }: { hours: number }) => {
       <View style={styles.barsContainer}>
         {mockData.map((value, index) => (
           <View key={index} style={styles.barWrapper}>
-            <View 
+            <View
               style={[
-                styles.bar, 
-                { 
+                styles.bar,
+                {
                   height: (value / 8) * 80,
-                  backgroundColor: index === 6 ? Colors.primary : Colors.surfaceElevated 
+                  backgroundColor: index === 6 ? Colors.primary : Colors.surfaceElevated
                 }
-              ]} 
+              ]}
             />
             <Text style={styles.barLabel}>
               {['M', 'T', 'W', 'T', 'F', 'S', 'S'][index]}
@@ -138,27 +139,28 @@ const WeeklyGraph = ({ hours }: { hours: number }) => {
 export default function HomeScreen() {
   // Initialize the app (Socket.IO, load sessions)
   useAppInitialization();
-  
-  const { 
-    currentSession, 
-    stats, 
+
+  const {
+    currentSession,
+    stats,
     isTimerRunning,
     isConnectedToSocket,
     notification,
     hideNotification,
-    startSession, 
-    stopSession, 
-    takeBreak, 
-    resumeFromBreak 
+    startSession,
+    stopSession,
+    takeBreak,
+    resumeFromBreak
   } = useStudyStore();
-  
+
   const { formattedTime } = useTimer();
-  
+
   const character = getCharacterLevel(stats.weeklyHours * 4); // Rough estimate for total hours
 
   const handleMainButtonPress = () => {
     if (!currentSession) {
       startSession();
+      router.push('/timer');
     } else if (currentSession.isBreak) {
       resumeFromBreak();
     } else {
@@ -181,7 +183,7 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={GlobalStyles.safeArea}>
       <StatusBar style="light" backgroundColor={Colors.background} />
-      
+
       {/* Notification Banner */}
       <NotificationBanner
         message={notification.message}
@@ -189,11 +191,10 @@ export default function HomeScreen() {
         visible={notification.visible}
         onHide={hideNotification}
       />
-      
+
       <ScrollView style={GlobalStyles.container} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={[GlobalStyles.title, { fontSize: 32, color: 'red' }]}>HOME SCREEN</Text>
           <Text style={GlobalStyles.title}>Study Together</Text>
           <View style={styles.statusRow}>
             <Text style={GlobalStyles.textSecondary}>Stay focused, stay connected</Text>
@@ -244,25 +245,25 @@ export default function HomeScreen() {
             <ClockAnimation isRunning={isTimerRunning} />
             <Text style={styles.timerText}>{formattedTime}</Text>
           </View>
-          
+
           {currentSession && (
             <Text style={[GlobalStyles.textSecondary, { textAlign: 'center', marginBottom: 20 }]}>
               {currentSession.isBreak ? 'On Break 💤' : 'Studying 📚'}
             </Text>
           )}
 
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[
               styles.mainButton,
               { backgroundColor: currentSession?.isBreak ? Colors.success : Colors.primary }
             ]}
             onPress={handleMainButtonPress}
           >
-            <Ionicons 
-              name={getMainButtonIcon() as any} 
-              size={24} 
-              color={Colors.text} 
-              style={{ marginRight: 12 }} 
+            <Ionicons
+              name={getMainButtonIcon() as any}
+              size={24}
+              color={Colors.text}
+              style={{ marginRight: 12 }}
             />
             <Text style={styles.mainButtonText}>
               {getMainButtonText()}
@@ -270,7 +271,7 @@ export default function HomeScreen() {
           </TouchableOpacity>
 
           {currentSession && (
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.secondaryButton, { marginTop: 12 }]}
               onPress={stopSession}
             >

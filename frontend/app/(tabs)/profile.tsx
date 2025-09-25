@@ -10,9 +10,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../constants/Colors';
-import { GlobalStyles } from '../constants/Theme';
-import { useStudyStore } from '../hooks/useStudySession';
+import { Colors } from '../../constants/Colors';
+import { GlobalStyles } from '../../constants/Theme';
+import { useStudyStore } from '../../hooks/useStudySession';
 
 // Character levels mapping
 const getCharacterInfo = (level: number) => {
@@ -91,16 +91,16 @@ const AchievementCard: React.FC<AchievementCardProps> = ({ achievement }) => {
   return (
     <View style={[styles.achievementCard, { opacity: achievement.unlocked ? 1 : 0.5 }]}>
       <View style={[styles.achievementIcon, { backgroundColor: achievement.color + '20' }]}>
-        <Ionicons 
-          name={achievement.icon as any} 
-          size={24} 
-          color={achievement.unlocked ? achievement.color : Colors.textMuted} 
+        <Ionicons
+          name={achievement.icon as any}
+          size={24}
+          color={achievement.unlocked ? achievement.color : Colors.textMuted}
         />
       </View>
-      
+
       <View style={styles.achievementInfo}>
-        <Text style={[styles.achievementTitle, { 
-          color: achievement.unlocked ? Colors.text : Colors.textMuted 
+        <Text style={[styles.achievementTitle, {
+          color: achievement.unlocked ? Colors.text : Colors.textMuted
         }]}>
           {achievement.title}
         </Text>
@@ -109,7 +109,7 @@ const AchievementCard: React.FC<AchievementCardProps> = ({ achievement }) => {
           <Text style={styles.achievementDate}>{achievement.date}</Text>
         )}
       </View>
-      
+
       {achievement.unlocked && (
         <Ionicons name="checkmark-circle" size={20} color={Colors.success} />
       )}
@@ -135,10 +135,9 @@ export default function ProfileScreen() {
     <SafeAreaView style={GlobalStyles.safeArea}>
       <StatusBar style="light" backgroundColor={Colors.background} />
       <ScrollView style={GlobalStyles.container} showsVerticalScrollIndicator={false}>
-        
+
         {/* Header */}
         <View style={styles.header}>
-          <Text style={[GlobalStyles.title, { fontSize: 32, color: 'red' }]}>PROFILE SCREEN</Text>
           <Text style={GlobalStyles.title}>Profile</Text>
           <Text style={GlobalStyles.textSecondary}>Your study journey</Text>
         </View>
@@ -148,10 +147,10 @@ export default function ProfileScreen() {
           <View style={styles.characterIcon}>
             <Text style={styles.characterEmoji}>{character.icon}</Text>
           </View>
-          
+
           <Text style={styles.characterName}>{character.name}</Text>
           <Text style={styles.characterLevel}>Level {stats.level}</Text>
-          
+
           {/* XP Progress */}
           <View style={styles.xpContainer}>
             <View style={styles.xpBar}>
@@ -166,26 +165,26 @@ export default function ProfileScreen() {
         {/* Stats Overview */}
         <View style={[GlobalStyles.glassCard, styles.statsOverview]}>
           <Text style={GlobalStyles.subtitle}>Study Statistics</Text>
-          
+
           <View style={styles.statsGrid}>
             <View style={styles.statBox}>
               <Ionicons name="time" size={28} color={Colors.primary} />
               <Text style={styles.statNumber}>{totalHours}h</Text>
               <Text style={GlobalStyles.textMuted}>Total Hours</Text>
             </View>
-            
+
             <View style={styles.statBox}>
               <Ionicons name="flame" size={28} color={Colors.fire} />
               <Text style={styles.statNumber}>{stats.longestStreak}</Text>
               <Text style={GlobalStyles.textMuted}>Longest Streak</Text>
             </View>
-            
+
             <View style={styles.statBox}>
               <Ionicons name="trending-up" size={28} color={Colors.success} />
               <Text style={styles.statNumber}>{stats.efficiency}%</Text>
               <Text style={GlobalStyles.textMuted}>Avg Efficiency</Text>
             </View>
-            
+
             <View style={styles.statBox}>
               <Ionicons name="trophy" size={28} color={Colors.streak} />
               <Text style={styles.statNumber}>{unlockedAchievements.length}</Text>
@@ -197,18 +196,18 @@ export default function ProfileScreen() {
         {/* Recent Performance */}
         <View style={[GlobalStyles.glassCard, styles.performanceCard]}>
           <Text style={GlobalStyles.subtitle}>This Week</Text>
-          
+
           <View style={styles.performanceStats}>
             <View style={styles.performanceStat}>
               <Text style={styles.performanceNumber}>{stats.weeklyHours}h</Text>
               <Text style={GlobalStyles.textMuted}>Hours Studied</Text>
             </View>
-            
+
             <View style={styles.performanceStat}>
               <Text style={styles.performanceNumber}>{stats.currentStreak}</Text>
               <Text style={GlobalStyles.textMuted}>Current Streak</Text>
             </View>
-            
+
             <View style={styles.performanceStat}>
               <Text style={styles.performanceNumber}>{stats.todayHours}h</Text>
               <Text style={GlobalStyles.textMuted}>Today</Text>
@@ -222,7 +221,7 @@ export default function ProfileScreen() {
           <Text style={[GlobalStyles.textMuted, { marginBottom: 20 }]}>
             {unlockedAchievements.length} of {mockAchievements.length} unlocked
           </Text>
-          
+
           {mockAchievements.map(achievement => (
             <AchievementCard key={achievement.id} achievement={achievement} />
           ))}

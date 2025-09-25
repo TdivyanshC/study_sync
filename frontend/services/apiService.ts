@@ -29,9 +29,9 @@ class ApiService {
 
   constructor() {
     // Get backend URL from environment
-    this.baseUrl = Constants.expoConfig?.extra?.backendUrl || 
+    this.baseUrl = Constants.expoConfig?.extra?.backendUrl ||
                    process.env.EXPO_PUBLIC_BACKEND_URL ||
-                   'http://localhost:8001';
+                   'http://localhost:8000';
     
     // Ensure it has /api suffix
     if (!this.baseUrl.endsWith('/api')) {

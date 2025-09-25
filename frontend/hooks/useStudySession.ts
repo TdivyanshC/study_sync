@@ -3,6 +3,9 @@ import { create } from 'zustand';
 import { apiService, StudySession as ApiStudySession } from '../services/apiService';
 import { socketService } from '../services/socketService';
 
+// Mock user ID for development
+const MOCK_USER_ID = 'mock-user-123';
+
 // Enhanced character progression system
 export const getCharacterLevel = (totalHours: number) => {
   const levels = [
@@ -333,7 +336,7 @@ export const useStudyStore = create<StudyStore>((set, get) => ({
 export const useTimer = () => {
   const { currentSession, isTimerRunning, updateTimer } = useStudyStore();
   const [time, setTime] = useState(0);
-  const intervalRef = useRef<NodeJS.Timeout>();
+  const intervalRef = useRef<number>();
 
   useEffect(() => {
     if (isTimerRunning && currentSession && !currentSession.isBreak) {

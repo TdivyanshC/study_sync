@@ -10,9 +10,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../constants/Colors';
-import { GlobalStyles } from '../constants/Theme';
-import { useStudyStore } from '../hooks/useStudySession';
+import { Colors } from '../../constants/Colors';
+import { GlobalStyles } from '../../constants/Theme';
+import { useStudyStore } from '../../hooks/useStudySession';
 import { format, formatDistanceToNow } from 'date-fns';
 
 // Mock data for previous streaks and sessions
@@ -79,7 +79,7 @@ const StreakCard: React.FC<StreakCardProps> = ({ streak, onResume, onInvite }) =
             {streak.duration}
           </Text>
         </View>
-        
+
         <View style={styles.streakDetail}>
           <Ionicons name="book" size={16} color={Colors.textSecondary} />
           <Text style={[GlobalStyles.textSecondary, { marginLeft: 8 }]}>
@@ -110,7 +110,7 @@ const StreakCard: React.FC<StreakCardProps> = ({ streak, onResume, onInvite }) =
           <Ionicons name="refresh" size={18} color={Colors.primary} />
           <Text style={styles.actionButtonText}>Resume</Text>
         </TouchableOpacity>
-        
+
         <TouchableOpacity style={styles.actionButton} onPress={onInvite}>
           <Ionicons name="person-add" size={18} color={Colors.accent} />
           <Text style={[styles.actionButtonText, { color: Colors.accent }]}>
@@ -146,10 +146,9 @@ export default function StreaksScreen() {
   return (
     <SafeAreaView style={GlobalStyles.safeArea}>
       <StatusBar style="light" backgroundColor={Colors.background} />
-      
+
       {/* Header */}
       <View style={styles.header}>
-        <Text style={[GlobalStyles.title, { fontSize: 32, color: 'red' }]}>STREAKS SCREEN</Text>
         <Text style={GlobalStyles.title}>Study Streaks</Text>
         <Text style={GlobalStyles.textSecondary}>
           Your study history and achievements
@@ -165,13 +164,13 @@ export default function StreaksScreen() {
             <Text style={styles.statNumber}>{stats.currentStreak}</Text>
             <Text style={GlobalStyles.textMuted}>Days</Text>
           </View>
-          
+
           <View style={styles.statItem}>
             <Ionicons name="trophy" size={32} color={Colors.streak} />
             <Text style={styles.statNumber}>{stats.longestStreak}</Text>
             <Text style={GlobalStyles.textMuted}>Best Streak</Text>
           </View>
-          
+
           <View style={styles.statItem}>
             <Ionicons name="trending-up" size={32} color={Colors.success} />
             <Text style={styles.statNumber}>{stats.efficiency}%</Text>
@@ -185,7 +184,7 @@ export default function StreaksScreen() {
         <Text style={[GlobalStyles.subtitle, { marginHorizontal: 16 }]}>
           Recent Sessions
         </Text>
-        
+
         <FlatList
           data={mockStreakHistory}
           renderItem={renderStreakCard}

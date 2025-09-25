@@ -12,8 +12,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../constants/Colors';
-import { GlobalStyles } from '../constants/Theme';
+import { Colors } from '../../constants/Colors';
+import { GlobalStyles } from '../../constants/Theme';
 
 // Mock data for spaces/rooms
 const mockSpaces = [
@@ -94,10 +94,10 @@ const SpaceCard: React.FC<SpaceCardProps> = ({ space, onJoin, onEnter, onStartSt
           </Text>
         </View>
         <View style={styles.statItem}>
-          <Ionicons 
-            name="radio-button-on" 
-            size={16} 
-            color={space.active > 0 ? Colors.success : Colors.textMuted} 
+          <Ionicons
+            name="radio-button-on"
+            size={16}
+            color={space.active > 0 ? Colors.success : Colors.textMuted}
           />
           <Text style={[GlobalStyles.textSecondary, { marginLeft: 6 }]}>
             {space.active} active now
@@ -113,7 +113,7 @@ const SpaceCard: React.FC<SpaceCardProps> = ({ space, onJoin, onEnter, onStartSt
               <Ionicons name="enter" size={18} color={Colors.text} />
               <Text style={styles.primaryButtonText}>Enter Space</Text>
             </TouchableOpacity>
-            
+
             <TouchableOpacity style={styles.secondaryButton} onPress={onStartStreak}>
               <Ionicons name="flame" size={18} color={Colors.fire} />
               <Text style={[styles.secondaryButtonText, { color: Colors.fire }]}>
@@ -172,10 +172,9 @@ export default function SpacesScreen() {
   return (
     <SafeAreaView style={GlobalStyles.safeArea}>
       <StatusBar style="light" backgroundColor={Colors.background} />
-      
+
       {/* Header */}
       <View style={styles.header}>
-        <Text style={[GlobalStyles.title, { fontSize: 32, color: 'red' }]}>SPACES SCREEN</Text>
         <Text style={GlobalStyles.title}>Study Spaces</Text>
         <Text style={GlobalStyles.textSecondary}>
           Join groups and study together
@@ -183,7 +182,7 @@ export default function SpacesScreen() {
       </View>
 
       {/* Create Space Button */}
-      <TouchableOpacity 
+      <TouchableOpacity
         style={[GlobalStyles.glassCard, styles.createButton]}
         onPress={() => setShowCreateModal(true)}
       >
@@ -238,14 +237,14 @@ export default function SpacesScreen() {
             />
 
             <View style={styles.modalActions}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.cancelButton}
                 onPress={() => setShowCreateModal(false)}
               >
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[
                   styles.createModalButton,
                   { opacity: spaceName.trim() ? 1 : 0.5 }
