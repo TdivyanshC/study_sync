@@ -46,24 +46,79 @@ class StatusCheckCreate(BaseModel):
     client_name: str
 
 class StudySession(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), alias="_id")
     user_id: str
-    start_time: datetime = Field(default_factory=datetime.utcnow)
-    end_time: Optional[datetime] = None
-    duration: int = 0  # seconds
-    is_active: bool = True
-    is_break: bool = False
-    subject: Optional[str] = None
+    subject: str
+    duration_minutes: int
+    efficiency: Optional[float] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
 
-class StudySessionCreate(BaseModel):
+class SessionCreate(BaseModel):
     user_id: str
-    subject: Optional[str] = None
+    subject: str
+    duration_minutes: int
+    efficiency: Optional[float] = None
 
-class StudySessionUpdate(BaseModel):
-    duration: Optional[int] = None
-    is_active: Optional[bool] = None
-    is_break: Optional[bool] = None
-    end_time: Optional[datetime] = None
+class Profile(BaseModel):
+    user_id: str
+    username: str
+    xp: int
+    level: int
+    streak: int
+    total_hours: float
+    efficiency: float
+    achievements: List[str]
+
+class StreakData(BaseModel):
+    current_streak: int
+    best_streak: int
+    average_efficiency: float
+
+class Space(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), alias="_id")
+    name: str
+    description: str
+    created_by: str
+    members: List[str]
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class SpaceCreate(BaseModel):
+    name: str
+    description: str
+    created_by: str
+
+class SpaceJoin(BaseModel):
+    user_id: str
+
+class SpaceActivity(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), alias="_id")
+    space_id: str
+    user_id: str
+    action: str
+    progress: Optional[int] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class SpaceActivityCreate(BaseModel):
+    user_id: str
+    action: str
+    progress: Optional[int] = None
+
+class SpaceChat(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), alias="_id")
+    space_id: str
+    user_id: str
+    message: str
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class SpaceChatCreate(BaseModel):
+    user_id: str
+    message: str
+
+class DashboardResponse(BaseModel):
+    profile: dict
+    streak: StreakData
+    spaces: List[dict]
+    recent_sessions: List[dict]
 
 # Socket.IO Events
 @sio.event
@@ -76,11 +131,45 @@ async def disconnect(sid):
     print(f"Client disconnected: {sid}")
 
 @sio.event
-async def join_room(sid, data):
-    room = data.get('room', 'general')
-    await sio.enter_room(sid, room)
-    await sio.emit('room_joined', {'room': room}, to=sid)
-    print(f"Client {sid} joined room {room}")
+async def join_space(sid, data):
+    space_id = data.get('space_id')
+    await sio.enter_room(sid, space_id)
+    await sio.emit('space_joined', {'space_id': space_id}, to=sid)
+    print(f"Client {sid} joined space {space_id}")
+
+@sio.event
+async def send_message(sid, data):
+    space_id = data.get('space_id')
+    user_id = data.get('user_id')
+    message = data.get('message')
+    # Save to db
+    chat = SpaceChat(space_id=space_id, user_id=user_id, message=message)
+    await db.space_chat.insert_one(chat.dict(by_alias=True))
+    # Broadcast
+    await sio.emit('new_message', {
+        'space_id': space_id,
+        'user_id': user_id,
+        'message': message,
+        'created_at': chat.created_at.isoformat()
+    }, room=space_id)
+
+@sio.event
+async def activity_update(sid, data):
+    space_id = data.get('space_id')
+    user_id = data.get('user_id')
+    action = data.get('action')
+    progress = data.get('progress')
+    # Save to db
+    activity = SpaceActivity(space_id=space_id, user_id=user_id, action=action, progress=progress)
+    await db.space_activity.insert_one(activity.dict(by_alias=True))
+    # Broadcast
+    await sio.emit('activity_received', {
+        'space_id': space_id,
+        'user_id': user_id,
+        'action': action,
+        'progress': progress,
+        'created_at': activity.created_at.isoformat()
+    }, room=space_id)
 
 @sio.event
 async def session_started(sid, data):
@@ -120,57 +209,261 @@ async def get_status_checks():
     return [StatusCheck(**status_check) for status_check in status_checks]
 
 # Study Session endpoints
-@api_router.post("/sessions", response_model=StudySession)
-async def create_session(session_data: StudySessionCreate):
-    session_dict = session_data.dict()
-    session_obj = StudySession(**session_dict)
-    
-    # Store in database
-    await db.study_sessions.insert_one(session_obj.dict())
-    
-    # Emit real-time notification
-    await sio.emit('session_started', {
-        'session_id': session_obj.id,
-        'user_id': session_obj.user_id,
-        'subject': session_obj.subject,
-        'timestamp': session_obj.start_time.isoformat()
-    })
-    
-    return session_obj
-
-@api_router.put("/sessions/{session_id}", response_model=StudySession)
-async def update_session(session_id: str, update_data: StudySessionUpdate):
-    update_dict = {k: v for k, v in update_data.dict().items() if v is not None}
-    
-    if update_data.end_time:
-        update_dict['end_time'] = update_data.end_time
-    
-    result = await db.study_sessions.update_one(
-        {"id": session_id},
-        {"$set": update_dict}
+@api_router.post("/sessions/add", response_model=StudySession)
+async def add_session(session_data: SessionCreate):
+    session = StudySession(
+        user_id=session_data.user_id,
+        subject=session_data.subject,
+        duration_minutes=session_data.duration_minutes,
+        efficiency=session_data.efficiency
     )
-    
-    if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Session not found")
-    
-    updated_session = await db.study_sessions.find_one({"id": session_id})
-    session_obj = StudySession(**updated_session)
-    
-    # Emit real-time update if session ended
-    if update_data.is_active == False:
-        await sio.emit('session_ended', {
-            'session_id': session_obj.id,
-            'user_id': session_obj.user_id,
-            'duration': session_obj.duration,
-            'timestamp': datetime.utcnow().isoformat()
-        })
-    
-    return session_obj
+    await db.sessions.insert_one(session.dict(by_alias=True))
+    return session
 
 @api_router.get("/sessions/{user_id}", response_model=List[StudySession])
 async def get_user_sessions(user_id: str):
-    sessions = await db.study_sessions.find({"user_id": user_id}).to_list(100)
+    sessions = await db.sessions.find({"user_id": user_id}).sort("created_at", -1).to_list(100)
     return [StudySession(**session) for session in sessions]
+
+# Streak endpoint
+@api_router.get("/streaks/{user_id}", response_model=StreakData)
+async def get_user_streaks(user_id: str):
+    sessions = await db.sessions.find({"user_id": user_id}).sort("created_at", 1).to_list(1000)
+    if not sessions:
+        return StreakData(current_streak=0, best_streak=0, average_efficiency=0.0)
+    
+    # Get unique dates and efficiencies
+    dates = set()
+    efficiencies = []
+    for session in sessions:
+        dates.add(session['created_at'].date())
+        efficiencies.append(session['efficiency'])
+    
+    sorted_dates = sorted(dates)
+    today = datetime.utcnow().date()
+    
+    # Calculate best streak
+    best_streak = 0
+    streak = 0
+    prev_date = None
+    for date in sorted_dates:
+        if prev_date and (date - prev_date).days == 1:
+            streak += 1
+        else:
+            streak = 1
+        best_streak = max(best_streak, streak)
+        prev_date = date
+    
+    # Calculate current streak
+    current_streak = 0
+    if sorted_dates:
+        last_date = sorted_dates[-1]
+        days_since_last = (today - last_date).days
+        if days_since_last <= 1:
+            # Find the streak ending at last_date
+            streak = 1
+            for i in range(len(sorted_dates) - 2, -1, -1):
+                if (sorted_dates[i+1] - sorted_dates[i]).days == 1:
+                    streak += 1
+                else:
+                    break
+            current_streak = streak
+    
+    # Average efficiency
+    average_efficiency = sum(efficiencies) / len(efficiencies) if efficiencies else 0.0
+    
+    return StreakData(
+        current_streak=current_streak,
+        best_streak=best_streak,
+        average_efficiency=round(average_efficiency, 2)
+    )
+
+@api_router.get("/dashboard/{user_id}", response_model=DashboardResponse)
+async def get_user_dashboard(user_id: str):
+    # Fetch profile
+    profile = await db.profiles.find_one({"user_id": user_id})
+    if not profile:
+        profile = {"user_id": user_id, "username": "Unknown", "xp": 0, "level": 1, "streak": 0, "total_hours": 0.0, "efficiency": 0.0, "achievements": []}
+
+    # Fetch streak data (reuse logic)
+    sessions = await db.sessions.find({"user_id": user_id}).sort("created_at", 1).to_list(1000)
+    if sessions:
+        dates = set()
+        efficiencies = []
+        for session in sessions:
+            dates.add(session['created_at'].date())
+            if session.get('efficiency'):
+                efficiencies.append(session['efficiency'])
+
+        sorted_dates = sorted(dates)
+        today = datetime.utcnow().date()
+
+        # Best streak
+        best_streak = 0
+        streak = 0
+        prev_date = None
+        for date in sorted_dates:
+            if prev_date and (date - prev_date).days == 1:
+                streak += 1
+            else:
+                streak = 1
+            best_streak = max(best_streak, streak)
+            prev_date = date
+
+        # Current streak
+        current_streak = 0
+        if sorted_dates:
+            last_date = sorted_dates[-1]
+            days_since_last = (today - last_date).days
+            if days_since_last <= 1:
+                streak = 1
+                for i in range(len(sorted_dates) - 2, -1, -1):
+                    if (sorted_dates[i+1] - sorted_dates[i]).days == 1:
+                        streak += 1
+                    else:
+                        break
+                current_streak = streak
+
+        average_efficiency = sum(efficiencies) / len(efficiencies) if efficiencies else 0.0
+        streak_data = StreakData(
+            current_streak=current_streak,
+            best_streak=best_streak,
+            average_efficiency=round(average_efficiency, 2)
+        )
+    else:
+        streak_data = StreakData(current_streak=0, best_streak=0, average_efficiency=0.0)
+
+    # Fetch active spaces
+    spaces_cursor = db.spaces.find({"members": user_id}, {"_id": 1, "name": 1, "description": 1})
+    spaces = await spaces_cursor.to_list(100)
+
+    # Fetch last 3 sessions
+    recent_sessions_cursor = db.sessions.find({"user_id": user_id}, {"subject": 1, "duration_minutes": 1, "created_at": 1}).sort("created_at", -1).limit(3)
+    recent_sessions = await recent_sessions_cursor.to_list(3)
+
+    return DashboardResponse(
+        profile=profile,
+        streak=streak_data,
+        spaces=spaces,
+        recent_sessions=recent_sessions
+    )
+
+# Space endpoints
+@api_router.post("/spaces/create", response_model=Space)
+async def create_space(space_data: SpaceCreate):
+    space = Space(
+        name=space_data.name,
+        description=space_data.description,
+        created_by=space_data.created_by,
+        members=[space_data.created_by]
+    )
+    await db.spaces.insert_one(space.dict(by_alias=True))
+    return space
+
+@api_router.post("/spaces/{space_id}/join")
+async def join_space(space_id: str, join_data: SpaceJoin):
+    space = await db.spaces.find_one({"_id": space_id})
+    if not space:
+        raise HTTPException(status_code=404, detail="Space not found")
+    if join_data.user_id in space['members']:
+        return {"message": "Already a member"}
+    await db.spaces.update_one(
+        {"_id": space_id},
+        {"$push": {"members": join_data.user_id}}
+    )
+    return {"message": "Joined successfully"}
+
+@api_router.get("/spaces/{user_id}", response_model=List[Space])
+async def get_user_spaces(user_id: str):
+    spaces = await db.spaces.find({"members": user_id}).to_list(100)
+    return [Space(**space) for space in spaces]
+
+@api_router.post("/spaces/{space_id}/activity", response_model=SpaceActivity)
+async def log_space_activity(space_id: str, activity_data: SpaceActivityCreate):
+    activity = SpaceActivity(
+        space_id=space_id,
+        user_id=activity_data.user_id,
+        action=activity_data.action,
+        progress=activity_data.progress
+    )
+    await db.space_activity.insert_one(activity.dict(by_alias=True))
+    return activity
+
+@api_router.get("/spaces/{space_id}/activity", response_model=List[SpaceActivity])
+async def get_space_activity(space_id: str):
+    activities = await db.space_activity.find({"space_id": space_id}).sort("created_at", -1).limit(20).to_list(20)
+    return [SpaceActivity(**activity) for activity in activities]
+
+@api_router.post("/spaces/{space_id}/chat", response_model=SpaceChat)
+async def send_chat_message(space_id: str, chat_data: SpaceChatCreate):
+    chat = SpaceChat(
+        space_id=space_id,
+        user_id=chat_data.user_id,
+        message=chat_data.message
+    )
+    await db.space_chat.insert_one(chat.dict(by_alias=True))
+    return chat
+
+@api_router.get("/spaces/{space_id}/chat", response_model=List[SpaceChat])
+async def get_space_chat(space_id: str):
+    messages = await db.space_chat.find({"space_id": space_id}).sort("created_at", -1).limit(20).to_list(20)
+    return [SpaceChat(**msg) for msg in messages]
+
+# Profile endpoints
+@api_router.post("/profiles/dummy", response_model=Profile)
+async def create_dummy_profile():
+    dummy_profile = Profile(
+        user_id="dummy_user_123",
+        username="DummyUser",
+        xp=100,
+        level=5,
+        streak=7,
+        total_hours=25.5,
+        efficiency=85.2,
+        achievements=["First Study Session", "Week Streak"]
+    )
+    await db.profiles.insert_one(dummy_profile.dict())
+    return dummy_profile
+
+@api_router.get("/profiles/{user_id}", response_model=Profile)
+async def get_profile(user_id: str):
+    profile = await db.profiles.find_one({"user_id": user_id})
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
+    return Profile(**profile)
+
+@api_router.post("/populate/dummy")
+async def populate_dummy_data():
+    # Dummy profiles
+    profiles = [
+        Profile(user_id="user1", username="Alice", xp=150, level=6, streak=8, total_hours=30.5, efficiency=88.0, achievements=["First Session", "Week Streak"]),
+        Profile(user_id="user2", username="Bob", xp=200, level=8, streak=12, total_hours=45.0, efficiency=92.0, achievements=["Month Streak", "High Efficiency"]),
+        Profile(user_id="user3", username="Charlie", xp=100, level=5, streak=5, total_hours=20.0, efficiency=85.0, achievements=["First Achievement"]),
+    ]
+    for profile in profiles:
+        await db.profiles.insert_one(profile.dict())
+    
+    # Dummy spaces
+    spaces = [
+        Space(name="Math Study Group", description="Group for math enthusiasts", created_by="user1", members=["user1", "user2"]),
+        Space(name="Science Club", description="Discussing science topics", created_by="user2", members=["user2", "user3"]),
+        Space(name="General Study", description="All subjects welcome", created_by="user1", members=["user1", "user2", "user3"]),
+    ]
+    for space in spaces:
+        await db.spaces.insert_one(space.dict(by_alias=True))
+    
+    # Dummy sessions
+    sessions = [
+        StudySession(user_id="user1", subject="Math", duration_minutes=60, efficiency=90.0, created_at=datetime.utcnow() - timedelta(days=1)),
+        StudySession(user_id="user1", subject="Physics", duration_minutes=45, efficiency=85.0, created_at=datetime.utcnow() - timedelta(days=2)),
+        StudySession(user_id="user2", subject="Chemistry", duration_minutes=50, efficiency=95.0, created_at=datetime.utcnow() - timedelta(days=1)),
+        StudySession(user_id="user2", subject="Biology", duration_minutes=40, efficiency=88.0, created_at=datetime.utcnow() - timedelta(days=3)),
+        StudySession(user_id="user3", subject="History", duration_minutes=30, efficiency=80.0, created_at=datetime.utcnow() - timedelta(days=1)),
+    ]
+    for session in sessions:
+        await db.sessions.insert_one(session.dict())
+    
+    return {"message": "Dummy data populated successfully"}
 
 # Include the router in the main app
 app.include_router(api_router)
