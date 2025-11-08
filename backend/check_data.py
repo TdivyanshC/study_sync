@@ -12,30 +12,21 @@ client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
 async def check_data():
-    print("Checking profiles:")
-    profiles = await db.profiles.find().to_list(10)
-    for p in profiles:
-        print(f"  {p}")
-    
-    print("\nChecking spaces:")
-    spaces = await db.spaces.find().to_list(10)
-    for s in spaces:
-        print(f"  {s}")
-    
-    print("\nChecking sessions:")
+    print("Checking sessions collection...")
     sessions = await db.sessions.find().to_list(10)
-    for s in sessions:
-        print(f"  {s}")
-    
-    print("\nChecking space_activity:")
-    activities = await db.space_activity.find().to_list(10)
-    for a in activities:
-        print(f"  {a}")
-    
-    print("\nChecking space_chat:")
-    chats = await db.space_chat.find().to_list(10)
-    for c in chats:
-        print(f"  {c}")
+    for session in sessions:
+        print(f"Session: {session}")
+        print(f"Type of _id: {type(session.get('_id'))}")
+
+    print("\nChecking profiles collection...")
+    profiles = await db.profiles.find().to_list(10)
+    for profile in profiles:
+        print(f"Profile: {profile}")
+
+    print("\nChecking spaces collection...")
+    spaces = await db.spaces.find().to_list(10)
+    for space in spaces:
+        print(f"Space: {space}")
 
 if __name__ == "__main__":
     asyncio.run(check_data())

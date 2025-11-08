@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { create } from 'zustand';
-import { apiService, StudySession as ApiStudySession } from '../services/apiService';
+import { apiService, DashboardData, StudySession as ApiStudySession } from '../services/apiService';
 import { socketService } from '../services/socketService';
 
-// Mock user ID for development
-const MOCK_USER_ID = 'mock-user-123';
+// Use real user ID from populated data
+const USER_ID = 'user1';
 
 // Enhanced character progression system
 export const getCharacterLevel = (totalHours: number) => {
@@ -18,25 +18,23 @@ export const getCharacterLevel = (totalHours: number) => {
 
   // Calculate XP from hours (1 hour = 100 XP)
   const xp = Math.floor(totalHours * 100);
-  
+
   for (let i = levels.length - 1; i >= 0; i--) {
     if (xp >= levels[i].minXP) {
       return { ...levels[i], currentXP: xp };
     }
   }
-  
+
   return { ...levels[0], currentXP: xp };
 };
 
 export interface StudySession {
-  id: string;
-  startTime: Date;
-  endTime?: Date;
-  duration: number; // in seconds
-  isActive: boolean;
-  isBreak: boolean;
-  subject?: string;
-  userId: string;
+  _id: string;
+  user_id: string;
+  subject: string;
+  duration_minutes: number;
+  efficiency?: number;
+  created_at: string;
 }
 
 export interface StudyStats {
@@ -57,72 +55,45 @@ interface NotificationState {
 
 // Zustand store for study session management
 interface StudyStore {
-  currentSession: StudySession | null;
   sessions: StudySession[];
   stats: StudyStats;
-  isTimerRunning: boolean;
+  dashboardData: DashboardData | null;
   isConnectedToSocket: boolean;
   notification: NotificationState;
   userId: string;
-  
+
   // Actions
   initializeSocket: () => Promise<void>;
-  startSession: (subject?: string) => Promise<void>;
-  stopSession: () => Promise<void>;
-  takeBreak: () => Promise<void>;
-  resumeFromBreak: () => Promise<void>;
-  updateTimer: (seconds: number) => Promise<void>;
-  loadUserSessions: () => Promise<void>;
+  loadDashboardData: () => Promise<void>;
+  logSession: (subject: string, durationMinutes: number, efficiency?: number) => Promise<void>;
   showNotification: (message: string, type: NotificationState['type']) => void;
   hideNotification: () => void;
   setSocketConnection: (connected: boolean) => void;
 }
 
 export const useStudyStore = create<StudyStore>((set, get) => ({
-  currentSession: null,
   sessions: [],
   stats: {
-    todayHours: 3.5,
-    weeklyHours: 24.5,
-    currentStreak: 7,
-    longestStreak: 12,
-    efficiency: 87,
-    level: 2,
-    xp: 850,
+    todayHours: 0,
+    weeklyHours: 0,
+    currentStreak: 0,
+    longestStreak: 0,
+    efficiency: 0,
+    level: 1,
+    xp: 0,
   },
-  isTimerRunning: false,
+  dashboardData: null,
   isConnectedToSocket: false,
   notification: { message: '', type: 'info', visible: false },
-  userId: MOCK_USER_ID,
+  userId: USER_ID,
 
   // Initialize Socket.IO connection
   initializeSocket: async () => {
     try {
       const connected = await socketService.connect(get().userId);
       set({ isConnectedToSocket: connected });
-      
+
       if (connected) {
-        // Set up Socket.IO event listeners for real-time notifications
-        socketService.onSessionEvents({
-          onUserStarted: (data) => {
-            if (data.user_id !== get().userId) {
-              get().showNotification(
-                `${data.user_id} started studying ${data.subject || 'something'}!`,
-                'info'
-              );
-            }
-          },
-          onUserStopped: (data) => {
-            if (data.user_id !== get().userId) {
-              const minutes = Math.floor(data.duration / 60);
-              get().showNotification(
-                `${data.user_id} finished studying! (${minutes} minutes)`,
-                'success'
-              );
-            }
-          },
-        });
-        
         get().showNotification('Connected to real-time updates!', 'success');
       } else {
         get().showNotification('Running in offline mode', 'warning');
@@ -133,188 +104,76 @@ export const useStudyStore = create<StudyStore>((set, get) => ({
     }
   },
 
-  startSession: async (subject) => {
+  // Load dashboard data from backend
+  loadDashboardData: async () => {
     try {
-      const { userId } = get();
-      
-      // Create session in backend
-      const apiSession = await apiService.createSession({
-        user_id: userId,
-        subject,
-      });
-      
-      // Convert to local format
-      const newSession: StudySession = {
-        id: apiSession.id,
-        startTime: new Date(apiSession.start_time),
-        duration: 0,
-        isActive: true,
-        isBreak: false,
-        subject,
-        userId,
-      };
-      
-      set({ 
-        currentSession: newSession,
-        isTimerRunning: true 
-      });
+      const dashboardData = await apiService.getUserDashboard(get().userId);
 
-      // Emit Socket.IO event for real-time notifications
-      if (get().isConnectedToSocket) {
-        socketService.emitSessionStarted(userId, subject);
-      }
-
-      get().showNotification('Study session started!', 'success');
-      console.log('✅ Session started:', newSession);
-      
-    } catch (error) {
-      console.error('Failed to start session:', error);
-      get().showNotification('Failed to start session', 'warning');
-    }
-  },
-
-  stopSession: async () => {
-    const { currentSession, sessions, userId } = get();
-    if (!currentSession) return;
-
-    try {
-      // End session in backend
-      const endedSession = await apiService.endSession(
-        currentSession.id,
-        currentSession.duration
-      );
-
-      // Update local state
-      const finishedSession: StudySession = {
-        ...currentSession,
-        endTime: new Date(),
-        isActive: false,
-      };
-
-      set({ 
-        currentSession: null,
-        sessions: [...sessions, finishedSession],
-        isTimerRunning: false 
-      });
-
-      // Emit Socket.IO event
-      if (get().isConnectedToSocket) {
-        socketService.emitSessionStopped(userId, currentSession.duration);
-      }
-
-      const minutes = Math.floor(currentSession.duration / 60);
-      get().showNotification(`Session completed! ${minutes} minutes studied`, 'success');
-      console.log('✅ Session stopped:', finishedSession);
-      
-    } catch (error) {
-      console.error('Failed to stop session:', error);
-      get().showNotification('Failed to end session', 'warning');
-      // Still update local state even if API fails
-      set({ 
-        currentSession: null,
-        isTimerRunning: false 
-      });
-    }
-  },
-
-  takeBreak: async () => {
-    const { currentSession } = get();
-    if (!currentSession) return;
-
-    try {
-      // Update session to break mode in backend
-      await apiService.setSessionBreak(currentSession.id, true);
-      
-      set(state => ({
-        currentSession: state.currentSession ? {
-          ...state.currentSession,
-          isBreak: true
-        } : null,
-        isTimerRunning: false
-      }));
-
-      get().showNotification('Break time! 💤', 'info');
-      
-    } catch (error) {
-      console.error('Failed to set break:', error);
-    }
-  },
-
-  resumeFromBreak: async () => {
-    const { currentSession } = get();
-    if (!currentSession) return;
-
-    try {
-      // Resume session from break in backend
-      await apiService.setSessionBreak(currentSession.id, false);
-      
-      set(state => ({
-        currentSession: state.currentSession ? {
-          ...state.currentSession,
-          isBreak: false
-        } : null,
-        isTimerRunning: true
-      }));
-
-      get().showNotification('Welcome back! 📚', 'success');
-      
-    } catch (error) {
-      console.error('Failed to resume from break:', error);
-    }
-  },
-
-  updateTimer: async (seconds) => {
-    const { currentSession } = get();
-    if (!currentSession) return;
-
-    // Update local state immediately
-    set(state => ({
-      currentSession: state.currentSession ? {
-        ...state.currentSession,
-        duration: seconds
-      } : null
-    }));
-
-    // Update backend every 30 seconds to avoid too many API calls
-    if (seconds % 30 === 0) {
-      try {
-        await apiService.updateSessionDuration(currentSession.id, seconds);
-      } catch (error) {
-        console.error('Failed to sync session duration:', error);
-      }
-    }
-  },
-
-  // Load user's session history
-  loadUserSessions: async () => {
-    try {
-      const apiSessions = await apiService.getUserSessions(get().userId);
-      
-      const sessions: StudySession[] = apiSessions.map(session => ({
-        id: session.id,
-        startTime: new Date(session.start_time),
-        endTime: session.end_time ? new Date(session.end_time) : undefined,
-        duration: session.duration,
-        isActive: session.is_active,
-        isBreak: session.is_break,
+      // Convert sessions to local format
+      const sessions: StudySession[] = dashboardData.recent_sessions.map(session => ({
+        _id: session._id,
+        user_id: session.user_id,
         subject: session.subject,
-        userId: session.user_id,
+        duration_minutes: session.duration_minutes,
+        efficiency: session.efficiency,
+        created_at: session.created_at,
       }));
-      
-      set({ sessions });
-      console.log('✅ Loaded user sessions:', sessions);
-      
+
+      // Calculate stats from profile and streak data
+      const profile = dashboardData.profile;
+      const streak = dashboardData.streak;
+
+      const stats: StudyStats = {
+        todayHours: Math.floor(profile.total_hours * 0.1), // Rough estimate
+        weeklyHours: profile.total_hours,
+        currentStreak: streak.current_streak,
+        longestStreak: streak.best_streak,
+        efficiency: Math.round(streak.average_efficiency),
+        level: profile.level,
+        xp: profile.xp,
+      };
+
+      set({
+        dashboardData,
+        sessions,
+        stats
+      });
+
+      console.log('✅ Loaded dashboard data:', dashboardData);
+
     } catch (error) {
-      console.error('Failed to load sessions:', error);
+      console.error('Failed to load dashboard data:', error);
+      get().showNotification('Failed to load dashboard data', 'warning');
+    }
+  },
+
+  // Log a completed study session
+  logSession: async (subject: string, durationMinutes: number, efficiency?: number) => {
+    try {
+      await apiService.createSession({
+        user_id: get().userId,
+        subject,
+        duration_minutes: durationMinutes,
+        efficiency,
+      });
+
+      get().showNotification('Session logged successfully!', 'success');
+
+      // Reload dashboard data
+      await get().loadDashboardData();
+
+    } catch (error) {
+      console.error('Failed to log session:', error);
+      get().showNotification('Failed to log session', 'warning');
     }
   },
 
   // Notification management
   showNotification: (message, type) => {
-    set({ 
+    set({
       notification: { message, type, visible: true }
     });
-    
+
     // Auto-hide after 3 seconds
     setTimeout(() => {
       get().hideNotification();
@@ -322,7 +181,7 @@ export const useStudyStore = create<StudyStore>((set, get) => ({
   },
 
   hideNotification: () => {
-    set(state => ({ 
+    set(state => ({
       notification: { ...state.notification, visible: false }
     }));
   },
@@ -332,77 +191,23 @@ export const useStudyStore = create<StudyStore>((set, get) => ({
   },
 }));
 
-// Custom hook for timer functionality
-export const useTimer = () => {
-  const { currentSession, isTimerRunning, updateTimer } = useStudyStore();
-  const [time, setTime] = useState(0);
-  const intervalRef = useRef<number>();
-
-  useEffect(() => {
-    if (isTimerRunning && currentSession && !currentSession.isBreak) {
-      intervalRef.current = setInterval(() => {
-        setTime(prev => {
-          const newTime = prev + 1;
-          updateTimer(newTime);
-          return newTime;
-        });
-      }, 1000);
-    } else {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    }
-
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, [isTimerRunning, currentSession, updateTimer]);
-
-  useEffect(() => {
-    if (currentSession) {
-      setTime(currentSession.duration);
-    } else {
-      setTime(0);
-    }
-  }, [currentSession]);
-
-  const formatTime = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const remainingSeconds = seconds % 60;
-    
-    if (hours > 0) {
-      return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
-    }
-    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
-  };
-
-  return {
-    time,
-    formattedTime: formatTime(time),
-    isRunning: isTimerRunning,
-  };
-};
-
 // Hook for initializing the app
 export const useAppInitialization = () => {
-  const { initializeSocket, loadUserSessions } = useStudyStore();
-  
+  const { initializeSocket, loadDashboardData } = useStudyStore();
+
   useEffect(() => {
     const initializeApp = async () => {
       console.log('🚀 Initializing Study Together app...');
-      
+
       // Initialize Socket.IO connection
       await initializeSocket();
-      
-      // Load user's session history
-      await loadUserSessions();
-      
+
+      // Load dashboard data
+      await loadDashboardData();
+
       console.log('✅ App initialization complete');
     };
-    
+
     initializeApp();
-  }, [initializeSocket, loadUserSessions]);
+  }, [initializeSocket, loadDashboardData]);
 };

@@ -16,12 +16,11 @@ import Animated, {
   useAnimatedStyle,
   withRepeat,
   withTiming,
-  interpolate,
   Easing,
 } from 'react-native-reanimated';
 import { Colors } from '../../constants/Colors';
 import { GlobalStyles } from '../../constants/Theme';
-import { useStudyStore, useTimer, useAppInitialization } from '../../hooks/useStudySession';
+import { useStudyStore, useAppInitialization } from '../../hooks/useStudySession';
 import NotificationBanner from '../../components/NotificationBanner';
 import { router } from 'expo-router';
 
@@ -105,23 +104,35 @@ const ClockAnimation = ({ isRunning }: { isRunning: boolean }) => {
   );
 };
 
-// Weekly graph placeholder
-const WeeklyGraph = ({ hours }: { hours: number }) => {
-  const mockData = [3, 5, 2, 7, 4, 6, 8]; // Mock weekly data
+// Weekly graph with real data
+const WeeklyGraph = ({ sessions }: { sessions: any[] }) => {
+  // Group sessions by day of week
+  const weeklyData = [0, 0, 0, 0, 0, 0, 0]; // Mon to Sun
+  const today = new Date();
+
+  sessions.forEach(session => {
+    const sessionDate = new Date(session.created_at);
+    const dayOfWeek = sessionDate.getDay(); // 0 = Sun, 1 = Mon, etc.
+    // Convert to Mon-Sun format (0 = Mon, 6 = Sun)
+    const adjustedDay = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    weeklyData[adjustedDay] += session.duration_minutes / 60; // Convert to hours
+  });
+
+  const totalHours = weeklyData.reduce((sum, hours) => sum + hours, 0);
 
   return (
     <View style={styles.graphContainer}>
       <Text style={[GlobalStyles.subtitle, { textAlign: 'center', marginBottom: 20 }]}>
-        This Week: {hours}h
+        This Week: {totalHours.toFixed(1)}h
       </Text>
       <View style={styles.barsContainer}>
-        {mockData.map((value, index) => (
+        {weeklyData.map((value, index) => (
           <View key={index} style={styles.barWrapper}>
             <View
               style={[
                 styles.bar,
                 {
-                  height: (value / 8) * 80,
+                  height: Math.max((value / Math.max(...weeklyData, 1)) * 80, 4), // Min height of 4
                   backgroundColor: index === 6 ? Colors.primary : Colors.surfaceElevated
                 }
               ]}
@@ -137,47 +148,23 @@ const WeeklyGraph = ({ hours }: { hours: number }) => {
 };
 
 export default function HomeScreen() {
-  // Initialize the app (Socket.IO, load sessions)
+  // Initialize the app (Socket.IO, load dashboard data)
   useAppInitialization();
 
   const {
-    currentSession,
     stats,
-    isTimerRunning,
+    dashboardData,
     isConnectedToSocket,
     notification,
     hideNotification,
-    startSession,
-    stopSession,
-    takeBreak,
-    resumeFromBreak
+    logSession
   } = useStudyStore();
 
-  const { formattedTime } = useTimer();
+  const character = getCharacterLevel(stats.weeklyHours);
 
-  const character = getCharacterLevel(stats.weeklyHours * 4); // Rough estimate for total hours
-
-  const handleMainButtonPress = () => {
-    if (!currentSession) {
-      startSession();
-      router.push('/timer');
-    } else if (currentSession.isBreak) {
-      resumeFromBreak();
-    } else {
-      takeBreak();
-    }
-  };
-
-  const getMainButtonText = () => {
-    if (!currentSession) return 'Start a Task';
-    if (currentSession.isBreak) return 'Resume Session';
-    return 'Take a Break';
-  };
-
-  const getMainButtonIcon = () => {
-    if (!currentSession) return 'play';
-    if (currentSession.isBreak) return 'play';
-    return 'pause';
+  const handleLogSession = () => {
+    // For demo, log a sample session
+    logSession('Mathematics', 60, 85);
   };
 
   return (
@@ -217,7 +204,7 @@ export default function HomeScreen() {
 
         {/* Weekly Analysis Graph */}
         <View style={[GlobalStyles.glassCard, { marginTop: 20 }]}>
-          <WeeklyGraph hours={stats.weeklyHours} />
+          <WeeklyGraph sessions={dashboardData?.recent_sessions || []} />
         </View>
 
         {/* Stats Cards Row */}
@@ -239,48 +226,36 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* Main Timer Section */}
+        {/* Quick Actions Section */}
         <View style={[GlobalStyles.glassCard, styles.timerCard]}>
-          <View style={styles.timerHeader}>
-            <ClockAnimation isRunning={isTimerRunning} />
-            <Text style={styles.timerText}>{formattedTime}</Text>
-          </View>
-
-          {currentSession && (
-            <Text style={[GlobalStyles.textSecondary, { textAlign: 'center', marginBottom: 20 }]}>
-              {currentSession.isBreak ? 'On Break 💤' : 'Studying 📚'}
-            </Text>
-          )}
+          <Text style={[GlobalStyles.subtitle, { textAlign: 'center', marginBottom: 20 }]}>
+            Quick Actions
+          </Text>
 
           <TouchableOpacity
-            style={[
-              styles.mainButton,
-              { backgroundColor: currentSession?.isBreak ? Colors.success : Colors.primary }
-            ]}
-            onPress={handleMainButtonPress}
+            style={[styles.mainButton, { backgroundColor: Colors.primary }]}
+            onPress={handleLogSession}
           >
             <Ionicons
-              name={getMainButtonIcon() as any}
+              name="add"
               size={24}
               color={Colors.text}
               style={{ marginRight: 12 }}
             />
             <Text style={styles.mainButtonText}>
-              {getMainButtonText()}
+              Log Study Session
             </Text>
           </TouchableOpacity>
 
-          {currentSession && (
-            <TouchableOpacity
-              style={[styles.secondaryButton, { marginTop: 12 }]}
-              onPress={stopSession}
-            >
-              <Ionicons name="stop" size={20} color={Colors.error} />
-              <Text style={[styles.secondaryButtonText, { marginLeft: 8 }]}>
-                End Session
-              </Text>
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity
+            style={[styles.secondaryButton, { marginTop: 12 }]}
+            onPress={() => router.push('/spaces')}
+          >
+            <Ionicons name="people" size={20} color={Colors.primary} />
+            <Text style={[styles.secondaryButtonText, { marginLeft: 8, color: Colors.primary }]}>
+              View Spaces
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* Today's Progress */}

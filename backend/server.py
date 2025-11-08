@@ -5,11 +5,12 @@ from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
 from pathlib import Path
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 from typing import List, Optional
 import uuid
 from datetime import datetime, timedelta
 import socketio
+from bson import ObjectId
 
 
 ROOT_DIR = Path(__file__).parent
@@ -46,12 +47,18 @@ class StatusCheckCreate(BaseModel):
     client_name: str
 
 class StudySession(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), alias="_id")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     user_id: str
     subject: str
     duration_minutes: int
     efficiency: Optional[float] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
+
+    class Config:
+        allow_population_by_field_name = True
+        json_encoders = {
+            datetime: lambda v: v.isoformat()
+        }
 
 class SessionCreate(BaseModel):
     user_id: str
@@ -220,10 +227,15 @@ async def add_session(session_data: SessionCreate):
     await db.sessions.insert_one(session.dict(by_alias=True))
     return session
 
-@api_router.get("/sessions/{user_id}", response_model=List[StudySession])
+@api_router.get("/sessions/{user_id}")
 async def get_user_sessions(user_id: str):
     sessions = await db.sessions.find({"user_id": user_id}).sort("created_at", -1).to_list(100)
-    return [StudySession(**session) for session in sessions]
+    # Convert MongoDB documents to dictionaries with proper JSON serialization
+    converted_sessions = []
+    for session in sessions:
+        session_dict = {k: str(v) if isinstance(v, ObjectId) else v for k, v in session.items()}
+        converted_sessions.append(session_dict)
+    return converted_sessions
 
 # Streak endpoint
 @api_router.get("/streaks/{user_id}", response_model=StreakData)
@@ -278,12 +290,15 @@ async def get_user_streaks(user_id: str):
         average_efficiency=round(average_efficiency, 2)
     )
 
-@api_router.get("/dashboard/{user_id}", response_model=DashboardResponse)
+@api_router.get("/dashboard/{user_id}")
 async def get_user_dashboard(user_id: str):
     # Fetch profile
-    profile = await db.profiles.find_one({"user_id": user_id})
-    if not profile:
+    profile_doc = await db.profiles.find_one({"user_id": user_id})
+    if not profile_doc:
         profile = {"user_id": user_id, "username": "Unknown", "xp": 0, "level": 1, "streak": 0, "total_hours": 0.0, "efficiency": 0.0, "achievements": []}
+    else:
+        # Convert ObjectId to string for JSON serialization
+        profile = {k: str(v) if k == '_id' else v for k, v in profile_doc.items()}
 
     # Fetch streak data (reuse logic)
     sessions = await db.sessions.find({"user_id": user_id}).sort("created_at", 1).to_list(1000)
@@ -325,28 +340,32 @@ async def get_user_dashboard(user_id: str):
                 current_streak = streak
 
         average_efficiency = sum(efficiencies) / len(efficiencies) if efficiencies else 0.0
-        streak_data = StreakData(
-            current_streak=current_streak,
-            best_streak=best_streak,
-            average_efficiency=round(average_efficiency, 2)
-        )
+        streak_data = {
+            "current_streak": current_streak,
+            "best_streak": best_streak,
+            "average_efficiency": round(average_efficiency, 2)
+        }
     else:
-        streak_data = StreakData(current_streak=0, best_streak=0, average_efficiency=0.0)
+        streak_data = {"current_streak": 0, "best_streak": 0, "average_efficiency": 0.0}
 
     # Fetch active spaces
     spaces_cursor = db.spaces.find({"members": user_id}, {"_id": 1, "name": 1, "description": 1})
-    spaces = await spaces_cursor.to_list(100)
+    spaces_docs = await spaces_cursor.to_list(100)
+    # Convert ObjectId to string for JSON serialization
+    spaces = [{k: str(v) if k == '_id' else v for k, v in space.items()} for space in spaces_docs]
 
     # Fetch last 3 sessions
-    recent_sessions_cursor = db.sessions.find({"user_id": user_id}, {"subject": 1, "duration_minutes": 1, "created_at": 1}).sort("created_at", -1).limit(3)
-    recent_sessions = await recent_sessions_cursor.to_list(3)
+    recent_sessions_cursor = db.sessions.find({"user_id": user_id}, {"_id": 1, "subject": 1, "duration_minutes": 1, "created_at": 1}).sort("created_at", -1).limit(3)
+    recent_sessions_docs = await recent_sessions_cursor.to_list(3)
+    # Convert ObjectId to string for JSON serialization
+    recent_sessions = [{k: str(v) if k == '_id' else v for k, v in session.items()} for session in recent_sessions_docs]
 
-    return DashboardResponse(
-        profile=profile,
-        streak=streak_data,
-        spaces=spaces,
-        recent_sessions=recent_sessions
-    )
+    return {
+        "profile": profile,
+        "streak": streak_data,
+        "spaces": spaces,
+        "recent_sessions": recent_sessions
+    }
 
 # Space endpoints
 @api_router.post("/spaces/create", response_model=Space)

@@ -2,26 +2,53 @@ import Constants from 'expo-constants';
 
 // Types for API responses
 export interface StudySession {
-  id: string;
+  _id: string;
   user_id: string;
-  start_time: string;
-  end_time?: string;
-  duration: number;
-  is_active: boolean;
-  is_break: boolean;
-  subject?: string;
+  subject: string;
+  duration_minutes: number;
+  efficiency?: number;
+  created_at: string;
 }
 
 export interface CreateSessionRequest {
   user_id: string;
-  subject?: string;
+  subject: string;
+  duration_minutes: number;
+  efficiency?: number;
 }
 
-export interface UpdateSessionRequest {
-  duration?: number;
-  is_active?: boolean;
-  is_break?: boolean;
-  end_time?: string;
+export interface Profile {
+  _id: string;
+  user_id: string;
+  username: string;
+  xp: number;
+  level: number;
+  streak: number;
+  total_hours: number;
+  efficiency: number;
+  achievements: string[];
+}
+
+export interface StreakData {
+  current_streak: number;
+  best_streak: number;
+  average_efficiency: number;
+}
+
+export interface Space {
+  _id: string;
+  name: string;
+  description: string;
+  created_by: string;
+  members: string[];
+  created_at: string;
+}
+
+export interface DashboardData {
+  profile: Profile;
+  streak: StreakData;
+  spaces: Space[];
+  recent_sessions: StudySession[];
 }
 
 class ApiService {
@@ -75,21 +102,9 @@ class ApiService {
   // Create a new study session
   public async createSession(sessionData: CreateSessionRequest): Promise<StudySession> {
     console.log('Creating session:', sessionData);
-    return this.fetchWithErrorHandling<StudySession>('/sessions', {
+    return this.fetchWithErrorHandling<StudySession>('/sessions/add', {
       method: 'POST',
       body: JSON.stringify(sessionData),
-    });
-  }
-
-  // Update an existing study session
-  public async updateSession(
-    sessionId: string, 
-    updateData: UpdateSessionRequest
-  ): Promise<StudySession> {
-    console.log(`Updating session ${sessionId}:`, updateData);
-    return this.fetchWithErrorHandling<StudySession>(`/sessions/${sessionId}`, {
-      method: 'PUT',
-      body: JSON.stringify(updateData),
     });
   }
 
@@ -99,27 +114,75 @@ class ApiService {
     return this.fetchWithErrorHandling<StudySession[]>(`/sessions/${userId}`);
   }
 
-  // End a study session
-  public async endSession(sessionId: string, duration: number): Promise<StudySession> {
-    const endTime = new Date().toISOString();
-    return this.updateSession(sessionId, {
-      duration,
-      is_active: false,
-      end_time: endTime,
+  // Get user profile
+  public async getUserProfile(userId: string): Promise<Profile> {
+    console.log(`Getting profile for user: ${userId}`);
+    return this.fetchWithErrorHandling<Profile>(`/profiles/${userId}`);
+  }
+
+  // Get user streaks
+  public async getUserStreaks(userId: string): Promise<StreakData> {
+    console.log(`Getting streaks for user: ${userId}`);
+    return this.fetchWithErrorHandling<StreakData>(`/streaks/${userId}`);
+  }
+
+  // Get user spaces
+  public async getUserSpaces(userId: string): Promise<Space[]> {
+    console.log(`Getting spaces for user: ${userId}`);
+    return this.fetchWithErrorHandling<Space[]>(`/spaces/${userId}`);
+  }
+
+  // Get user dashboard
+  public async getUserDashboard(userId: string): Promise<DashboardData> {
+    console.log(`Getting dashboard for user: ${userId}`);
+    return this.fetchWithErrorHandling<DashboardData>(`/dashboard/${userId}`);
+  }
+
+  // Create a space
+  public async createSpace(spaceData: { name: string; description: string; created_by: string }): Promise<Space> {
+    console.log('Creating space:', spaceData);
+    return this.fetchWithErrorHandling<Space>('/spaces/create', {
+      method: 'POST',
+      body: JSON.stringify(spaceData),
     });
   }
 
-  // Set session to break mode
-  public async setSessionBreak(sessionId: string, isBreak: boolean): Promise<StudySession> {
-    return this.updateSession(sessionId, {
-      is_break: isBreak,
+  // Join a space
+  public async joinSpace(spaceId: string, userId: string): Promise<{ message: string }> {
+    console.log(`User ${userId} joining space ${spaceId}`);
+    return this.fetchWithErrorHandling<{ message: string }>(`/spaces/${spaceId}/join`, {
+      method: 'POST',
+      body: JSON.stringify({ user_id: userId }),
     });
   }
 
-  // Update session duration (called periodically while timer is running)
-  public async updateSessionDuration(sessionId: string, duration: number): Promise<StudySession> {
-    return this.updateSession(sessionId, {
-      duration,
+  // Get space activity
+  public async getSpaceActivity(spaceId: string): Promise<any[]> {
+    console.log(`Getting activity for space: ${spaceId}`);
+    return this.fetchWithErrorHandling<any[]>(`/spaces/${spaceId}/activity`);
+  }
+
+  // Get space chat
+  public async getSpaceChat(spaceId: string): Promise<any[]> {
+    console.log(`Getting chat for space: ${spaceId}`);
+    return this.fetchWithErrorHandling<any[]>(`/spaces/${spaceId}/chat`);
+  }
+
+  // Send chat message
+  public async sendChatMessage(spaceId: string, userId: string, message: string): Promise<any> {
+    console.log(`Sending message to space ${spaceId}:`, message);
+    return this.fetchWithErrorHandling<any>(`/spaces/${spaceId}/chat`, {
+      method: 'POST',
+      body: JSON.stringify({ user_id: userId, message }),
+    });
+  }
+
+  // Log space activity
+  public async logSpaceActivity(spaceId: string, userId: string, action: string, progress?: number): Promise<any> {
+    console.log(`Logging activity in space ${spaceId}:`, action);
+    return this.fetchWithErrorHandling<any>(`/spaces/${spaceId}/activity`, {
+      method: 'POST',
+      body: JSON.stringify({ user_id: userId, action, progress }),
     });
   }
 }
