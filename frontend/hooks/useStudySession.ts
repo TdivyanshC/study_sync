@@ -29,9 +29,9 @@ export const getCharacterLevel = (totalHours: number) => {
 };
 
 export interface StudySession {
-  _id: string;
+  id: string;
   user_id: string;
-  subject: string;
+  space_id?: string;
   duration_minutes: number;
   efficiency?: number;
   created_at: string;
@@ -111,9 +111,9 @@ export const useStudyStore = create<StudyStore>((set, get) => ({
 
       // Convert sessions to local format
       const sessions: StudySession[] = dashboardData.recent_sessions.map(session => ({
-        _id: session._id,
+        id: session.id,
         user_id: session.user_id,
-        subject: session.subject,
+        space_id: session.space_id,
         duration_minutes: session.duration_minutes,
         efficiency: session.efficiency,
         created_at: session.created_at,
@@ -123,9 +123,12 @@ export const useStudyStore = create<StudyStore>((set, get) => ({
       const profile = dashboardData.profile;
       const streak = dashboardData.streak;
 
+      // Calculate total hours from sessions
+      const totalHours = sessions.reduce((sum, session) => sum + session.duration_minutes / 60, 0);
+
       const stats: StudyStats = {
-        todayHours: Math.floor(profile.total_hours * 0.1), // Rough estimate
-        weeklyHours: profile.total_hours,
+        todayHours: Math.floor(totalHours * 0.1), // Rough estimate for today
+        weeklyHours: totalHours,
         currentStreak: streak.current_streak,
         longestStreak: streak.best_streak,
         efficiency: Math.round(streak.average_efficiency),
@@ -152,7 +155,6 @@ export const useStudyStore = create<StudyStore>((set, get) => ({
     try {
       await apiService.createSession({
         user_id: get().userId,
-        subject,
         duration_minutes: durationMinutes,
         efficiency,
       });

@@ -1,25 +1,38 @@
 from fastapi import FastAPI, APIRouter, HTTPException
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
-from motor.motor_asyncio import AsyncIOMotorClient
+from supabase import create_client, Client
 import os
 import logging
 from pathlib import Path
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field
 from typing import List, Optional
 import uuid
 from datetime import datetime, timedelta
 import socketio
-from bson import ObjectId
+import bcrypt
+import jwt
 
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-# MongoDB connection
-mongo_url = os.environ['MONGO_URL']
-client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ['DB_NAME']]
+# Supabase connection
+supabase_url = os.environ['SUPABASE_URL']
+supabase_key = os.environ['SUPABASE_SERVICE_KEY']
+
+# Initialize Supabase client with error handling
+supabase = None
+try:
+    supabase: Client = create_client(supabase_url, supabase_key)
+    print("Supabase client initialized successfully")
+except Exception as e:
+    print(f"Failed to initialize Supabase client: {e}")
+    print("Please check your SUPABASE_URL and SUPABASE_SERVICE_KEY in .env")
+    print("The server will start but Supabase operations will fail")
+
+# JWT secret
+JWT_SECRET = os.environ.get('JWT_SECRET', 'your_jwt_secret_key')
 
 # Socket.IO server
 sio = socketio.AsyncServer(
@@ -48,10 +61,11 @@ class StatusCheckCreate(BaseModel):
 
 class StudySession(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    space_id: Optional[str] = None
     user_id: str
-    subject: str
     duration_minutes: int
     efficiency: Optional[float] = None
+    confirmations_received: int = Field(default=0)
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
     class Config:
@@ -61,38 +75,55 @@ class StudySession(BaseModel):
         }
 
 class SessionCreate(BaseModel):
+    space_id: Optional[str] = None
     user_id: str
-    subject: str
     duration_minutes: int
     efficiency: Optional[float] = None
+
+class UserSignup(BaseModel):
+    username: str
+    email: str
+    password: str
+
+class UserLogin(BaseModel):
+    email: str
+    password: str
 
 class Profile(BaseModel):
     user_id: str
     username: str
     xp: int
     level: int
-    streak: int
+    streak_count: int
     total_hours: float
     efficiency: float
-    achievements: List[str]
+    badges: List[dict]
 
 class StreakData(BaseModel):
     current_streak: int
     best_streak: int
     average_efficiency: float
 
-class Space(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), alias="_id")
-    name: str
+class Badge(BaseModel):
+    id: str
+    title: str
     description: str
+    icon_url: Optional[str]
+    requirement_type: str
+    requirement_value: int
+
+class Space(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
     created_by: str
-    members: List[str]
+    visibility: str = Field(default="public")
+    member_count: int = Field(default=1)
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 class SpaceCreate(BaseModel):
     name: str
-    description: str
     created_by: str
+    visibility: str = Field(default="public")
 
 class SpaceJoin(BaseModel):
     user_id: str
@@ -149,15 +180,16 @@ async def send_message(sid, data):
     space_id = data.get('space_id')
     user_id = data.get('user_id')
     message = data.get('message')
-    # Save to db
+    # Save to Supabase
     chat = SpaceChat(space_id=space_id, user_id=user_id, message=message)
-    await db.space_chat.insert_one(chat.dict(by_alias=True))
+    result = supabase.table('space_chat').insert(chat.dict()).execute()
+    saved_chat = result.data[0]
     # Broadcast
     await sio.emit('new_message', {
         'space_id': space_id,
         'user_id': user_id,
         'message': message,
-        'created_at': chat.created_at.isoformat()
+        'created_at': saved_chat['created_at']
     }, room=space_id)
 
 @sio.event
@@ -166,16 +198,17 @@ async def activity_update(sid, data):
     user_id = data.get('user_id')
     action = data.get('action')
     progress = data.get('progress')
-    # Save to db
+    # Save to Supabase
     activity = SpaceActivity(space_id=space_id, user_id=user_id, action=action, progress=progress)
-    await db.space_activity.insert_one(activity.dict(by_alias=True))
+    result = supabase.table('space_activity').insert(activity.dict()).execute()
+    saved_activity = result.data[0]
     # Broadcast
     await sio.emit('activity_received', {
         'space_id': space_id,
         'user_id': user_id,
         'action': action,
         'progress': progress,
-        'created_at': activity.created_at.isoformat()
+        'created_at': saved_activity['created_at']
     }, room=space_id)
 
 @sio.event
@@ -207,53 +240,105 @@ async def root():
 async def create_status_check(input: StatusCheckCreate):
     status_dict = input.dict()
     status_obj = StatusCheck(**status_dict)
-    _ = await db.status_checks.insert_one(status_obj.dict())
-    return status_obj
+    result = supabase.table('status_checks').insert(status_obj.dict()).execute()
+    return StatusCheck(**result.data[0])
 
 @api_router.get("/status", response_model=List[StatusCheck])
 async def get_status_checks():
-    status_checks = await db.status_checks.find().to_list(1000)
-    return [StatusCheck(**status_check) for status_check in status_checks]
+    result = supabase.table('status_checks').select('*').execute()
+    return [StatusCheck(**item) for item in result.data]
+
+# Auth endpoints
+@api_router.post("/auth/signup")
+async def signup(user_data: UserSignup):
+    # Check if user already exists
+    existing = supabase.table('users').select('*').eq('email', user_data.email).execute()
+    if existing.data:
+        raise HTTPException(status_code=400, detail="User already exists")
+
+    # Hash password and create user
+    hashed_password = hash_password(user_data.password)
+    user_dict = {
+        "username": user_data.username,
+        "email": user_data.email,
+        "password_hash": hashed_password
+    }
+
+    result = supabase.table('users').insert(user_dict).execute()
+    user = result.data[0]
+
+    # Create JWT token
+    token = create_jwt_token(user['id'])
+
+    return {"token": token, "user": {"id": user['id'], "username": user['username'], "email": user['email']}}
+
+@api_router.post("/auth/login")
+async def login(user_data: UserLogin):
+    # Find user by email
+    result = supabase.table('users').select('*').eq('email', user_data.email).execute()
+    if not result.data:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    user = result.data[0]
+
+    # Verify password
+    if not verify_password(user_data.password, user['password_hash']):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    # Create JWT token
+    token = create_jwt_token(user['id'])
+
+    return {"token": token, "user": {"id": user['id'], "username": user['username'], "email": user['email']}}
 
 # Study Session endpoints
-@api_router.post("/sessions/add", response_model=StudySession)
-async def add_session(session_data: SessionCreate):
+@api_router.post("/session/start", response_model=StudySession)
+async def start_session(session_data: SessionCreate):
     session = StudySession(
+        space_id=session_data.space_id,
         user_id=session_data.user_id,
-        subject=session_data.subject,
         duration_minutes=session_data.duration_minutes,
         efficiency=session_data.efficiency
     )
-    await db.sessions.insert_one(session.dict(by_alias=True))
-    return session
+    result = supabase.table('study_sessions').insert(session.dict()).execute()
+    return StudySession(**result.data[0])
+
+@api_router.post("/session/confirm")
+async def confirm_session(session_id: str, user_id: str):
+    # Update confirmations count
+    result = supabase.table('study_sessions').update({
+        'confirmations_received': supabase.table('study_sessions').select('confirmations_received').eq('id', session_id).execute().data[0]['confirmations_received'] + 1
+    }).eq('id', session_id).execute()
+
+    # Check for badge achievements
+    await check_and_award_badges(user_id)
+
+    return {"message": "Session confirmed"}
 
 @api_router.get("/sessions/{user_id}")
 async def get_user_sessions(user_id: str):
-    sessions = await db.sessions.find({"user_id": user_id}).sort("created_at", -1).to_list(100)
-    # Convert MongoDB documents to dictionaries with proper JSON serialization
-    converted_sessions = []
-    for session in sessions:
-        session_dict = {k: str(v) if isinstance(v, ObjectId) else v for k, v in session.items()}
-        converted_sessions.append(session_dict)
-    return converted_sessions
+    result = supabase.table('study_sessions').select('*').eq('user_id', user_id).order('created_at', desc=True).limit(100).execute()
+    return result.data
 
 # Streak endpoint
 @api_router.get("/streaks/{user_id}", response_model=StreakData)
 async def get_user_streaks(user_id: str):
-    sessions = await db.sessions.find({"user_id": user_id}).sort("created_at", 1).to_list(1000)
+    result = supabase.table('study_sessions').select('created_at, efficiency').eq('user_id', user_id).order('created_at').execute()
+    sessions = result.data
+
     if not sessions:
         return StreakData(current_streak=0, best_streak=0, average_efficiency=0.0)
-    
+
     # Get unique dates and efficiencies
     dates = set()
     efficiencies = []
     for session in sessions:
-        dates.add(session['created_at'].date())
-        efficiencies.append(session['efficiency'])
-    
+        dates.add(datetime.fromisoformat(session['created_at'].replace('Z', '+00:00')).date())
+        if session.get('efficiency'):
+            efficiencies.append(session['efficiency'])
+
     sorted_dates = sorted(dates)
     today = datetime.utcnow().date()
-    
+
     # Calculate best streak
     best_streak = 0
     streak = 0
@@ -265,7 +350,7 @@ async def get_user_streaks(user_id: str):
             streak = 1
         best_streak = max(best_streak, streak)
         prev_date = date
-    
+
     # Calculate current streak
     current_streak = 0
     if sorted_dates:
@@ -280,89 +365,73 @@ async def get_user_streaks(user_id: str):
                 else:
                     break
             current_streak = streak
-    
+
     # Average efficiency
     average_efficiency = sum(efficiencies) / len(efficiencies) if efficiencies else 0.0
-    
+
     return StreakData(
         current_streak=current_streak,
         best_streak=best_streak,
         average_efficiency=round(average_efficiency, 2)
     )
 
+@api_router.get("/profile/{user_id}")
+async def get_user_profile(user_id: str):
+    # Get user data
+    user_result = supabase.table('users').select('*').eq('id', user_id).execute()
+    if not user_result.data:
+        raise HTTPException(status_code=404, detail="User not found")
+    user = user_result.data[0]
+
+    # Calculate stats from study sessions
+    sessions_result = supabase.table('study_sessions').select('duration_minutes, efficiency, created_at').eq('user_id', user_id).execute()
+    sessions = sessions_result.data
+
+    total_hours = sum(session['duration_minutes'] for session in sessions) / 60.0
+    total_efficiency = sum(session['efficiency'] for session in sessions if session['efficiency']) if sessions else 0
+    avg_efficiency = total_efficiency / len([s for s in sessions if s['efficiency']]) if sessions else 0
+
+    # Calculate level and XP (simple formula)
+    xp = int(total_hours * 10)  # 10 XP per hour
+    level = xp // 100 + 1  # Level up every 100 XP
+
+    # Get user badges
+    badges_result = supabase.table('user_badges').select('badges(*)').eq('user_id', user_id).execute()
+    badges = [item['badges'] for item in badges_result.data]
+
+    # Get streak data
+    streak_result = await get_user_streaks(user_id)
+
+    return {
+        "user_id": user_id,
+        "username": user['username'],
+        "xp": xp,
+        "level": level,
+        "streak_count": streak_result.current_streak,
+        "total_hours": round(total_hours, 2),
+        "efficiency": round(avg_efficiency, 2),
+        "badges": badges
+    }
+
 @api_router.get("/dashboard/{user_id}")
 async def get_user_dashboard(user_id: str):
-    # Fetch profile
-    profile_doc = await db.profiles.find_one({"user_id": user_id})
-    if not profile_doc:
-        profile = {"user_id": user_id, "username": "Unknown", "xp": 0, "level": 1, "streak": 0, "total_hours": 0.0, "efficiency": 0.0, "achievements": []}
-    else:
-        # Convert ObjectId to string for JSON serialization
-        profile = {k: str(v) if k == '_id' else v for k, v in profile_doc.items()}
+    # Get profile
+    profile = await get_user_profile(user_id)
 
-    # Fetch streak data (reuse logic)
-    sessions = await db.sessions.find({"user_id": user_id}).sort("created_at", 1).to_list(1000)
-    if sessions:
-        dates = set()
-        efficiencies = []
-        for session in sessions:
-            dates.add(session['created_at'].date())
-            if session.get('efficiency'):
-                efficiencies.append(session['efficiency'])
+    # Get streak data
+    streak = await get_user_streaks(user_id)
 
-        sorted_dates = sorted(dates)
-        today = datetime.utcnow().date()
+    # Get spaces
+    spaces_result = supabase.table('space_members').select('spaces(*)').eq('user_id', user_id).execute()
+    spaces = [item['spaces'] for item in spaces_result.data]
 
-        # Best streak
-        best_streak = 0
-        streak = 0
-        prev_date = None
-        for date in sorted_dates:
-            if prev_date and (date - prev_date).days == 1:
-                streak += 1
-            else:
-                streak = 1
-            best_streak = max(best_streak, streak)
-            prev_date = date
-
-        # Current streak
-        current_streak = 0
-        if sorted_dates:
-            last_date = sorted_dates[-1]
-            days_since_last = (today - last_date).days
-            if days_since_last <= 1:
-                streak = 1
-                for i in range(len(sorted_dates) - 2, -1, -1):
-                    if (sorted_dates[i+1] - sorted_dates[i]).days == 1:
-                        streak += 1
-                    else:
-                        break
-                current_streak = streak
-
-        average_efficiency = sum(efficiencies) / len(efficiencies) if efficiencies else 0.0
-        streak_data = {
-            "current_streak": current_streak,
-            "best_streak": best_streak,
-            "average_efficiency": round(average_efficiency, 2)
-        }
-    else:
-        streak_data = {"current_streak": 0, "best_streak": 0, "average_efficiency": 0.0}
-
-    # Fetch active spaces
-    spaces_cursor = db.spaces.find({"members": user_id}, {"_id": 1, "name": 1, "description": 1})
-    spaces_docs = await spaces_cursor.to_list(100)
-    # Convert ObjectId to string for JSON serialization
-    spaces = [{k: str(v) if k == '_id' else v for k, v in space.items()} for space in spaces_docs]
-
-    # Fetch last 3 sessions
-    recent_sessions_cursor = db.sessions.find({"user_id": user_id}, {"_id": 1, "subject": 1, "duration_minutes": 1, "created_at": 1}).sort("created_at", -1).limit(3)
-    recent_sessions_docs = await recent_sessions_cursor.to_list(3)
-    # Convert ObjectId to string for JSON serialization
-    recent_sessions = [{k: str(v) if k == '_id' else v for k, v in session.items()} for session in recent_sessions_docs]
+    # Get recent sessions
+    sessions_result = supabase.table('study_sessions').select('*').eq('user_id', user_id).order('created_at', desc=True).limit(3).execute()
+    recent_sessions = sessions_result.data
 
     return {
         "profile": profile,
-        "streak": streak_data,
+        "streak": streak.dict(),
         "spaces": spaces,
         "recent_sessions": recent_sessions
     }
@@ -372,30 +441,49 @@ async def get_user_dashboard(user_id: str):
 async def create_space(space_data: SpaceCreate):
     space = Space(
         name=space_data.name,
-        description=space_data.description,
         created_by=space_data.created_by,
-        members=[space_data.created_by]
+        visibility=space_data.visibility
     )
-    await db.spaces.insert_one(space.dict(by_alias=True))
-    return space
+    result = supabase.table('spaces').insert(space.dict()).execute()
+    space_data = result.data[0]
 
-@api_router.post("/spaces/{space_id}/join")
-async def join_space(space_id: str, join_data: SpaceJoin):
-    space = await db.spaces.find_one({"_id": space_id})
-    if not space:
+    # Add creator to space_members
+    supabase.table('space_members').insert({
+        'space_id': space_data['id'],
+        'user_id': space_data['created_by']
+    }).execute()
+
+    return Space(**space_data)
+
+@api_router.post("/spaces/join")
+async def join_space(join_data: SpaceJoin):
+    # Check if space exists
+    space_result = supabase.table('spaces').select('*').eq('id', join_data.space_id).execute()
+    if not space_result.data:
         raise HTTPException(status_code=404, detail="Space not found")
-    if join_data.user_id in space['members']:
+
+    # Check if already a member
+    member_result = supabase.table('space_members').select('*').eq('space_id', join_data.space_id).eq('user_id', join_data.user_id).execute()
+    if member_result.data:
         return {"message": "Already a member"}
-    await db.spaces.update_one(
-        {"_id": space_id},
-        {"$push": {"members": join_data.user_id}}
-    )
+
+    # Add to space_members
+    supabase.table('space_members').insert({
+        'space_id': join_data.space_id,
+        'user_id': join_data.user_id
+    }).execute()
+
+    # Update member count
+    supabase.table('spaces').update({
+        'member_count': space_result.data[0]['member_count'] + 1
+    }).eq('id', join_data.space_id).execute()
+
     return {"message": "Joined successfully"}
 
 @api_router.get("/spaces/{user_id}", response_model=List[Space])
 async def get_user_spaces(user_id: str):
-    spaces = await db.spaces.find({"members": user_id}).to_list(100)
-    return [Space(**space) for space in spaces]
+    result = supabase.table('space_members').select('spaces(*)').eq('user_id', user_id).execute()
+    return [Space(**item['spaces']) for item in result.data]
 
 @api_router.post("/spaces/{space_id}/activity", response_model=SpaceActivity)
 async def log_space_activity(space_id: str, activity_data: SpaceActivityCreate):
@@ -405,13 +493,13 @@ async def log_space_activity(space_id: str, activity_data: SpaceActivityCreate):
         action=activity_data.action,
         progress=activity_data.progress
     )
-    await db.space_activity.insert_one(activity.dict(by_alias=True))
-    return activity
+    result = supabase.table('space_activity').insert(activity.dict()).execute()
+    return SpaceActivity(**result.data[0])
 
 @api_router.get("/spaces/{space_id}/activity", response_model=List[SpaceActivity])
 async def get_space_activity(space_id: str):
-    activities = await db.space_activity.find({"space_id": space_id}).sort("created_at", -1).limit(20).to_list(20)
-    return [SpaceActivity(**activity) for activity in activities]
+    result = supabase.table('space_activity').select('*').eq('space_id', space_id).order('created_at', desc=True).limit(20).execute()
+    return [SpaceActivity(**item) for item in result.data]
 
 @api_router.post("/spaces/{space_id}/chat", response_model=SpaceChat)
 async def send_chat_message(space_id: str, chat_data: SpaceChatCreate):
@@ -420,69 +508,240 @@ async def send_chat_message(space_id: str, chat_data: SpaceChatCreate):
         user_id=chat_data.user_id,
         message=chat_data.message
     )
-    await db.space_chat.insert_one(chat.dict(by_alias=True))
-    return chat
+    result = supabase.table('space_chat').insert(chat.dict()).execute()
+    return SpaceChat(**result.data[0])
 
 @api_router.get("/spaces/{space_id}/chat", response_model=List[SpaceChat])
 async def get_space_chat(space_id: str):
-    messages = await db.space_chat.find({"space_id": space_id}).sort("created_at", -1).limit(20).to_list(20)
-    return [SpaceChat(**msg) for msg in messages]
+    result = supabase.table('space_chat').select('*').eq('space_id', space_id).order('created_at', desc=True).limit(20).execute()
+    return [SpaceChat(**item) for item in result.data]
 
-# Profile endpoints
-@api_router.post("/profiles/dummy", response_model=Profile)
-async def create_dummy_profile():
-    dummy_profile = Profile(
-        user_id="dummy_user_123",
-        username="DummyUser",
-        xp=100,
-        level=5,
-        streak=7,
-        total_hours=25.5,
-        efficiency=85.2,
-        achievements=["First Study Session", "Week Streak"]
-    )
-    await db.profiles.insert_one(dummy_profile.dict())
-    return dummy_profile
+# Badge and achievement functions
+async def check_and_award_badges(user_id: str):
+    # Get user stats
+    sessions_result = supabase.table('study_sessions').select('duration_minutes, created_at').eq('user_id', user_id).execute()
+    sessions = sessions_result.data
 
-@api_router.get("/profiles/{user_id}", response_model=Profile)
-async def get_profile(user_id: str):
-    profile = await db.profiles.find_one({"user_id": user_id})
-    if not profile:
-        raise HTTPException(status_code=404, detail="Profile not found")
-    return Profile(**profile)
+    # Check for 7-day streak badge
+    streak_data = await get_user_streaks(user_id)
+    if streak_data.current_streak >= 7:
+        await award_badge_if_not_exists(user_id, '7 Day Streak')
+
+    # Check for 10-hour grind badge (study time in last 24 hours)
+    yesterday = datetime.utcnow() - timedelta(days=1)
+    recent_sessions = [s for s in sessions if datetime.fromisoformat(s['created_at'].replace('Z', '+00:00')) > yesterday]
+    total_recent_hours = sum(s['duration_minutes'] for s in recent_sessions) / 60.0
+    if total_recent_hours >= 10:
+        await award_badge_if_not_exists(user_id, '10 Hour Grind')
+
+    # Check for first session badge
+    if len(sessions) >= 1:
+        await award_badge_if_not_exists(user_id, 'First Steps')
+
+async def award_badge_if_not_exists(user_id: str, badge_title: str):
+    # Check if user already has this badge
+    existing = supabase.table('user_badges').select('id').eq('user_id', user_id).eq('badges.title', badge_title).execute()
+    if existing.data:
+        return
+
+    # Get badge
+    badge_result = supabase.table('badges').select('id').eq('title', badge_title).execute()
+    if not badge_result.data:
+        return
+
+    badge_id = badge_result.data[0]['id']
+
+    # Award badge
+    supabase.table('user_badges').insert({
+        'user_id': user_id,
+        'badge_id': badge_id
+    }).execute()
 
 @api_router.post("/populate/dummy")
 async def populate_dummy_data():
-    # Dummy profiles
-    profiles = [
-        Profile(user_id="user1", username="Alice", xp=150, level=6, streak=8, total_hours=30.5, efficiency=88.0, achievements=["First Session", "Week Streak"]),
-        Profile(user_id="user2", username="Bob", xp=200, level=8, streak=12, total_hours=45.0, efficiency=92.0, achievements=["Month Streak", "High Efficiency"]),
-        Profile(user_id="user3", username="Charlie", xp=100, level=5, streak=5, total_hours=20.0, efficiency=85.0, achievements=["First Achievement"]),
+    # Create dummy users
+    users = [
+        {"username": "Alice", "email": "alice@example.com", "password_hash": hash_password("password")},
+        {"username": "Bob", "email": "bob@example.com", "password_hash": hash_password("password")},
+        {"username": "Charlie", "email": "charlie@example.com", "password_hash": hash_password("password")},
     ]
-    for profile in profiles:
-        await db.profiles.insert_one(profile.dict())
-    
-    # Dummy spaces
+
+    user_ids = []
+    for user in users:
+        result = supabase.table('users').insert(user).execute()
+        user_ids.append(result.data[0]['id'])
+
+    # Create dummy spaces
     spaces = [
-        Space(name="Math Study Group", description="Group for math enthusiasts", created_by="user1", members=["user1", "user2"]),
-        Space(name="Science Club", description="Discussing science topics", created_by="user2", members=["user2", "user3"]),
-        Space(name="General Study", description="All subjects welcome", created_by="user1", members=["user1", "user2", "user3"]),
+        {"name": "Math Study Group", "created_by": user_ids[0], "visibility": "public"},
+        {"name": "Science Club", "created_by": user_ids[1], "visibility": "public"},
+        {"name": "General Study", "created_by": user_ids[0], "visibility": "public"},
     ]
+
+    space_ids = []
     for space in spaces:
-        await db.spaces.insert_one(space.dict(by_alias=True))
-    
-    # Dummy sessions
-    sessions = [
-        StudySession(user_id="user1", subject="Math", duration_minutes=60, efficiency=90.0, created_at=datetime.utcnow() - timedelta(days=1)),
-        StudySession(user_id="user1", subject="Physics", duration_minutes=45, efficiency=85.0, created_at=datetime.utcnow() - timedelta(days=2)),
-        StudySession(user_id="user2", subject="Chemistry", duration_minutes=50, efficiency=95.0, created_at=datetime.utcnow() - timedelta(days=1)),
-        StudySession(user_id="user2", subject="Biology", duration_minutes=40, efficiency=88.0, created_at=datetime.utcnow() - timedelta(days=3)),
-        StudySession(user_id="user3", subject="History", duration_minutes=30, efficiency=80.0, created_at=datetime.utcnow() - timedelta(days=1)),
+        result = supabase.table('spaces').insert(space).execute()
+        space_ids.append(result.data[0]['id'])
+
+    # Add members to spaces
+    members = [
+        {"space_id": space_ids[0], "user_id": user_ids[0]},
+        {"space_id": space_ids[0], "user_id": user_ids[1]},
+        {"space_id": space_ids[1], "user_id": user_ids[1]},
+        {"space_id": space_ids[1], "user_id": user_ids[2]},
+        {"space_id": space_ids[2], "user_id": user_ids[0]},
+        {"space_id": space_ids[2], "user_id": user_ids[1]},
+        {"space_id": space_ids[2], "user_id": user_ids[2]},
     ]
+
+    for member in members:
+        supabase.table('space_members').insert(member).execute()
+
+    # Create dummy sessions
+    sessions = [
+        {"user_id": user_ids[0], "space_id": space_ids[0], "duration_minutes": 60, "efficiency": 90.0, "created_at": (datetime.utcnow() - timedelta(days=1)).isoformat()},
+        {"user_id": user_ids[0], "space_id": space_ids[0], "duration_minutes": 45, "efficiency": 85.0, "created_at": (datetime.utcnow() - timedelta(days=2)).isoformat()},
+        {"user_id": user_ids[1], "space_id": space_ids[1], "duration_minutes": 50, "efficiency": 95.0, "created_at": (datetime.utcnow() - timedelta(days=1)).isoformat()},
+        {"user_id": user_ids[1], "space_id": space_ids[1], "duration_minutes": 40, "efficiency": 88.0, "created_at": (datetime.utcnow() - timedelta(days=3)).isoformat()},
+        {"user_id": user_ids[2], "space_id": space_ids[2], "duration_minutes": 30, "efficiency": 80.0, "created_at": (datetime.utcnow() - timedelta(days=1)).isoformat()},
+    ]
+
     for session in sessions:
-        await db.sessions.insert_one(session.dict())
-    
+        supabase.table('study_sessions').insert(session).execute()
+
     return {"message": "Dummy data populated successfully"}
+
+@api_router.post("/test/seed")
+async def seed_test_data():
+    try:
+        # 1. Insert user
+        user_result = supabase.table("users").insert([
+            {"username": "test_user", "email": "test_user@example.com", "password_hash": "hashed123"}
+        ]).select().single().execute()
+
+        if user_result.error:
+            raise Exception(f"User insert error: {user_result.error}")
+
+        user = user_result.data
+
+        # 2. Insert space
+        space_result = supabase.table("spaces").insert([
+            {"name": "Demo Project Space", "created_by": user['id'], "visibility": "public"}
+        ]).select().single().execute()
+
+        if space_result.error:
+            raise Exception(f"Space insert error: {space_result.error}")
+
+        space = space_result.data
+
+        # 3. Add user to space_members
+        member_result = supabase.table("space_members").insert([
+            {"space_id": space['id'], "user_id": user['id']}
+        ]).execute()
+
+        if member_result.error:
+            raise Exception(f"Space member insert error: {member_result.error}")
+
+        # 4. Insert study session
+        session_result = supabase.table("study_sessions").insert([
+            {"space_id": space['id'], "user_id": user['id'], "duration_minutes": 45, "efficiency": 92.5}
+        ]).execute()
+
+        if session_result.error:
+            raise Exception(f"Study session insert error: {session_result.error}")
+
+        return {
+            "success": True,
+            "message": "Mock data inserted successfully",
+            "user": user,
+            "space": space
+        }
+
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+@api_router.post("/test/insert-sample-data")
+async def insert_sample_data():
+    if supabase is None:
+        return {
+            "success": False,
+            "error": "Supabase client not initialized. Check your environment variables."
+        }
+
+    try:
+        # 1. Insert user
+        user_result = supabase.table("users").insert([
+            {
+                "username": "john_doe",
+                "email": "john@example.com",
+                "password_hash": "superhashedpassword123"
+            }
+        ]).select().single().execute()
+
+        if user_result.error:
+            raise Exception(f"User insert error: {user_result.error}")
+
+        user = user_result.data
+
+        # 2. Insert space
+        space_result = supabase.table("spaces").insert([
+            {
+                "name": "AP Study Sync Demo Space",
+                "created_by": user['id'],
+                "visibility": "public"
+            }
+        ]).select().single().execute()
+
+        if space_result.error:
+            raise Exception(f"Space insert error: {space_result.error}")
+
+        space = space_result.data
+
+        # 3. Link user to space
+        member_result = supabase.table("space_members").insert([
+            {
+                "space_id": space['id'],
+                "user_id": user['id']
+            }
+        ]).select().single().execute()
+
+        if member_result.error:
+            raise Exception(f"Space member insert error: {member_result.error}")
+
+        member = member_result.data
+
+        # 4. Insert study session
+        session_result = supabase.table("study_sessions").insert([
+            {
+                "space_id": space['id'],
+                "user_id": user['id'],
+                "duration_minutes": 25,
+                "efficiency": 87.3
+            }
+        ]).select().single().execute()
+
+        if session_result.error:
+            raise Exception(f"Study session insert error: {session_result.error}")
+
+        session = session_result.data
+
+        return {
+            "success": True,
+            "message": "Sample data successfully inserted",
+            "user": user,
+            "space": space,
+            "member": member,
+            "session": session
+        }
+
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
 
 # Include the router in the main app
 app.include_router(api_router)
@@ -502,9 +761,33 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-@app.on_event("shutdown")
-async def shutdown_db_client():
-    client.close()
+# Helper functions
+def hash_password(password: str) -> str:
+    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
+def verify_password(password: str, hashed: str) -> bool:
+    return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
+
+def create_jwt_token(user_id: str) -> str:
+    payload = {
+        "user_id": user_id,
+        "exp": datetime.utcnow() + timedelta(days=7)
+    }
+    return jwt.encode(payload, JWT_SECRET, algorithm="HS256")
+
+def verify_jwt_token(token: str) -> Optional[str]:
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+        return payload.get("user_id")
+    except jwt.ExpiredSignatureError:
+        return None
+    except jwt.InvalidTokenError:
+        return None
 
 # Export the socket app for Uvicorn
 app = socket_app
+
+# Add bcrypt and jwt to requirements if not already there
+# Note: These should be added to requirements.txt
+# bcrypt==4.0.1
+# PyJWT==2.8.0

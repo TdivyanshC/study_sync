@@ -1,10 +1,10 @@
-import Constants from 'expo-constants';
+import { supabase } from '../lib/supabaseClient';
 
 // Types for API responses
 export interface StudySession {
-  _id: string;
+  id: string;
   user_id: string;
-  subject: string;
+  space_id?: string;
   duration_minutes: number;
   efficiency?: number;
   created_at: string;
@@ -12,21 +12,19 @@ export interface StudySession {
 
 export interface CreateSessionRequest {
   user_id: string;
-  subject: string;
+  space_id?: string;
   duration_minutes: number;
   efficiency?: number;
 }
 
 export interface Profile {
-  _id: string;
-  user_id: string;
+  id: string;
   username: string;
+  email: string;
   xp: number;
   level: number;
-  streak: number;
-  total_hours: number;
-  efficiency: number;
-  achievements: string[];
+  streak_count: number;
+  created_at: string;
 }
 
 export interface StreakData {
@@ -36,11 +34,11 @@ export interface StreakData {
 }
 
 export interface Space {
-  _id: string;
+  id: string;
   name: string;
-  description: string;
   created_by: string;
-  members: string[];
+  visibility: string;
+  member_count: number;
   created_at: string;
 }
 
@@ -52,138 +50,287 @@ export interface DashboardData {
 }
 
 class ApiService {
-  private baseUrl: string;
-
   constructor() {
-    // Get backend URL from environment
-    this.baseUrl = Constants.expoConfig?.extra?.backendUrl ||
-                   process.env.EXPO_PUBLIC_BACKEND_URL ||
-                   'http://localhost:8000';
-    
-    // Ensure it has /api suffix
-    if (!this.baseUrl.endsWith('/api')) {
-      this.baseUrl += '/api';
-    }
-    
-    console.log('API Service initialized with base URL:', this.baseUrl);
-  }
-
-  // Generic fetch wrapper with error handling
-  private async fetchWithErrorHandling<T>(
-    url: string, 
-    options: RequestInit = {}
-  ): Promise<T> {
-    try {
-      const response = await fetch(`${this.baseUrl}${url}`, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...options.headers,
-        },
-        ...options,
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP ${response.status}: ${errorText}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error(`API Error - ${url}:`, error);
-      throw error;
-    }
+    console.log('API Service initialized with Supabase');
   }
 
   // Health check
   public async healthCheck(): Promise<{ message: string }> {
-    return this.fetchWithErrorHandling<{ message: string }>('/');
+    try {
+      const { data, error } = await supabase.from('status_checks').select('*').limit(1);
+      if (error) throw error;
+      return { message: 'Supabase connection successful' };
+    } catch (error) {
+      console.error('Health check error:', error);
+      throw error;
+    }
   }
 
   // Create a new study session
   public async createSession(sessionData: CreateSessionRequest): Promise<StudySession> {
     console.log('Creating session:', sessionData);
-    return this.fetchWithErrorHandling<StudySession>('/sessions/add', {
-      method: 'POST',
-      body: JSON.stringify(sessionData),
-    });
+    const { data, error } = await supabase
+      .from('study_sessions')
+      .insert(sessionData)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
   }
 
   // Get all sessions for a user
   public async getUserSessions(userId: string): Promise<StudySession[]> {
     console.log(`Getting sessions for user: ${userId}`);
-    return this.fetchWithErrorHandling<StudySession[]>(`/sessions/${userId}`);
+    const { data, error } = await supabase
+      .from('study_sessions')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
   }
 
   // Get user profile
   public async getUserProfile(userId: string): Promise<Profile> {
     console.log(`Getting profile for user: ${userId}`);
-    return this.fetchWithErrorHandling<Profile>(`/profiles/${userId}`);
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (error) throw error;
+    return data;
   }
 
   // Get user streaks
   public async getUserStreaks(userId: string): Promise<StreakData> {
     console.log(`Getting streaks for user: ${userId}`);
-    return this.fetchWithErrorHandling<StreakData>(`/streaks/${userId}`);
+    const { data, error } = await supabase
+      .from('study_sessions')
+      .select('created_at, efficiency')
+      .eq('user_id', userId)
+      .order('created_at');
+
+    if (error) throw error;
+
+    // Calculate streak data
+    const sessions = data || [];
+    let currentStreak = 0;
+    let bestStreak = 0;
+    let tempStreak = 0;
+    const efficiencies: number[] = [];
+
+    // Sort sessions by date
+    sessions.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+
+    for (let i = 0; i < sessions.length; i++) {
+      const session = sessions[i];
+      if (session.efficiency !== null && session.efficiency !== undefined) {
+        efficiencies.push(session.efficiency);
+      }
+
+      // Check if consecutive days
+      if (i === 0 || this.isConsecutiveDay(sessions[i-1].created_at, session.created_at)) {
+        tempStreak++;
+      } else {
+        bestStreak = Math.max(bestStreak, tempStreak);
+        tempStreak = 1;
+      }
+    }
+    bestStreak = Math.max(bestStreak, tempStreak);
+
+    // Check if current streak is still active (last session within last 2 days)
+    const lastSession = sessions[sessions.length - 1];
+    if (lastSession && this.isRecentSession(lastSession.created_at)) {
+      currentStreak = tempStreak;
+    }
+
+    const averageEfficiency = efficiencies.length > 0
+      ? efficiencies.reduce((sum, eff) => sum + eff, 0) / efficiencies.length
+      : 0;
+
+    return {
+      current_streak: currentStreak,
+      best_streak: bestStreak,
+      average_efficiency: averageEfficiency
+    };
+  }
+
+  private isConsecutiveDay(date1: string, date2: string): boolean {
+    const d1 = new Date(date1);
+    const d2 = new Date(date2);
+    const diffTime = Math.abs(d2.getTime() - d1.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays === 1;
+  }
+
+  private isRecentSession(date: string): boolean {
+    const sessionDate = new Date(date);
+    const now = new Date();
+    const diffTime = now.getTime() - sessionDate.getTime();
+    const diffDays = diffTime / (1000 * 60 * 60 * 24);
+    return diffDays <= 2; // Within last 2 days
   }
 
   // Get user spaces
   public async getUserSpaces(userId: string): Promise<Space[]> {
     console.log(`Getting spaces for user: ${userId}`);
-    return this.fetchWithErrorHandling<Space[]>(`/spaces/${userId}`);
+    const { data, error } = await supabase
+      .from('space_members')
+      .select('spaces(*)')
+      .eq('user_id', userId);
+
+    if (error) throw error;
+    return (data?.map((item: any) => item.spaces as Space) || []);
   }
 
   // Get user dashboard
   public async getUserDashboard(userId: string): Promise<DashboardData> {
     console.log(`Getting dashboard for user: ${userId}`);
-    return this.fetchWithErrorHandling<DashboardData>(`/dashboard/${userId}`);
+
+    const [profile, streak, spaces, recentSessions] = await Promise.all([
+      this.getUserProfile(userId),
+      this.getUserStreaks(userId),
+      this.getUserSpaces(userId),
+      this.getUserSessions(userId).then(sessions => sessions.slice(0, 3))
+    ]);
+
+    return {
+      profile,
+      streak,
+      spaces,
+      recent_sessions: recentSessions
+    };
   }
 
   // Create a space
-  public async createSpace(spaceData: { name: string; description: string; created_by: string }): Promise<Space> {
+  public async createSpace(spaceData: { name: string; created_by: string; visibility?: string }): Promise<Space> {
     console.log('Creating space:', spaceData);
-    return this.fetchWithErrorHandling<Space>('/spaces/create', {
-      method: 'POST',
-      body: JSON.stringify(spaceData),
-    });
+    const { data, error } = await supabase
+      .from('spaces')
+      .insert(spaceData)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Add creator to space_members
+    await supabase
+      .from('space_members')
+      .insert({
+        space_id: data.id,
+        user_id: spaceData.created_by
+      });
+
+    return data;
   }
 
   // Join a space
   public async joinSpace(spaceId: string, userId: string): Promise<{ message: string }> {
     console.log(`User ${userId} joining space ${spaceId}`);
-    return this.fetchWithErrorHandling<{ message: string }>(`/spaces/${spaceId}/join`, {
-      method: 'POST',
-      body: JSON.stringify({ user_id: userId }),
-    });
+
+    // Check if space exists
+    const { data: spaceData, error: spaceError } = await supabase
+      .from('spaces')
+      .select('*')
+      .eq('id', spaceId)
+      .single();
+
+    if (spaceError || !spaceData) throw new Error('Space not found');
+
+    // Check if already a member
+    const { data: memberData, error: memberError } = await supabase
+      .from('space_members')
+      .select('*')
+      .eq('space_id', spaceId)
+      .eq('user_id', userId)
+      .single();
+
+    if (memberData) throw new Error('Already a member of this space');
+
+    // Add to space_members
+    const { error: insertError } = await supabase
+      .from('space_members')
+      .insert({
+        space_id: spaceId,
+        user_id: userId
+      });
+
+    if (insertError) throw insertError;
+
+    // Update member count
+    await supabase
+      .from('spaces')
+      .update({ member_count: spaceData.member_count + 1 })
+      .eq('id', spaceId);
+
+    return { message: 'Successfully joined space' };
   }
 
   // Get space activity
   public async getSpaceActivity(spaceId: string): Promise<any[]> {
     console.log(`Getting activity for space: ${spaceId}`);
-    return this.fetchWithErrorHandling<any[]>(`/spaces/${spaceId}/activity`);
+    const { data, error } = await supabase
+      .from('space_activity')
+      .select('*')
+      .eq('space_id', spaceId)
+      .order('created_at', { ascending: false })
+      .limit(20);
+
+    if (error) throw error;
+    return data || [];
   }
 
   // Get space chat
   public async getSpaceChat(spaceId: string): Promise<any[]> {
     console.log(`Getting chat for space: ${spaceId}`);
-    return this.fetchWithErrorHandling<any[]>(`/spaces/${spaceId}/chat`);
+    const { data, error } = await supabase
+      .from('space_chat')
+      .select('*')
+      .eq('space_id', spaceId)
+      .order('created_at', { ascending: false })
+      .limit(20);
+
+    if (error) throw error;
+    return data || [];
   }
 
   // Send chat message
   public async sendChatMessage(spaceId: string, userId: string, message: string): Promise<any> {
     console.log(`Sending message to space ${spaceId}:`, message);
-    return this.fetchWithErrorHandling<any>(`/spaces/${spaceId}/chat`, {
-      method: 'POST',
-      body: JSON.stringify({ user_id: userId, message }),
-    });
+    const { data, error } = await supabase
+      .from('space_chat')
+      .insert({
+        space_id: spaceId,
+        user_id: userId,
+        message
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
   }
 
   // Log space activity
   public async logSpaceActivity(spaceId: string, userId: string, action: string, progress?: number): Promise<any> {
     console.log(`Logging activity in space ${spaceId}:`, action);
-    return this.fetchWithErrorHandling<any>(`/spaces/${spaceId}/activity`, {
-      method: 'POST',
-      body: JSON.stringify({ user_id: userId, action, progress }),
-    });
+    const { data, error } = await supabase
+      .from('space_activity')
+      .insert({
+        space_id: spaceId,
+        user_id: userId,
+        action,
+        progress
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
   }
 }
 

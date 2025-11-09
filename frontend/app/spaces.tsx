@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -14,53 +14,23 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
 import { GlobalStyles } from '../constants/Theme';
+import { apiService, Space } from '../services/apiService';
+import { useStudyStore } from '../hooks/useStudySession';
 
-// Mock data for spaces/rooms
-const mockSpaces = [
-  {
-    id: '1',
-    name: 'CS Study Squad',
-    description: 'Computer Science group study',
-    members: 8,
-    active: 3,
-    icon: '💻',
-    isJoined: true,
-    currentSession: true,
-  },
-  {
-    id: '2',
-    name: 'Math Wizards',
-    description: 'Advanced mathematics study group',
-    members: 12,
-    active: 5,
-    icon: '📐',
-    isJoined: true,
-    currentSession: false,
-  },
-  {
-    id: '3',
-    name: 'Physics Lab',
-    description: 'Physics problem solving sessions',
-    members: 6,
-    active: 2,
-    icon: '⚛️',
-    isJoined: false,
-    currentSession: false,
-  },
-  {
-    id: '4',
-    name: 'Language Learners',
-    description: 'Practice languages together',
-    members: 15,
-    active: 7,
-    icon: '🌍',
-    isJoined: false,
-    currentSession: true,
-  },
-];
+// Use real user ID from populated data
+const USER_ID = 'user1';
+
+interface ExtendedSpace extends Space {
+  isJoined: boolean;
+  active: number;
+  currentSession: boolean;
+  icon: string;
+  description?: string;
+  members: number;
+}
 
 interface SpaceCardProps {
-  space: typeof mockSpaces[0];
+  space: ExtendedSpace;
   onJoin: () => void;
   onEnter: () => void;
   onStartStreak: () => void;
@@ -136,31 +106,81 @@ export default function SpacesScreen() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [spaceName, setSpaceName] = useState('');
   const [spaceDescription, setSpaceDescription] = useState('');
+  const [spaces, setSpaces] = useState<ExtendedSpace[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const handleJoinSpace = (spaceId: string) => {
-    // TODO: Implement join space functionality
-    console.log('Joining space:', spaceId);
+  const { showNotification } = useStudyStore();
+
+  useEffect(() => {
+    loadSpaces();
+  }, []);
+
+  const loadSpaces = async () => {
+    try {
+      setLoading(true);
+      const userSpaces = await apiService.getUserSpaces(USER_ID);
+
+      // Transform spaces to include UI properties
+      const extendedSpaces: ExtendedSpace[] = userSpaces.map(space => ({
+        ...space,
+        isJoined: true, // Since these are user's spaces
+        active: Math.floor(Math.random() * 10), // Mock active users
+        currentSession: Math.random() > 0.5, // Mock current session
+        icon: ['💻', '📐', '⚛️', '🌍', '📚', '🎨'][Math.floor(Math.random() * 6)],
+        description: 'Study group space', // Mock description
+        members: space.member_count,
+      }));
+
+      setSpaces(extendedSpaces);
+    } catch (error) {
+      console.error('Failed to load spaces:', error);
+      showNotification('Failed to load spaces', 'warning');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleJoinSpace = async (spaceId: string) => {
+    try {
+      await apiService.joinSpace(spaceId, USER_ID);
+      showNotification('Successfully joined space!', 'success');
+      await loadSpaces(); // Reload to update UI
+    } catch (error) {
+      console.error('Failed to join space:', error);
+      showNotification('Failed to join space', 'warning');
+    }
   };
 
   const handleEnterSpace = (spaceId: string) => {
-    // TODO: Implement enter space functionality
+    // TODO: Navigate to space detail/timer screen
     console.log('Entering space:', spaceId);
   };
 
   const handleStartStreak = (spaceId: string) => {
-    // TODO: Implement start streak functionality
+    // TODO: Start timer in this space
     console.log('Starting streak in space:', spaceId);
   };
 
-  const handleCreateSpace = () => {
-    // TODO: Implement create space functionality
-    console.log('Creating space:', spaceName, spaceDescription);
-    setShowCreateModal(false);
-    setSpaceName('');
-    setSpaceDescription('');
+  const handleCreateSpace = async () => {
+    try {
+      await apiService.createSpace({
+        name: spaceName,
+        created_by: USER_ID,
+        visibility: 'public',
+      });
+
+      showNotification('Space created successfully!', 'success');
+      setShowCreateModal(false);
+      setSpaceName('');
+      setSpaceDescription('');
+      await loadSpaces(); // Reload to show new space
+    } catch (error) {
+      console.error('Failed to create space:', error);
+      showNotification('Failed to create space', 'warning');
+    }
   };
 
-  const renderSpaceCard = ({ item }: { item: typeof mockSpaces[0] }) => (
+  const renderSpaceCard = ({ item }: { item: ExtendedSpace }) => (
     <SpaceCard
       space={item}
       onJoin={() => handleJoinSpace(item.id)}
@@ -196,11 +216,19 @@ export default function SpacesScreen() {
 
       {/* Spaces List */}
       <FlatList
-        data={mockSpaces}
+        data={spaces}
         renderItem={renderSpaceCard}
         keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 100 }}
+        ListEmptyComponent={
+          !loading ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyText}>No spaces yet</Text>
+              <Text style={GlobalStyles.textMuted}>Create your first study space!</Text>
+            </View>
+          ) : null
+        }
       />
 
       {/* Create Space Modal */}
@@ -450,5 +478,15 @@ const styles = StyleSheet.create({
     color: Colors.text,
     fontSize: 16,
     fontWeight: '600',
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  emptyText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: Colors.text,
+    marginBottom: 8,
   },
 });
