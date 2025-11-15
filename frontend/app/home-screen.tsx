@@ -154,7 +154,7 @@ export default function HomeScreen() {
   
   const { formattedTime } = useTimer();
   
-  const character = getCharacterLevel(stats.weeklyHours * 4); // Rough estimate for total hours
+  const character = getCharacterLevel((stats?.weeklyHours || 0) * 4); // Rough estimate for total hours
 
   const handleMainButtonPress = () => {
     if (!currentSession) {

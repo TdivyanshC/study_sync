@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback, Suspense } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   View,
   Text,
@@ -8,6 +9,7 @@ import {
   Modal,
   TextInput,
   FlatList,
+  Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -16,6 +18,10 @@ import { Colors } from '../constants/Colors';
 import { GlobalStyles } from '../constants/Theme';
 import { apiService, Space } from '../services/apiService';
 import { useStudyStore } from '../hooks/useStudySession';
+import { realtimeClient } from '../services/realtimeClient';
+import ActivityCard from '../components/ActivityCard';
+import ChatInput from '../components/ChatInput';
+import BadgePopup from '../components/BadgePopup';
 
 // Use real user ID from populated data
 const USER_ID = 'user1';
@@ -108,17 +114,79 @@ export default function SpacesScreen() {
   const [spaceDescription, setSpaceDescription] = useState('');
   const [spaces, setSpaces] = useState<ExtendedSpace[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activityFeed, setActivityFeed] = useState<any[]>([]);
+  const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
+  const [chatMessages, setChatMessages] = useState<any[]>([]);
+  const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null);
+  const [badgePopup, setBadgePopup] = useState<{ visible: boolean; title: string; description?: string }>({
+    visible: false,
+    title: '',
+    description: ''
+  });
 
   const { showNotification } = useStudyStore();
+  const queryClient = useQueryClient();
+  const activityAnimations = useRef<{ [key: string]: Animated.Value }>({});
 
   useEffect(() => {
-    loadSpaces();
+    // Spaces are loaded via React Query in the useQuery hook below
+    console.log('Loading spaces...');
+
+    // Subscribe to badge achievements for current user
+    const unsubscribeBadges = realtimeClient.subscribeToBadges(USER_ID, (badge) => {
+      setBadgePopup({
+        visible: true,
+        title: badge.badges.title,
+        description: badge.badges.description
+      });
+    });
+
+    return () => {
+      unsubscribeBadges();
+      // Clean up all realtime subscriptions when component unmounts
+      realtimeClient.unsubscribeAll();
+    };
   }, []);
 
-  const loadSpaces = async () => {
-    try {
-      setLoading(true);
+  // Subscribe to activities for all spaces
+  useEffect(() => {
+    if (!spaces.length) return;
+
+    const unsubscribeActivities: (() => void)[] = [];
+
+    spaces.forEach(space => {
+      const unsubscribe = realtimeClient.subscribeToActivity(space.id, (activity) => {
+        // Create fade-in animation for new activity
+        const animKey = `${activity.id}_${Date.now()}`;
+        activityAnimations.current[animKey] = new Animated.Value(0);
+
+        setActivityFeed(prev => {
+          const newFeed = [activity, ...prev].slice(0, 10); // Keep only latest 10
+          return newFeed;
+        });
+
+        // Animate in
+        Animated.timing(activityAnimations.current[animKey], {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }).start();
+      });
+      unsubscribeActivities.push(unsubscribe);
+    });
+
+    return () => {
+      unsubscribeActivities.forEach(unsubscribe => unsubscribe());
+    };
+  }, [spaces.map(s => s.id).join(',')]); // Only re-subscribe when space IDs change
+
+  // Use React Query for caching spaces data
+  const { data: spacesData, isLoading: spacesLoading, error: spacesError } = useQuery({
+    queryKey: ['userSpaces', USER_ID],
+    queryFn: async () => {
+      console.time('fetchSpaces');
       const userSpaces = await apiService.getUserSpaces(USER_ID);
+      console.timeEnd('fetchSpaces');
 
       // Transform spaces to include UI properties
       const extendedSpaces: ExtendedSpace[] = userSpaces.map(space => ({
@@ -131,37 +199,87 @@ export default function SpacesScreen() {
         members: space.member_count,
       }));
 
-      setSpaces(extendedSpaces);
-    } catch (error) {
-      console.error('Failed to load spaces:', error);
-      showNotification('Failed to load spaces', 'warning');
-    } finally {
-      setLoading(false);
-    }
-  };
+      return extendedSpaces;
+    },
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
 
-  const handleJoinSpace = async (spaceId: string) => {
+  // Update local state when query data changes
+  useEffect(() => {
+    if (spacesData) {
+      setSpaces(spacesData);
+    }
+    setLoading(spacesLoading);
+    if (spacesError) {
+      console.error('Failed to load spaces:', spacesError);
+      showNotification('Failed to load spaces', 'warning');
+    }
+  }, [spacesData, spacesLoading, spacesError, showNotification]);
+
+  const handleJoinSpace = useCallback(async (spaceId: string) => {
     try {
       await apiService.joinSpace(spaceId, USER_ID);
+
+      // Log activity to space_activity table
+      await apiService.logSpaceActivity(spaceId, USER_ID, 'joined_space');
+
       showNotification('Successfully joined space!', 'success');
-      await loadSpaces(); // Reload to update UI
+      // Invalidate React Query cache to refetch spaces
+      queryClient.invalidateQueries({ queryKey: ['userSpaces', USER_ID] });
     } catch (error) {
       console.error('Failed to join space:', error);
       showNotification('Failed to join space', 'warning');
     }
-  };
+  }, [showNotification]);
 
-  const handleEnterSpace = (spaceId: string) => {
-    // TODO: Navigate to space detail/timer screen
+  // Subscribe to current space realtime events
+  useEffect(() => {
+    if (!selectedSpaceId) return;
+
+    const unsubscribeChat = realtimeClient.subscribeToChat(selectedSpaceId, (chat) => {
+      setChatMessages(prev => [...prev, chat].slice(-20)); // Keep last 20 messages
+    });
+
+    const unsubscribePresence = realtimeClient.trackPresence(
+      selectedSpaceId,
+      USER_ID,
+      (onlineUsers) => setOnlineUsers(onlineUsers)
+    );
+
+    return () => {
+      unsubscribeChat();
+      unsubscribePresence();
+    };
+  }, [selectedSpaceId]);
+
+  const handleEnterSpace = useCallback((spaceId: string) => {
     console.log('Entering space:', spaceId);
-  };
+    setSelectedSpaceId(spaceId);
+    setChatMessages([]);
+    setOnlineUsers([]);
+  }, []);
 
-  const handleStartStreak = (spaceId: string) => {
-    // TODO: Start timer in this space
+  const handleSendMessage = useCallback(async (message: string) => {
+    if (!selectedSpaceId) return;
+
+    try {
+      await apiService.sendChatMessage(selectedSpaceId, USER_ID, message);
+      // Message will appear via realtime subscription
+    } catch (error) {
+      console.error('Failed to send message:', error);
+      showNotification('Failed to send message', 'warning');
+    }
+  }, [selectedSpaceId, showNotification]);
+
+  const handleStartStreak = useCallback((spaceId: string) => {
+    // TODO: Start timer in this space and log activity
     console.log('Starting streak in space:', spaceId);
-  };
 
-  const handleCreateSpace = async () => {
+    // Could log activity when starting a session
+    // await apiService.logSpaceActivity(spaceId, USER_ID, 'started_session');
+  }, []);
+
+  const handleCreateSpace = useCallback(async () => {
     try {
       await apiService.createSpace({
         name: spaceName,
@@ -173,21 +291,22 @@ export default function SpacesScreen() {
       setShowCreateModal(false);
       setSpaceName('');
       setSpaceDescription('');
-      await loadSpaces(); // Reload to show new space
+      // Invalidate React Query cache to refetch spaces
+      queryClient.invalidateQueries({ queryKey: ['userSpaces', USER_ID] });
     } catch (error) {
       console.error('Failed to create space:', error);
       showNotification('Failed to create space', 'warning');
     }
-  };
+  }, [spaceName, showNotification, queryClient]);
 
-  const renderSpaceCard = ({ item }: { item: ExtendedSpace }) => (
+  const renderSpaceCard = useCallback(({ item }: { item: ExtendedSpace }) => (
     <SpaceCard
       space={item}
       onJoin={() => handleJoinSpace(item.id)}
       onEnter={() => handleEnterSpace(item.id)}
       onStartStreak={() => handleStartStreak(item.id)}
     />
-  );
+  ), [handleJoinSpace, handleEnterSpace, handleStartStreak]);
 
   return (
     <SafeAreaView style={GlobalStyles.safeArea}>
@@ -200,6 +319,39 @@ export default function SpacesScreen() {
         <Text style={GlobalStyles.textSecondary}>
           Join groups and study together
         </Text>
+
+        {/* Online Users Indicator */}
+        <View style={styles.onlineIndicator}>
+          <Ionicons
+            name="people"
+            size={16}
+            color={onlineUsers.length > 0 ? Colors.success : Colors.textMuted}
+          />
+          <Text style={[GlobalStyles.textMuted, { marginLeft: 6 }]}>
+            {onlineUsers.length} online
+          </Text>
+
+          {/* Online User Avatars */}
+          {onlineUsers.length > 0 && (
+            <View style={styles.onlineAvatars}>
+              {onlineUsers.slice(0, 3).map((userId, index) => (
+                <View key={userId} style={[styles.onlineAvatar, { marginLeft: index > 0 ? -8 : 0 }]}>
+                  <Text style={styles.onlineAvatarText}>
+                    {userId.charAt(0).toUpperCase()}
+                  </Text>
+                  <View style={styles.onlineDot} />
+                </View>
+              ))}
+              {onlineUsers.length > 3 && (
+                <View style={[styles.onlineAvatar, styles.onlineAvatarMore]}>
+                  <Text style={styles.onlineAvatarText}>
+                    +{onlineUsers.length - 3}
+                  </Text>
+                </View>
+              )}
+            </View>
+          )}
+        </View>
       </View>
 
       {/* Create Space Button */}
@@ -213,6 +365,56 @@ export default function SpacesScreen() {
           Start your own study group
         </Text>
       </TouchableOpacity>
+
+      {/* Activity Feed */}
+      {activityFeed.length > 0 && (
+        <View style={[GlobalStyles.glassCard, { marginHorizontal: 16, marginBottom: 16 }]}>
+          <Text style={[GlobalStyles.subtitle, { marginBottom: 12 }]}>Live Activity</Text>
+          <ScrollView style={{ maxHeight: 200 }}>
+            {activityFeed.slice(0, 5).map((activity, index) => {
+              const animKey = `${activity.id}_${activity.created_at}`;
+              const opacity = activityAnimations.current[animKey] || new Animated.Value(1);
+
+              return (
+                <Animated.View key={`${activity.id}_${index}`} style={{ opacity }}>
+                  <ActivityCard
+                    userId={activity.user_id}
+                    action={activity.action}
+                    timestamp={activity.created_at}
+                  />
+                </Animated.View>
+              );
+            })}
+          </ScrollView>
+        </View>
+      )}
+
+      {/* Chat Section */}
+      {selectedSpaceId && (
+        <View style={[GlobalStyles.glassCard, { marginHorizontal: 16, marginBottom: 16, flex: 1 }]}>
+          <Text style={[GlobalStyles.subtitle, { marginBottom: 12 }]}>
+            Space Chat
+          </Text>
+
+          {/* Chat Messages */}
+          <ScrollView style={{ maxHeight: 200, marginBottom: 12 }}>
+            {chatMessages.map((message, index) => (
+              <View key={index} style={styles.messageItem}>
+                <View style={styles.messageHeader}>
+                  <Text style={styles.messageUser}>{message.user_id}</Text>
+                  <Text style={styles.messageTime}>
+                    {new Date(message.created_at).toLocaleTimeString()}
+                  </Text>
+                </View>
+                <Text style={styles.messageText}>{message.message}</Text>
+              </View>
+            ))}
+          </ScrollView>
+
+          {/* Chat Input */}
+          <ChatInput onSendMessage={handleSendMessage} />
+        </View>
+      )}
 
       {/* Spaces List */}
       <FlatList
@@ -287,6 +489,14 @@ export default function SpacesScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Badge Achievement Popup */}
+      <BadgePopup
+        visible={badgePopup.visible}
+        badgeTitle={badgePopup.title}
+        badgeDescription={badgePopup.description}
+        onClose={() => setBadgePopup({ visible: false, title: '', description: '' })}
+      />
     </SafeAreaView>
   );
 }
@@ -488,5 +698,82 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: Colors.text,
     marginBottom: 8,
+  },
+  activityItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.surfaceElevated,
+  },
+  activityText: {
+    fontSize: 14,
+    color: Colors.text,
+    flex: 1,
+  },
+  onlineIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  messageItem: {
+    backgroundColor: Colors.surfaceElevated,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 8,
+  },
+  messageHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  messageUser: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: Colors.primary,
+  },
+  messageTime: {
+    fontSize: 12,
+    color: Colors.textMuted,
+  },
+  messageText: {
+    fontSize: 14,
+    color: Colors.text,
+    lineHeight: 18,
+  },
+  onlineAvatars: {
+    flexDirection: 'row',
+    marginLeft: 12,
+  },
+  onlineAvatar: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: Colors.surface,
+  },
+  onlineAvatarText: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: Colors.text,
+  },
+  onlineAvatarMore: {
+    backgroundColor: Colors.surfaceElevated,
+  },
+  onlineDot: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: Colors.success,
+    borderWidth: 1,
+    borderColor: Colors.surface,
   },
 });

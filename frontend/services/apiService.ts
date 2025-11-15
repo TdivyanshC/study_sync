@@ -94,6 +94,7 @@ class ApiService {
 
   // Get user profile
   public async getUserProfile(userId: string): Promise<Profile> {
+    console.time(`getUserProfile-${userId}`);
     console.log(`Getting profile for user: ${userId}`);
     const { data, error } = await supabase
       .from('users')
@@ -102,6 +103,7 @@ class ApiService {
       .single();
 
     if (error) throw error;
+    console.timeEnd(`getUserProfile-${userId}`);
     return data;
   }
 
@@ -177,6 +179,7 @@ class ApiService {
 
   // Get user spaces
   public async getUserSpaces(userId: string): Promise<Space[]> {
+    console.time(`getUserSpaces-${userId}`);
     console.log(`Getting spaces for user: ${userId}`);
     const { data, error } = await supabase
       .from('space_members')
@@ -184,6 +187,7 @@ class ApiService {
       .eq('user_id', userId);
 
     if (error) throw error;
+    console.timeEnd(`getUserSpaces-${userId}`);
     return (data?.map((item: any) => item.spaces as Space) || []);
   }
 
@@ -208,6 +212,7 @@ class ApiService {
 
   // Create a space
   public async createSpace(spaceData: { name: string; created_by: string; visibility?: string }): Promise<Space> {
+    console.time('createSpace');
     console.log('Creating space:', spaceData);
     const { data, error } = await supabase
       .from('spaces')
@@ -225,6 +230,7 @@ class ApiService {
         user_id: spaceData.created_by
       });
 
+    console.timeEnd('createSpace');
     return data;
   }
 
@@ -270,29 +276,29 @@ class ApiService {
     return { message: 'Successfully joined space' };
   }
 
-  // Get space activity
-  public async getSpaceActivity(spaceId: string): Promise<any[]> {
-    console.log(`Getting activity for space: ${spaceId}`);
+  // Get space activity with pagination
+  public async getSpaceActivity(spaceId: string, limit: number = 20, offset: number = 0): Promise<any[]> {
+    console.log(`Getting activity for space: ${spaceId} (limit: ${limit}, offset: ${offset})`);
     const { data, error } = await supabase
       .from('space_activity')
       .select('*')
       .eq('space_id', spaceId)
       .order('created_at', { ascending: false })
-      .limit(20);
+      .range(offset, offset + limit - 1);
 
     if (error) throw error;
     return data || [];
   }
 
-  // Get space chat
-  public async getSpaceChat(spaceId: string): Promise<any[]> {
-    console.log(`Getting chat for space: ${spaceId}`);
+  // Get space chat with pagination
+  public async getSpaceChat(spaceId: string, limit: number = 20, offset: number = 0): Promise<any[]> {
+    console.log(`Getting chat for space: ${spaceId} (limit: ${limit}, offset: ${offset})`);
     const { data, error } = await supabase
       .from('space_chat')
       .select('*')
       .eq('space_id', spaceId)
       .order('created_at', { ascending: false })
-      .limit(20);
+      .range(offset, offset + limit - 1);
 
     if (error) throw error;
     return data || [];

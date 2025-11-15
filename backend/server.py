@@ -12,6 +12,7 @@ from datetime import datetime, timedelta
 import socketio
 import bcrypt
 import jwt
+from services.supabase_db import supabase_db
 
 
 ROOT_DIR = Path(__file__).parent
@@ -68,11 +69,12 @@ class StudySession(BaseModel):
     confirmations_received: int = Field(default=0)
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
-    class Config:
-        allow_population_by_field_name = True
-        json_encoders = {
+    model_config = {
+        "validate_assignment": True,
+        "json_encoders": {
             datetime: lambda v: v.isoformat()
         }
+    }
 
 class SessionCreate(BaseModel):
     space_id: Optional[str] = None
@@ -252,9 +254,13 @@ async def get_status_checks():
 @api_router.post("/auth/signup")
 async def signup(user_data: UserSignup):
     # Check if user already exists
-    existing = supabase.table('users').select('*').eq('email', user_data.email).execute()
-    if existing.data:
-        raise HTTPException(status_code=400, detail="User already exists")
+    existing_result = supabase_db.fetch_data('users', {'eq_email': user_data.email})
+    if existing_result['success'] and existing_result['data']:
+        return {
+            "success": False,
+            "message": "User already exists",
+            "data": None
+        }
 
     # Hash password and create user
     hashed_password = hash_password(user_data.password)
@@ -264,55 +270,152 @@ async def signup(user_data: UserSignup):
         "password_hash": hashed_password
     }
 
-    result = supabase.table('users').insert(user_dict).execute()
-    user = result.data[0]
+    result = supabase_db.insert_data('users', user_dict)
+    if not result['success']:
+        return result
+
+    user = result['data'][0] if result['data'] else None
+    if not user:
+        return {
+            "success": False,
+            "message": "Failed to create user",
+            "data": None
+        }
 
     # Create JWT token
     token = create_jwt_token(user['id'])
 
-    return {"token": token, "user": {"id": user['id'], "username": user['username'], "email": user['email']}}
+    return {
+        "success": True,
+        "message": "User created successfully",
+        "data": {
+            "token": token,
+            "user": {"id": user['id'], "username": user['username'], "email": user['email']}
+        }
+    }
 
 @api_router.post("/auth/login")
 async def login(user_data: UserLogin):
     # Find user by email
-    result = supabase.table('users').select('*').eq('email', user_data.email).execute()
-    if not result.data:
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+    result = supabase_db.fetch_data('users', {'eq_email': user_data.email})
+    if not result['success'] or not result['data']:
+        return {
+            "success": False,
+            "message": "Invalid credentials",
+            "data": None
+        }
 
-    user = result.data[0]
+    user = result['data'][0]
 
     # Verify password
     if not verify_password(user_data.password, user['password_hash']):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+        return {
+            "success": False,
+            "message": "Invalid credentials",
+            "data": None
+        }
 
     # Create JWT token
     token = create_jwt_token(user['id'])
 
-    return {"token": token, "user": {"id": user['id'], "username": user['username'], "email": user['email']}}
+    return {
+        "success": True,
+        "message": "Login successful",
+        "data": {
+            "token": token,
+            "user": {"id": user['id'], "username": user['username'], "email": user['email']}
+        }
+    }
 
 # Study Session endpoints
-@api_router.post("/session/start", response_model=StudySession)
+@api_router.post("/session/start")
 async def start_session(session_data: SessionCreate):
-    session = StudySession(
-        space_id=session_data.space_id,
-        user_id=session_data.user_id,
-        duration_minutes=session_data.duration_minutes,
-        efficiency=session_data.efficiency
-    )
-    result = supabase.table('study_sessions').insert(session.dict()).execute()
-    return StudySession(**result.data[0])
+    session_dict = {
+        "space_id": session_data.space_id,
+        "user_id": session_data.user_id,
+        "duration_minutes": session_data.duration_minutes,
+        "efficiency": session_data.efficiency
+    }
+
+    result = supabase_db.insert_data('study_sessions', session_dict)
+    if not result['success']:
+        return result
+
+    return {
+        "success": True,
+        "message": "Study session started successfully",
+        "data": result['data'][0] if result['data'] else None
+    }
 
 @api_router.post("/session/confirm")
 async def confirm_session(session_id: str, user_id: str):
+    # First get current confirmations count
+    fetch_result = supabase_db.fetch_data('study_sessions', {'eq_id': session_id})
+    if not fetch_result['success'] or not fetch_result['data']:
+        return {
+            "success": False,
+            "message": "Session not found",
+            "data": None
+        }
+
+    current_confirmations = fetch_result['data'][0]['confirmations_received']
+
     # Update confirmations count
-    result = supabase.table('study_sessions').update({
-        'confirmations_received': supabase.table('study_sessions').select('confirmations_received').eq('id', session_id).execute().data[0]['confirmations_received'] + 1
-    }).eq('id', session_id).execute()
+    update_result = supabase_db.update_data('study_sessions',
+        {'eq_id': session_id},
+        {'confirmations_received': current_confirmations + 1}
+    )
+
+    if not update_result['success']:
+        return update_result
 
     # Check for badge achievements
     await check_and_award_badges(user_id)
 
-    return {"message": "Session confirmed"}
+    return {
+        "success": True,
+        "message": "Session confirmed successfully",
+        "data": None
+    }
+
+@api_router.post("/session/end")
+async def end_session(session_id: str, duration_minutes: int, efficiency: Optional[float] = None):
+    # Update session with final duration and efficiency
+    update_data = {'duration_minutes': duration_minutes}
+    if efficiency is not None:
+        update_data['efficiency'] = efficiency
+
+    result = supabase_db.update_data('study_sessions', {'eq_id': session_id}, update_data)
+    if not result['success']:
+        return result
+
+    # Get session data for XP calculation
+    session_result = supabase_db.fetch_data('study_sessions', {'eq_id': session_id})
+    if not session_result['success'] or not session_result['data']:
+        return {
+            "success": False,
+            "message": "Failed to retrieve updated session",
+            "data": None
+        }
+
+    session = session_result['data'][0]
+    user_id = session['user_id']
+
+    # Calculate XP and update user stats
+    xp_gained = duration_minutes * 10  # 10 XP per minute
+    level_up = await update_user_stats(user_id, xp_gained, duration_minutes)
+
+    # Check for badge achievements
+    await check_and_award_badges(user_id)
+
+    return {
+        "success": True,
+        "message": "Session ended successfully",
+        "data": {
+            "xp_gained": xp_gained,
+            "level_up": level_up
+        }
+    }
 
 @api_router.get("/sessions/{user_id}")
 async def get_user_sessions(user_id: str):
@@ -437,48 +540,90 @@ async def get_user_dashboard(user_id: str):
     }
 
 # Space endpoints
-@api_router.post("/spaces/create", response_model=Space)
+@api_router.post("/spaces/create")
 async def create_space(space_data: SpaceCreate):
-    space = Space(
-        name=space_data.name,
-        created_by=space_data.created_by,
-        visibility=space_data.visibility
-    )
-    result = supabase.table('spaces').insert(space.dict()).execute()
-    space_data = result.data[0]
+    space_dict = {
+        "name": space_data.name,
+        "created_by": space_data.created_by,
+        "visibility": space_data.visibility
+    }
+
+    result = supabase_db.insert_data('spaces', space_dict)
+    if not result['success']:
+        return result
+
+    space_data_response = result['data'][0]
 
     # Add creator to space_members
-    supabase.table('space_members').insert({
-        'space_id': space_data['id'],
-        'user_id': space_data['created_by']
-    }).execute()
+    member_dict = {
+        'space_id': space_data_response['id'],
+        'user_id': space_data_response['created_by']
+    }
+    member_result = supabase_db.insert_data('space_members', member_dict)
+    if not member_result['success']:
+        return {
+            "success": False,
+            "message": "Space created but failed to add creator as member",
+            "data": space_data_response
+        }
 
-    return Space(**space_data)
+    return {
+        "success": True,
+        "message": "Space created successfully",
+        "data": space_data_response
+    }
 
 @api_router.post("/spaces/join")
 async def join_space(join_data: SpaceJoin):
     # Check if space exists
-    space_result = supabase.table('spaces').select('*').eq('id', join_data.space_id).execute()
-    if not space_result.data:
-        raise HTTPException(status_code=404, detail="Space not found")
+    space_result = supabase_db.fetch_data('spaces', {'eq_id': join_data.space_id})
+    if not space_result['success'] or not space_result['data']:
+        return {
+            "success": False,
+            "message": "Space not found",
+            "data": None
+        }
+
+    space = space_result['data'][0]
 
     # Check if already a member
-    member_result = supabase.table('space_members').select('*').eq('space_id', join_data.space_id).eq('user_id', join_data.user_id).execute()
-    if member_result.data:
-        return {"message": "Already a member"}
+    member_result = supabase_db.fetch_data('space_members', {
+        'eq_space_id': join_data.space_id,
+        'eq_user_id': join_data.user_id
+    })
+    if member_result['success'] and member_result['data']:
+        return {
+            "success": False,
+            "message": "Already a member of this space",
+            "data": None
+        }
 
     # Add to space_members
-    supabase.table('space_members').insert({
+    member_dict = {
         'space_id': join_data.space_id,
         'user_id': join_data.user_id
-    }).execute()
+    }
+    insert_result = supabase_db.insert_data('space_members', member_dict)
+    if not insert_result['success']:
+        return insert_result
 
     # Update member count
-    supabase.table('spaces').update({
-        'member_count': space_result.data[0]['member_count'] + 1
-    }).eq('id', join_data.space_id).execute()
+    update_result = supabase_db.update_data('spaces',
+        {'eq_id': join_data.space_id},
+        {'member_count': space['member_count'] + 1}
+    )
+    if not update_result['success']:
+        return {
+            "success": False,
+            "message": "Joined space but failed to update member count",
+            "data": None
+        }
 
-    return {"message": "Joined successfully"}
+    return {
+        "success": True,
+        "message": "Successfully joined space",
+        "data": None
+    }
 
 @api_router.get("/spaces/{user_id}", response_model=List[Space])
 async def get_user_spaces(user_id: str):
@@ -783,6 +928,32 @@ def verify_jwt_token(token: str) -> Optional[str]:
         return None
     except jwt.InvalidTokenError:
         return None
+
+async def update_user_stats(user_id: str, xp_gained: int, minutes_studied: int) -> bool:
+    """Update user XP, level, and streak. Returns True if leveled up."""
+    # Get current user data
+    user_result = supabase_db.fetch_data('users', {'eq_id': user_id})
+    if not user_result['success'] or not user_result['data']:
+        return False
+
+    user = user_result['data'][0]
+    current_xp = user.get('xp', 0)
+    current_level = user.get('level', 1)
+    current_streak = user.get('streak_count', 0)
+
+    new_xp = current_xp + xp_gained
+    new_level = new_xp // 100 + 1  # Level up every 100 XP
+
+    # Update streak (simplified - in real app would check consecutive days)
+    new_streak = current_streak + 1
+
+    update_result = supabase_db.update_data('users', {'eq_id': user_id}, {
+        'xp': new_xp,
+        'level': new_level,
+        'streak_count': new_streak
+    })
+
+    return update_result['success'] and new_level > current_level
 
 # Export the socket app for Uvicorn
 app = socket_app

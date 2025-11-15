@@ -36,8 +36,8 @@ CREATE TABLE spaces (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Space members junction table
-CREATE TABLE space_members (
+-- Space memberships junction table
+CREATE TABLE space_memberships (
     space_id UUID REFERENCES spaces(id) ON DELETE CASCADE,
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     joined_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -92,11 +92,14 @@ CREATE TABLE status_checks (
 -- Indexes for performance
 CREATE INDEX idx_study_sessions_user_id ON study_sessions(user_id);
 CREATE INDEX idx_study_sessions_created_at ON study_sessions(created_at);
-CREATE INDEX idx_space_members_space_id ON space_members(space_id);
-CREATE INDEX idx_space_members_user_id ON space_members(user_id);
+CREATE INDEX idx_space_memberships_space_id ON space_memberships(space_id);
+CREATE INDEX idx_space_memberships_user_id ON space_memberships(user_id);
 CREATE INDEX idx_space_activity_space_id ON space_activity(space_id);
+CREATE INDEX idx_space_activity_created_at ON space_activity(created_at);
 CREATE INDEX idx_space_chat_space_id ON space_chat(space_id);
+CREATE INDEX idx_space_chat_created_at ON space_chat(created_at);
 CREATE INDEX idx_user_badges_user_id ON user_badges(user_id);
+CREATE INDEX idx_spaces_created_by ON spaces(created_by);
 
 -- Insert default badges
 INSERT INTO badges (title, description, requirement_type, requirement_value) VALUES
@@ -110,7 +113,7 @@ INSERT INTO badges (title, description, requirement_type, requirement_value) VAL
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE study_sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE spaces ENABLE ROW LEVEL SECURITY;
-ALTER TABLE space_members ENABLE ROW LEVEL SECURITY;
+ALTER TABLE space_memberships ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_badges ENABLE ROW LEVEL SECURITY;
 ALTER TABLE space_activity ENABLE ROW LEVEL SECURITY;
 ALTER TABLE space_chat ENABLE ROW LEVEL SECURITY;
@@ -120,7 +123,7 @@ ALTER TABLE space_chat ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Allow all operations on users" ON users FOR ALL USING (true);
 CREATE POLICY "Allow all operations on study_sessions" ON study_sessions FOR ALL USING (true);
 CREATE POLICY "Allow all operations on spaces" ON spaces FOR ALL USING (true);
-CREATE POLICY "Allow all operations on space_members" ON space_members FOR ALL USING (true);
+CREATE POLICY "Allow all operations on space_memberships" ON space_memberships FOR ALL USING (true);
 CREATE POLICY "Allow all operations on user_badges" ON user_badges FOR ALL USING (true);
 CREATE POLICY "Allow all operations on space_activity" ON space_activity FOR ALL USING (true);
 CREATE POLICY "Allow all operations on space_chat" ON space_chat FOR ALL USING (true);
