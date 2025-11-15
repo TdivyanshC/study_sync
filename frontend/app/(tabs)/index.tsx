@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -11,10 +11,25 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
 import { GlobalStyles } from '../../constants/Theme';
 import { router } from 'expo-router';
+import { useStudyStore } from '../../hooks/useStudySession';
+import StudySessionPopup from '../../components/StudySessionPopup';
 
 export default function Index() {
+  const [showPopup, setShowPopup] = useState(false);
+  const { startSession } = useStudyStore();
+
   const handleStartSession = () => {
+    setShowPopup(true);
+  };
+
+  const handleConfirm = () => {
+    startSession();
+    setShowPopup(false);
     router.push('/timer');
+  };
+
+  const handleCancel = () => {
+    setShowPopup(false);
   };
 
   const handleViewSpaces = () => {
@@ -93,6 +108,12 @@ export default function Index() {
           <Text style={GlobalStyles.textMuted}>- B.B. King</Text>
         </View>
       </ScrollView>
+
+      <StudySessionPopup
+        visible={showPopup}
+        onConfirm={handleConfirm}
+        onCancel={handleCancel}
+      />
     </SafeAreaView>
   );
 }
