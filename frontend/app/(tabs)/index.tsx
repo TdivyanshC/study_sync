@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -12,24 +12,26 @@ import { Colors } from '../../constants/Colors';
 import { GlobalStyles } from '../../constants/Theme';
 import { router } from 'expo-router';
 import { useStudyStore } from '../../hooks/useStudySession';
-import StudySessionPopup from '../../components/StudySessionPopup';
+import { usePopup } from '../../providers/PopupProvider';
+import { getRandomJoke } from '../../data/jokes';
 
 export default function Index() {
-  const [showPopup, setShowPopup] = useState(false);
   const { startSession } = useStudyStore();
+  const { openPopup, closePopup } = usePopup();
 
   const handleStartSession = () => {
-    setShowPopup(true);
-  };
-
-  const handleConfirm = () => {
-    startSession();
-    setShowPopup(false);
-    router.push('/timer');
-  };
-
-  const handleCancel = () => {
-    setShowPopup(false);
+    openPopup({
+      message: getRandomJoke(),
+      primaryButtonText: "Yeah I'm serious 😎",
+      secondaryButtonText: "Wait let me check 😭",
+      animation: require("../../assets/animations/avatar 1.json"),
+      onPrimary: () => {
+        closePopup();
+        startSession();
+        router.push('/timer');
+      },
+      onSecondary: () => closePopup(),
+    });
   };
 
   const handleViewSpaces = () => {
@@ -37,7 +39,8 @@ export default function Index() {
   };
 
   return (
-    <SafeAreaView style={GlobalStyles.safeArea}>
+    <View style={{ flex: 1 }}>
+      <SafeAreaView style={GlobalStyles.safeArea}>
       <ScrollView style={GlobalStyles.container} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
@@ -108,13 +111,8 @@ export default function Index() {
           <Text style={GlobalStyles.textMuted}>- B.B. King</Text>
         </View>
       </ScrollView>
-
-      <StudySessionPopup
-        visible={showPopup}
-        onConfirm={handleConfirm}
-        onCancel={handleCancel}
-      />
     </SafeAreaView>
+    </View>
   );
 }
 

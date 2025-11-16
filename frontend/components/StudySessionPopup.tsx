@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,13 +6,13 @@ import {
   StyleSheet,
   Dimensions,
   Modal,
+  Animated,
 } from 'react-native';
+import LottieView from 'lottie-react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
 
-const { width, height } = Dimensions.get('window');
-const isTablet = width > 600;
-const sheetHeight = isTablet ? height * 0.3 : height * 0.4;
+const { width } = Dimensions.get('window');
 
 const funnyPrompts = [
   "Okay champ, no distractions — not even from your baby 😭?",
@@ -45,6 +45,10 @@ export default function StudySessionPopup({ visible, onConfirm, onCancel }: Stud
   const [confirmText, setConfirmText] = useState('');
   const [cancelText, setCancelText] = useState('');
 
+  const rotation = useRef(new Animated.Value(0)).current;
+  const { height } = Dimensions.get('window');
+  const sheetHeight = height * 0.9;
+
   useEffect(() => {
     if (visible) {
       const randomPrompt = funnyPrompts[Math.floor(Math.random() * funnyPrompts.length)];
@@ -54,8 +58,24 @@ export default function StudySessionPopup({ visible, onConfirm, onCancel }: Stud
       setCurrentPrompt(randomPrompt);
       setConfirmText(randomConfirm);
       setCancelText(randomCancel);
+
+      // Start rotation animation
+      Animated.loop(
+        Animated.timing(rotation, {
+          toValue: 1,
+          duration: 2000,
+          useNativeDriver: true,
+        })
+      ).start();
+    } else {
+      rotation.setValue(0);
     }
   }, [visible]);
+
+  const rotate = rotation.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
 
   const handleConfirm = () => {
     onConfirm();
@@ -69,7 +89,7 @@ export default function StudySessionPopup({ visible, onConfirm, onCancel }: Stud
     <Modal
       visible={visible}
       transparent
-      animationType="slide"
+      animationType="none"
       onRequestClose={handleCancel}
     >
       <View style={styles.overlay}>
@@ -82,13 +102,23 @@ export default function StudySessionPopup({ visible, onConfirm, onCancel }: Stud
           </TouchableOpacity>
 
           <View style={styles.content}>
-            {/* Avatar */}
+            {/* Avatar Lottie */}
             <View style={styles.avatarContainer}>
-              <Text style={{ fontSize: 40, color: Colors.text }}>🎓</Text>
+              <LottieView
+                source={require('../assets/animations/checkmark_success.json')}
+                autoPlay
+                loop
+                speed={1}
+                onAnimationFinish={() => console.log('Lottie finished')}
+                onAnimationFailure={(error) => console.log('Lottie error:', error)}
+                style={styles.avatar}
+              />
             </View>
 
             {/* Prompt Text */}
-            <Text style={styles.promptText}>{currentPrompt}</Text>
+            <View style={styles.textContainer}>
+              <Text style={styles.promptText}>{currentPrompt}</Text>
+            </View>
 
             {/* Buttons */}
             <View style={styles.buttonContainer}>
@@ -116,22 +146,25 @@ export default function StudySessionPopup({ visible, onConfirm, onCancel }: Stud
 
 const styles = StyleSheet.create({
   overlay: {
-    flex: 1,
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    justifyContent: 'flex-end',
   },
   overlayTouchable: {
     ...StyleSheet.absoluteFillObject,
   },
   sheet: {
+    position: 'absolute',
+    bottom: 0,
     width: width,
     backgroundColor: Colors.surface,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 20,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 20,
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: 40,
   },
   closeButton: {
     position: 'absolute',
@@ -145,39 +178,47 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     width: '100%',
+    paddingTop: 60, // Space for close button
   },
   avatarContainer: {
-    marginBottom: 20,
+    flex: 0.5, // 50% of content height
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   avatar: {
-    width: 100,
-    height: 100,
+    width: width * 0.4, // 40% of screen width
+    height: width * 0.4,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  textContainer: {
+    flex: 0.3, // 30% for text
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   promptText: {
     fontSize: 18,
     color: Colors.text,
     textAlign: 'center',
-    marginBottom: 30,
     fontWeight: '600',
     lineHeight: 24,
   },
   buttonContainer: {
+    flex: 0.2, // 20% for buttons
     flexDirection: 'row',
     justifyContent: 'space-between',
     width: '100%',
   },
   confirmButton: {
     backgroundColor: Colors.primary,
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 12,
     flex: 1,
     marginRight: 12,
     alignItems: 'center',
+    justifyContent: 'center',
+    height: 60, // Increased height
+    borderRadius: 12,
     shadowColor: Colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -191,12 +232,12 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     backgroundColor: Colors.surfaceElevated,
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 12,
     flex: 1,
     marginLeft: 12,
     alignItems: 'center',
+    justifyContent: 'center',
+    height: 60, // Increased height
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: Colors.cardBorder,
   },
