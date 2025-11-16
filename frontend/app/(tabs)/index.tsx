@@ -24,7 +24,7 @@ export default function Index() {
       message: getRandomJoke(),
       primaryButtonText: "Yeah I'm serious 😎",
       secondaryButtonText: "Wait let me check 😭",
-      animation: require("../../assets/animations/avatar 1.json"),
+      animation: require("../../assets/animations/avatar 1-MJ2k6.json"),
       onPrimary: () => {
         closePopup();
         startSession();

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useRef, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useRef, useEffect, ReactNode } from 'react';
 import {
   View,
   Text,
@@ -7,7 +7,6 @@ import {
   Dimensions,
   Animated,
 } from 'react-native';
-import { useAnimatedStyle, useSharedValue, withTiming, runOnJS } from 'react-native-reanimated';
 import LottieView from 'lottie-react-native';
 import { Colors } from '../constants/Colors';
 
@@ -44,40 +43,69 @@ interface PopupProviderProps {
 
 export const PopupProvider: React.FC<PopupProviderProps> = ({ children }) => {
   const [isVisible, setIsVisible] = useState(false);
+  const [ready, setReady] = useState(false);
   const [message, setMessage] = useState('');
   const [primaryButtonText, setPrimaryButtonText] = useState('');
   const [secondaryButtonText, setSecondaryButtonText] = useState('');
-  const [animation, setAnimation] = useState<any>(require('../assets/animations/avatar 1.json'));
+  const [animation, setAnimation] = useState<any>(JSON.parse(JSON.stringify(require('../assets/animations/avatar 1-MJ2k6.json'))));
   const [onPrimary, setOnPrimary] = useState<() => void>(() => {});
   const [onSecondary, setOnSecondary] = useState<() => void>(() => {});
 
-  const translateY = useSharedValue(screenHeight);
-  const backdropOpacity = useSharedValue(0);
+  const translateY = useRef(new Animated.Value(screenHeight)).current;
+  const backdropOpacity = useRef(new Animated.Value(0)).current;
   const lottieRef = useRef<LottieView>(null);
+
+  useEffect(() => {
+    if (isVisible) {
+      setTimeout(() => setReady(true), 120);
+    } else {
+      setReady(false);
+    }
+  }, [isVisible]);
 
   const openPopup = (options: PopupOptions) => {
     setMessage(options.message);
     setPrimaryButtonText(options.primaryButtonText);
     setSecondaryButtonText(options.secondaryButtonText);
-    setAnimation(options.animation);
+    setAnimation(JSON.parse(JSON.stringify(options.animation)));
     setOnPrimary(() => options.onPrimary);
     setOnSecondary(() => options.onSecondary);
     setIsVisible(true);
 
-    translateY.value = withTiming(0, { duration: 300 });
-    backdropOpacity.value = withTiming(1, { duration: 300 });
+    Animated.parallel([
+      Animated.timing(translateY, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(backdropOpacity, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start();
   };
 
   const closePopup = () => {
-    translateY.value = withTiming(screenHeight, { duration: 300 });
-    backdropOpacity.value = withTiming(0, { duration: 300 }, () => {
-      runOnJS(setIsVisible)(false);
+    Animated.parallel([
+      Animated.timing(translateY, {
+        toValue: screenHeight,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(backdropOpacity, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setIsVisible(false);
     });
   };
 
   const handlePrimary = () => {
     // Play checkmark animation
-    setAnimation(require('../assets/animations/checkmark_success.json'));
+    setAnimation(JSON.parse(JSON.stringify(require('../assets/animations/checkmark_success.json'))));
     lottieRef.current?.play(0, 60); // Assuming it's a short animation
     // After animation, call onPrimary
     setTimeout(() => {
@@ -90,13 +118,13 @@ export const PopupProvider: React.FC<PopupProviderProps> = ({ children }) => {
     onSecondary();
   };
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.value }],
-  }));
+  const animatedStyle = {
+    transform: [{ translateY }],
+  };
 
-  const backdropStyle = useAnimatedStyle(() => ({
-    opacity: backdropOpacity.value,
-  }));
+  const backdropStyle = {
+    opacity: backdropOpacity,
+  };
 
   return (
     <PopupContext.Provider value={{ isVisible, openPopup, closePopup }}>
@@ -108,13 +136,24 @@ export const PopupProvider: React.FC<PopupProviderProps> = ({ children }) => {
           </Animated.View>
           <Animated.View style={[styles.popupContainer, animatedStyle]}>
             <View style={styles.sheet}>
-              <LottieView
-                ref={lottieRef}
-                source={animation}
-                autoPlay
-                loop={animation === require('../assets/animations/avatar 1.json')}
-                style={styles.lottie}
-              />
+              {ready && (
+                <View style={{ overflow: 'visible', alignItems: 'center', justifyContent: 'center' }}>
+                  <LottieView
+                    ref={lottieRef}
+                    source={animation}
+                    autoPlay
+                    loop={JSON.stringify(animation) === JSON.stringify(JSON.parse(JSON.stringify(require('../assets/animations/avatar 1-MJ2k6.json'))))}
+                    renderMode="HARDWARE"
+                    resizeMode="cover"
+                    enableMergePathsAndroidForKitKatAndAbove={true}
+                    style={{
+                      width: 180,
+                      height: 180,
+                      backgroundColor: 'transparent'
+                    }}
+                  />
+                </View>
+              )}
               <Text style={styles.message}>{message}</Text>
               <View style={styles.buttonContainer}>
                 <TouchableOpacity style={styles.primaryButton} onPress={handlePrimary}>
@@ -154,10 +193,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 32,
     padding: 24,
     alignItems: 'center',
-  },
-  lottie: {
-    width: 150,
-    height: 150,
+    overflow: 'visible',
   },
   message: {
     fontSize: 18,
