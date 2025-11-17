@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Animated,
   Dimensions,
+  Pressable,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
@@ -28,6 +29,8 @@ const BadgePopup: React.FC<BadgePopupProps> = ({
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
   const bounceAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(40)).current;
+  const avatarAnim = useRef(new Animated.Value(0.92)).current;
 
   useEffect(() => {
     if (visible) {
@@ -35,6 +38,8 @@ const BadgePopup: React.FC<BadgePopupProps> = ({
       scaleAnim.setValue(0);
       opacityAnim.setValue(0);
       bounceAnim.setValue(0);
+      slideAnim.setValue(40);
+      avatarAnim.setValue(0.92);
 
       // Start entrance animation
       Animated.parallel([
@@ -46,9 +51,24 @@ const BadgePopup: React.FC<BadgePopupProps> = ({
         }),
         Animated.timing(opacityAnim, {
           toValue: 1,
-          duration: 300,
+          duration: 250,
           useNativeDriver: true,
         }),
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          tension: 80,
+          friction: 8,
+          useNativeDriver: true,
+        }),
+        Animated.sequence([
+          Animated.delay(150),
+          Animated.spring(avatarAnim, {
+            toValue: 1,
+            tension: 120,
+            friction: 6,
+            useNativeDriver: true,
+          }),
+        ]),
         Animated.sequence([
           Animated.delay(200),
           Animated.spring(bounceAnim, {
@@ -81,9 +101,18 @@ const BadgePopup: React.FC<BadgePopupProps> = ({
         duration: 200,
         useNativeDriver: true,
       }),
+      Animated.timing(slideAnim, {
+        toValue: 40,
+        duration: 200,
+        useNativeDriver: true,
+      }),
     ]).start(() => {
       onClose();
     });
+  };
+
+  const handleBackdropPress = () => {
+    handleClose();
   };
 
   const getBadgeIcon = (title: string) => {
@@ -119,16 +148,22 @@ const BadgePopup: React.FC<BadgePopupProps> = ({
       animationType="none"
       onRequestClose={handleClose}
     >
-      <View style={styles.overlay}>
+      <Pressable style={styles.overlay} onPress={handleBackdropPress}>
         <Animated.View
           style={[
             styles.popup,
             {
-              transform: [{ scale: scaleAnim }],
+              transform: [
+                { scale: scaleAnim },
+                { translateY: slideAnim }
+              ],
               opacity: opacityAnim,
             },
           ]}
         >
+          {/* Handle Bar */}
+          <View style={styles.handleBar} />
+          
           {/* Confetti effect */}
           <View style={styles.confettiContainer}>
             {[...Array(6)].map((_, i) => (
@@ -150,13 +185,20 @@ const BadgePopup: React.FC<BadgePopupProps> = ({
 
           {/* Badge content */}
           <View style={styles.content}>
-            <View style={styles.iconContainer}>
+            <Animated.View 
+              style={[
+                styles.iconContainer,
+                {
+                  transform: [{ scale: avatarAnim }],
+                }
+              ]}
+            >
               <Ionicons
                 name={getBadgeIcon(badgeTitle)}
                 size={48}
                 color={Colors.accent}
               />
-            </View>
+            </Animated.View>
 
             <Text style={styles.title}>Achievement Unlocked!</Text>
             <Text style={styles.badgeTitle}>{badgeTitle}</Text>
@@ -165,7 +207,7 @@ const BadgePopup: React.FC<BadgePopupProps> = ({
             )}
           </View>
         </Animated.View>
-      </View>
+      </Pressable>
     </Modal>
   );
 };
@@ -173,22 +215,33 @@ const BadgePopup: React.FC<BadgePopupProps> = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   popup: {
-    backgroundColor: Colors.surface,
-    borderRadius: 24,
-    padding: 32,
-    width: width * 0.8,
-    maxWidth: 320,
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    borderRadius: 28,
+    padding: 20,
+    paddingTop: 16,
+    width: Math.min(width * 0.9, 380),
+    maxWidth: 380,
     alignItems: 'center',
-    shadowColor: Colors.text,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
     shadowRadius: 20,
-    elevation: 10,
+    elevation: 15,
+    borderWidth: 0.5,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    backdropFilter: 'blur(25px)',
+  },
+  handleBar: {
+    width: 40,
+    height: 5,
+    backgroundColor: 'rgba(255, 255, 255, 0.4)',
+    borderRadius: 2.5,
+    marginBottom: 16,
   },
   confettiContainer: {
     position: 'absolute',
@@ -208,6 +261,7 @@ const styles = StyleSheet.create({
   },
   content: {
     alignItems: 'center',
+    width: '100%',
   },
   iconContainer: {
     width: 80,
@@ -217,26 +271,34 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
   },
   title: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 22,
+    fontWeight: '600',
     color: Colors.primary,
-    marginBottom: 8,
+    marginBottom: 12,
     textAlign: 'center',
+    opacity: 0.9,
   },
   badgeTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: '600',
     color: Colors.text,
-    marginBottom: 8,
+    marginBottom: 16,
     textAlign: 'center',
   },
   description: {
-    fontSize: 14,
+    fontSize: 16,
+    fontWeight: '500',
     color: Colors.textSecondary,
     textAlign: 'center',
-    lineHeight: 18,
+    lineHeight: 22,
+    opacity: 0.7,
   },
 });
 

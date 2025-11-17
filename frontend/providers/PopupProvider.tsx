@@ -8,6 +8,7 @@ import {
   Animated,
 } from 'react-native';
 import LottieView from 'lottie-react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
 
 const { height: screenHeight } = Dimensions.get('window');
@@ -134,28 +135,46 @@ export const PopupProvider: React.FC<PopupProviderProps> = ({ children }) => {
           <Animated.View style={[styles.backdrop, backdropStyle]}>
             <TouchableOpacity style={StyleSheet.absoluteFillObject} onPress={closePopup} />
           </Animated.View>
-          <Animated.View style={[styles.popupContainer, animatedStyle]}>
-            <View style={styles.sheet}>
-              {ready && (
-                <View style={{ overflow: 'visible', alignItems: 'center', justifyContent: 'center' }}>
-                  <LottieView
-                    ref={lottieRef}
-                    source={animation}
-                    autoPlay
-                    loop={JSON.stringify(animation) === JSON.stringify(JSON.parse(JSON.stringify(require('../assets/animations/avatar 1-MJ2k6.json'))))}
-                    renderMode="HARDWARE"
-                    resizeMode="cover"
-                    enableMergePathsAndroidForKitKatAndAbove={true}
-                    style={{
-                      width: 180,
-                      height: 180,
-                      backgroundColor: 'transparent'
-                    }}
-                  />
+          
+          {/* Unified Popup Container */}
+          <Animated.View style={[styles.unifiedPopupContainer, animatedStyle]}>
+            <View style={styles.popupSheet}>
+              {/* Cross Button */}
+              <TouchableOpacity style={styles.closeButton} onPress={closePopup}>
+                <Ionicons name="close" size={24} color={Colors.text} />
+              </TouchableOpacity>
+
+              {/* Handle Bar */}
+              <View style={styles.handleBar} />
+
+              {/* Content Section */}
+              <View style={styles.contentSection}>
+                {ready && (
+                  <View style={styles.avatarContainer}>
+                    <LottieView
+                      ref={lottieRef}
+                      source={animation}
+                      autoPlay
+                      loop={JSON.stringify(animation) === JSON.stringify(JSON.parse(JSON.stringify(require('../assets/animations/avatar 1-MJ2k6.json'))))}
+                      renderMode="HARDWARE"
+                      resizeMode="cover"
+                      enableMergePathsAndroidForKitKatAndAbove={true}
+                      style={styles.lottie}
+                    />
+                  </View>
+                )}
+                
+                {/* Text Content */}
+                <View style={styles.textContainer}>
+                  <Text style={styles.message}>{message}</Text>
+                  <Text style={styles.subMessage}>
+                    This will help you track your study progress and maintain focus throughout your session.
+                  </Text>
                 </View>
-              )}
-              <Text style={styles.message}>{message}</Text>
-              <View style={styles.buttonContainer}>
+              </View>
+
+              {/* Bottom Buttons - Full width, outside content container */}
+              <View style={styles.fullWidthButtons}>
                 <TouchableOpacity style={styles.primaryButton} onPress={handlePrimary}>
                   <Text style={styles.primaryButtonText}>{primaryButtonText}</Text>
                 </TouchableOpacity>
@@ -174,61 +193,118 @@ export const PopupProvider: React.FC<PopupProviderProps> = ({ children }) => {
 const styles = StyleSheet.create({
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: 'rgba(0,0,0,0.6)',
   },
-  popupContainer: {
+  unifiedPopupContainer: {
     position: 'absolute',
-    top: 0,
+    bottom: 0,
     left: 0,
     right: 0,
-    bottom: 0,
+    top: 0,
     justifyContent: 'flex-end',
     zIndex: 9999,
     elevation: 9999,
   },
-  sheet: {
+  popupSheet: {
     width: '100%',
-    backgroundColor: '#161616',
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
-    padding: 24,
+    backgroundColor: Colors.surface,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingBottom: 0,
     alignItems: 'center',
     overflow: 'visible',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 20,
+  },
+  handleBar: {
+    width: 40,
+    height: 5,
+    backgroundColor: Colors.textSecondary,
+    borderRadius: 2.5,
+    marginTop: 12,
+    marginBottom: 20,
+    opacity: 0.4,
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 16,
+    right: 20,
+    padding: 12,
+    backgroundColor: Colors.surfaceElevated,
+    borderRadius: 24,
+    zIndex: 1,
+  },
+  contentSection: {
+    width: '100%',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingBottom: 30,
+  },
+  avatarContainer: {
+    marginBottom: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  lottie: {
+    width: 140,
+    height: 140,
+    backgroundColor: 'transparent'
+  },
+  textContainer: {
+    alignItems: 'center',
+    width: '100%',
   },
   message: {
-    fontSize: 18,
+    fontSize: 20,
     color: Colors.text,
     textAlign: 'center',
-    marginVertical: 20,
+    fontWeight: '600',
+    lineHeight: 26,
+    marginBottom: 12,
   },
-  buttonContainer: {
+  subMessage: {
+    fontSize: 16,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    fontWeight: '400',
+    lineHeight: 22,
+  },
+  fullWidthButtons: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     width: '100%',
+    backgroundColor: Colors.surface,
+    borderTopWidth: 1,
+    borderTopColor: Colors.cardBorder,
   },
   primaryButton: {
     backgroundColor: Colors.primary,
     flex: 1,
-    paddingVertical: 12,
-    borderRadius: 25,
     alignItems: 'center',
-    marginRight: 10,
+    justifyContent: 'center',
+    height: 70,
+    borderRadius: 0,
   },
   primaryButtonText: {
     color: Colors.text,
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
   secondaryButton: {
-    backgroundColor: '#333',
+    backgroundColor: Colors.surfaceElevated,
     flex: 1,
-    paddingVertical: 12,
-    borderRadius: 25,
     alignItems: 'center',
-    marginLeft: 10,
+    justifyContent: 'center',
+    height: 70,
+    borderRadius: 0,
+    borderLeftWidth: 1,
+    borderLeftColor: Colors.cardBorder,
   },
   secondaryButtonText: {
     color: Colors.text,
     fontSize: 16,
+    fontWeight: '600',
   },
 });

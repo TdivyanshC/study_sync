@@ -22,8 +22,8 @@ export default function Index() {
   const handleStartSession = () => {
     openPopup({
       message: getRandomJoke(),
-      primaryButtonText: "Yeah I'm serious 😎",
-      secondaryButtonText: "Wait let me check 😭",
+      primaryButtonText: "Yeah I'm serious ",
+      secondaryButtonText: "Wait let me check ",
       animation: require("../../assets/animations/avatar 1-MJ2k6.json"),
       onPrimary: () => {
         closePopup();

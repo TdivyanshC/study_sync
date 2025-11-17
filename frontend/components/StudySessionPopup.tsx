@@ -7,6 +7,7 @@ import {
   Dimensions,
   Modal,
   Animated,
+  Pressable,
 } from 'react-native';
 import LottieView from 'lottie-react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,23 +16,23 @@ import { Colors } from '../constants/Colors';
 const { width } = Dimensions.get('window');
 
 const funnyPrompts = [
-  "Okay champ, no distractions — not even from your baby 😭?",
-  "Be honest… are you actually gonna study or just scroll memes again? 👀",
-  "Bro, don't lie. Your crush hasn't texted you since 2022 💀",
-  "Time to lock in… unless you still need to check WhatsApp 👀",
-  "Focus mode ON — brain cells, please don't fail us today 🧠🔥"
+  "Ready to start your study session?",
+  "Time to focus and get things done!",
+  "Let's make this study session count!",
+  "Are you prepared to lock in?",
+  "Ready to maximize your productivity?"
 ];
 
 const confirmButtons = [
-  "Yeah I'm serious 😎",
-  "Let's lock in 🔒🔥",
-  "Send me to the grind 😤",
+  "Yes, I'm Ready",
+  "Start Session",
+  "Let's Begin",
 ];
 
 const cancelButtons = [
-  "Wait let me check something 😭",
-  "No no wait I wasn't ready 💀",
-  "Give me 2 minutes bro 🙏"
+  "Not Yet",
+  "Maybe Later",
+  "Cancel"
 ];
 
 interface StudySessionPopupProps {
@@ -46,6 +47,10 @@ export default function StudySessionPopup({ visible, onConfirm, onCancel }: Stud
   const [cancelText, setCancelText] = useState('');
 
   const rotation = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(100)).current;
+  const avatarAnim = useRef(new Animated.Value(0.8)).current;
+  const opacityAnim = useRef(new Animated.Value(0)).current;
+  
   const { height } = Dimensions.get('window');
   const sheetHeight = height * 0.9;
 
@@ -58,6 +63,32 @@ export default function StudySessionPopup({ visible, onConfirm, onCancel }: Stud
       setCurrentPrompt(randomPrompt);
       setConfirmText(randomConfirm);
       setCancelText(randomCancel);
+
+      // Reset animations
+      slideAnim.setValue(100);
+      avatarAnim.setValue(0.8);
+      opacityAnim.setValue(0);
+
+      // Enhanced entrance animations
+      Animated.parallel([
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          tension: 80,
+          friction: 8,
+          useNativeDriver: true,
+        }),
+        Animated.spring(avatarAnim, {
+          toValue: 1,
+          tension: 120,
+          friction: 6,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacityAnim, {
+          toValue: 1,
+          duration: 250,
+          useNativeDriver: true,
+        }),
+      ]).start();
 
       // Start rotation animation
       Animated.loop(
@@ -78,11 +109,41 @@ export default function StudySessionPopup({ visible, onConfirm, onCancel }: Stud
   });
 
   const handleConfirm = () => {
-    onConfirm();
+    Animated.parallel([
+      Animated.timing(slideAnim, {
+        toValue: 100,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      onConfirm();
+    });
   };
 
   const handleCancel = () => {
-    onCancel();
+    Animated.parallel([
+      Animated.timing(slideAnim, {
+        toValue: 100,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      onCancel();
+    });
+  };
+
+  const handleBackdropPress = () => {
+    handleCancel();
   };
 
   return (
@@ -92,18 +153,38 @@ export default function StudySessionPopup({ visible, onConfirm, onCancel }: Stud
       animationType="none"
       onRequestClose={handleCancel}
     >
-      <View style={styles.overlay}>
-        <TouchableOpacity style={styles.overlayTouchable} onPress={handleCancel} />
-
-        <View style={[styles.sheet, { height: sheetHeight }]}>
+      <Pressable style={styles.overlay} onPress={handleBackdropPress}>
+        <Animated.View 
+          style={[
+            styles.sheet, 
+            { 
+              height: sheetHeight,
+              transform: [{ translateY: slideAnim }],
+              opacity: opacityAnim,
+            }
+          ]}
+        >
           {/* Cross Button */}
           <TouchableOpacity style={styles.closeButton} onPress={handleCancel}>
             <Ionicons name="close" size={24} color={Colors.text} />
           </TouchableOpacity>
 
+          {/* Handle Bar */}
+          <View style={styles.handleBar} />
+
           <View style={styles.content}>
             {/* Avatar Lottie */}
-            <View style={styles.avatarContainer}>
+            <Animated.View 
+              style={[
+                styles.avatarContainer,
+                {
+                  transform: [
+                    { scale: avatarAnim },
+                    { rotate }
+                  ],
+                }
+              ]}
+            >
               <LottieView
                 source={require('../assets/animations/checkmark_success.json')}
                 autoPlay
@@ -113,33 +194,36 @@ export default function StudySessionPopup({ visible, onConfirm, onCancel }: Stud
                 onAnimationFailure={(error) => console.log('Lottie error:', error)}
                 style={styles.avatar}
               />
-            </View>
+            </Animated.View>
 
-            {/* Prompt Text */}
+            {/* Text Messages */}
             <View style={styles.textContainer}>
               <Text style={styles.promptText}>{currentPrompt}</Text>
-            </View>
-
-            {/* Buttons */}
-            <View style={styles.buttonContainer}>
-              <TouchableOpacity
-                style={styles.confirmButton}
-                onPress={handleConfirm}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.confirmButtonText}>{confirmText}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.cancelButton}
-                onPress={handleCancel}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.cancelButtonText}>{cancelText}</Text>
-              </TouchableOpacity>
+              <Text style={styles.subText}>
+                This will help you track your study progress and maintain focus throughout your session.
+              </Text>
             </View>
           </View>
+        </Animated.View>
+
+        {/* Bottom Buttons - Outside parent container */}
+        <View style={styles.bottomButtons}>
+          <TouchableOpacity
+            style={styles.confirmButton}
+            onPress={handleConfirm}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.confirmButtonText}>{confirmText}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.cancelButton}
+            onPress={handleCancel}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.cancelButtonText}>{cancelText}</Text>
+          </TouchableOpacity>
         </View>
-      </View>
+      </Pressable>
     </Modal>
   );
 }
@@ -147,103 +231,126 @@ export default function StudySessionPopup({ visible, onConfirm, onCancel }: Stud
 const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-  },
-  overlayTouchable: {
-    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    backdropFilter: 'blur(20px)',
   },
   sheet: {
     position: 'absolute',
-    bottom: 0,
-    width: width,
-    backgroundColor: Colors.surface,
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
+    bottom: 100, // Leave space for buttons
+    left: 0,
+    right: 0,
+    top: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
+    shadowOffset: { width: 0, height: -8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 25,
     elevation: 20,
     alignItems: 'center',
+    borderWidth: 0.5,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    backdropFilter: 'blur(25px)',
+  },
+  handleBar: {
+    width: 40,
+    height: 5,
+    backgroundColor: 'rgba(255, 255, 255, 0.4)',
+    borderRadius: 2.5,
+    marginTop: 12,
+    marginBottom: 20,
   },
   closeButton: {
     position: 'absolute',
     top: 16,
-    right: 16,
-    padding: 8,
-    backgroundColor: Colors.surfaceElevated,
-    borderRadius: 20,
+    right: 20,
+    padding: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 24,
     zIndex: 1,
+    backdropFilter: 'blur(10px)',
   },
   content: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
     width: '100%',
-    paddingTop: 60, // Space for close button
+    paddingTop: 60,
+    paddingHorizontal: 24,
   },
   avatarContainer: {
-    flex: 0.5, // 50% of content height
+    marginBottom: 20,
     justifyContent: 'center',
     alignItems: 'center',
   },
   avatar: {
-    width: width * 0.4, // 40% of screen width
-    height: width * 0.4,
+    width: width * 0.3,
+    height: width * 0.3,
     alignItems: 'center',
     justifyContent: 'center',
   },
   textContainer: {
-    flex: 0.3, // 30% for text
-    justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 20,
   },
   promptText: {
-    fontSize: 18,
+    fontSize: 20,
     color: Colors.text,
     textAlign: 'center',
     fontWeight: '600',
-    lineHeight: 24,
+    lineHeight: 26,
+    opacity: 0.9,
+    marginBottom: 12,
   },
-  buttonContainer: {
-    flex: 0.2, // 20% for buttons
+  subText: {
+    fontSize: 16,
+    color: Colors.text,
+    textAlign: 'center',
+    fontWeight: '400',
+    lineHeight: 22,
+    opacity: 0.7,
+  },
+  bottomButtons: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
+    borderWidth: 0.5,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    backdropFilter: 'blur(25px)',
   },
   confirmButton: {
     backgroundColor: Colors.primary,
     flex: 1,
-    marginRight: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    height: 60, // Increased height
-    borderRadius: 12,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
+    height: 70,
+    borderRadius: 0,
   },
   confirmButtonText: {
     color: Colors.text,
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
   cancelButton: {
-    backgroundColor: Colors.surfaceElevated,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     flex: 1,
-    marginLeft: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    height: 60, // Increased height
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: Colors.cardBorder,
+    height: 70,
+    borderRadius: 0,
+    borderLeftWidth: 1,
+    borderLeftColor: 'rgba(255, 255, 255, 0.1)',
   },
   cancelButtonText: {
     color: Colors.text,
     fontSize: 16,
     fontWeight: '600',
+    opacity: 0.8,
   },
 });
