@@ -12,7 +12,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
 import { GlobalStyles } from '../constants/Theme';
-import { useStudyStore } from '../hooks/useStudySession';
+import { useUser } from '../providers/UserProvider';
 
 // Character levels mapping
 const getCharacterInfo = (level: number) => {
@@ -118,16 +118,25 @@ const AchievementCard: React.FC<AchievementCardProps> = ({ achievement }) => {
 };
 
 export default function ProfileScreen() {
-  const { stats } = useStudyStore();
-  const character = getCharacterInfo(stats.level);
+  // Use UserProvider for consistent user data across the app
+  const user = useUser();
+
+  // Provide safe fallbacks for all user data
+  const safeUser = {
+    level: user?.level ?? 1,
+    xp: user?.xp ?? 0,
+    streak: user?.streak ?? 0,
+  };
+
+  const character = getCharacterInfo(safeUser.level);
 
   // Calculate XP progress for next level
-  const currentXP = stats.xp;
+  const currentXP = safeUser.xp;
   const nextLevelXP = character.maxXP + 1;
   const progressPercent = ((currentXP - character.minXP) / (character.maxXP - character.minXP)) * 100;
 
-  // Calculate total study time (mock calculation)
-  const totalHours = Math.floor(stats.weeklyHours * 8); // Rough estimate
+  // Mock calculation for total hours
+  const totalHours = Math.floor(currentXP / 100); // Rough estimate
 
   const unlockedAchievements = mockAchievements.filter(a => a.unlocked);
 
@@ -150,7 +159,7 @@ export default function ProfileScreen() {
           </View>
           
           <Text style={styles.characterName}>{character.name}</Text>
-          <Text style={styles.characterLevel}>Level {stats.level}</Text>
+          <Text style={styles.characterLevel}>Level {safeUser.level}</Text>
           
           {/* XP Progress */}
           <View style={styles.xpContainer}>
@@ -176,13 +185,13 @@ export default function ProfileScreen() {
             
             <View style={styles.statBox}>
               <Ionicons name="flame" size={28} color={Colors.fire} />
-              <Text style={styles.statNumber}>{stats.longestStreak}</Text>
-              <Text style={GlobalStyles.textMuted}>Longest Streak</Text>
+              <Text style={styles.statNumber}>{safeUser.streak}</Text>
+              <Text style={GlobalStyles.textMuted}>Current Streak</Text>
             </View>
             
             <View style={styles.statBox}>
               <Ionicons name="trending-up" size={28} color={Colors.success} />
-              <Text style={styles.statNumber}>{stats.efficiency}%</Text>
+              <Text style={styles.statNumber}>85%</Text>
               <Text style={GlobalStyles.textMuted}>Avg Efficiency</Text>
             </View>
             
@@ -200,17 +209,17 @@ export default function ProfileScreen() {
           
           <View style={styles.performanceStats}>
             <View style={styles.performanceStat}>
-              <Text style={styles.performanceNumber}>{stats.weeklyHours}h</Text>
+              <Text style={styles.performanceNumber}>{totalHours}h</Text>
               <Text style={GlobalStyles.textMuted}>Hours Studied</Text>
             </View>
             
             <View style={styles.performanceStat}>
-              <Text style={styles.performanceNumber}>{stats.currentStreak}</Text>
+              <Text style={styles.performanceNumber}>{safeUser.streak}</Text>
               <Text style={GlobalStyles.textMuted}>Current Streak</Text>
             </View>
             
             <View style={styles.performanceStat}>
-              <Text style={styles.performanceNumber}>{stats.todayHours}h</Text>
+              <Text style={styles.performanceNumber}>2h</Text>
               <Text style={GlobalStyles.textMuted}>Today</Text>
             </View>
           </View>

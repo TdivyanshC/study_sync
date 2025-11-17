@@ -116,7 +116,7 @@ export const useStudyStore = create<StudyStore>((set, get) => ({
         created_at: session.created_at,
       }));
 
-      // Calculate stats from profile and streak data
+      // Calculate stats from profile and streak data - with safety checks
       const profile = dashboardData.profile;
       const streak = dashboardData.streak;
 
@@ -126,11 +126,11 @@ export const useStudyStore = create<StudyStore>((set, get) => ({
       const stats: StudyStats = {
         todayHours: Math.floor(totalHours * 0.1), // Rough estimate for today
         weeklyHours: totalHours,
-        currentStreak: streak.current_streak,
-        longestStreak: streak.best_streak,
-        efficiency: Math.round(streak.average_efficiency),
-        level: profile.level,
-        xp: profile.xp,
+        currentStreak: streak?.current_streak || 0,
+        longestStreak: streak?.best_streak || 0,
+        efficiency: Math.round(streak?.average_efficiency || 0),
+        level: profile?.level || 1,
+        xp: profile?.xp || 0,
       };
 
       set({

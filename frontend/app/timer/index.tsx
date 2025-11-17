@@ -1,157 +1,154 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withRepeat,
-  withTiming,
-  Easing,
-} from 'react-native-reanimated';
+import LottieView from 'lottie-react-native';
 import { Colors } from '../../constants/Colors';
 import { GlobalStyles } from '../../constants/Theme';
 import { useTimer, useStudyStore } from '../../hooks/useStudySession';
+import { useUser } from '../../providers/UserProvider';
 import { router } from 'expo-router';
 
 const { width } = Dimensions.get('window');
 
-// Enhanced Burning Fire Animation Component
-const BurningFlame = ({ isActive }: { isActive: boolean }) => {
-  const scale1 = useSharedValue(1);
-  const scale2 = useSharedValue(1);
-  const scale3 = useSharedValue(1);
-  const opacity1 = useSharedValue(1);
-  const opacity2 = useSharedValue(0.8);
-  const opacity3 = useSharedValue(0.6);
-  const translateX = useSharedValue(0);
+// Available lottie animations
+const availableAnimations = [
+  require('../../assets/animations/avatar 1.json'),
+  require('../../assets/animations/Clock Lottie Animation.json'),
+  require('../../assets/animations/Loading 50 _ Among Us.json'),
+  require('../../assets/animations/Progress of loading hand.json'),
+  require('../../assets/animations/Running.json'),
+  require('../../assets/animations/Yin Yang.json'),
+];
 
-  React.useEffect(() => {
+// Loading Indicator Component
+const LoadingIndicator: React.FC = () => (
+  <View style={styles.loadingContainer}>
+    <ActivityIndicator size="large" color={Colors.primary} />
+    <Text style={styles.loadingText}>Loading timer...</Text>
+  </View>
+);
+
+// Lottie Animation Component
+const AnimatedLottie = ({ isActive, animationSource }: { isActive: boolean; animationSource: any }) => {
+  const lottieRef = useRef<LottieView>(null);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
     if (isActive) {
-      // Main flame - more dynamic
-      scale1.value = withRepeat(
-        withTiming(1.3, { duration: 600, easing: Easing.inOut(Easing.ease) }),
-        -1,
-        true
-      );
-      opacity1.value = withRepeat(
-        withTiming(0.8, { duration: 500, easing: Easing.inOut(Easing.ease) }),
-        -1,
-        true
-      );
-
-      // Middle flame
-      scale2.value = withRepeat(
-        withTiming(1.2, { duration: 700, easing: Easing.inOut(Easing.ease) }),
-        -1,
-        true
-      );
-      opacity2.value = withRepeat(
-        withTiming(0.6, { duration: 600, easing: Easing.inOut(Easing.ease) }),
-        -1,
-        true
-      );
-
-      // Inner flame
-      scale3.value = withRepeat(
-        withTiming(1.1, { duration: 800, easing: Easing.inOut(Easing.ease) }),
-        -1,
-        true
-      );
-      opacity3.value = withRepeat(
-        withTiming(0.4, { duration: 700, easing: Easing.inOut(Easing.ease) }),
-        -1,
-        true
-      );
-
-      // Sway motion
-      translateX.value = withRepeat(
-        withTiming(10, { duration: 2000, easing: Easing.inOut(Easing.ease) }),
-        -1,
-        true
-      );
+      setTimeout(() => setReady(true), 100);
     } else {
-      scale1.value = withTiming(1);
-      scale2.value = withTiming(1);
-      scale3.value = withTiming(1);
-      opacity1.value = withTiming(1);
-      opacity2.value = withTiming(0.8);
-      opacity3.value = withTiming(0.6);
+      setReady(false);
     }
   }, [isActive]);
 
-  const animatedStyle1 = useAnimatedStyle(() => ({
-    transform: [{ scale: scale1.value }, { translateX: translateX.value }],
-    opacity: opacity1.value,
-  }));
-
-  const animatedStyle2 = useAnimatedStyle(() => ({
-    transform: [{ scale: scale2.value }, { translateX: translateX.value * 0.8 }],
-    opacity: opacity2.value,
-  }));
-
-  const animatedStyle3 = useAnimatedStyle(() => ({
-    transform: [{ scale: scale3.value }, { translateX: translateX.value * 0.6 }],
-    opacity: opacity3.value,
-  }));
-
   return (
-    <View style={styles.flameContainer}>
-      {/* Outer flame */}
-      <Animated.View style={[styles.flameLayer, animatedStyle1]}>
-        <Ionicons name="flame" size={150} color="#ff4500" />
-      </Animated.View>
-      {/* Middle flame */}
-      <Animated.View style={[styles.flameLayer, animatedStyle2]}>
-        <Ionicons name="flame" size={120} color="#ff6347" />
-      </Animated.View>
-      {/* Inner flame */}
-      <Animated.View style={[styles.flameLayer, animatedStyle3]}>
-        <Ionicons name="flame" size={90} color="#ffd700" />
-      </Animated.View>
-      {/* Core */}
-      <Ionicons name="flame" size={60} color="#ffffff" />
+    <View style={styles.lottieContainer}>
+      {ready && (
+        <LottieView
+          ref={lottieRef}
+          source={JSON.parse(JSON.stringify(animationSource))}
+          autoPlay={isActive}
+          loop={isActive}
+          renderMode="HARDWARE"
+          resizeMode="cover"
+          enableMergePathsAndroidForKitKatAndAbove={true}
+          style={styles.lottie}
+        />
+      )}
     </View>
   );
 };
 
-export default function TimerScreen() {
-  const { formattedTime, isRunning } = useTimer();
-  const { currentSession, stopSession, takeBreak } = useStudyStore();
+// Main Timer Screen Component
+function TimerScreen() {
+  // Use UserProvider for safe user data
+  const user = useUser();
+  const { formattedTime, isRunning, start, stop, reset } = useTimer();
+  const { currentSession, stopSession, takeBreak, resumeFromBreak } = useStudyStore();
+  
+  // State for animation selection
+  const [currentAnimation, setCurrentAnimation] = useState(availableAnimations[0]);
+  const [isStudying, setIsStudying] = useState(false);
 
-  const handleCompleteTask = () => {
-    stopSession();
-    router.back();
-  };
+  // Show loading state while user data is being loaded
+  if (!user?.isLoaded) {
+    return <LoadingIndicator />;
+  }
 
-  const handlePause = () => {
-    takeBreak();
-  };
+  // Select random animation on component mount
+  useEffect(() => {
+    const randomIndex = Math.floor(Math.random() * availableAnimations.length);
+    setCurrentAnimation(availableAnimations[randomIndex]);
+  }, []);
+
+  // Sync timer with session state
+  useEffect(() => {
+    if (currentSession && !currentSession.isBreak && !isStudying) {
+      // Session started, begin studying
+      setIsStudying(true);
+      start(); // Start the timer
+    } else if (!currentSession || currentSession.isBreak) {
+      // Session paused or ended
+      setIsStudying(false);
+      stop(); // Stop the timer
+    }
+  }, [currentSession, start, stop]);
+
+  // Defensive error handling for all handlers
+  const handleCompleteTask = React.useCallback(() => {
+    try {
+      reset(); // Reset timer to 0
+      stopSession();
+      router.back();
+    } catch (error) {
+      console.error('Error completing task:', error);
+      reset(); // Reset timer even on error
+      router.back();
+    }
+  }, [stopSession, reset]);
+
+  const handlePause = React.useCallback(() => {
+    try {
+      takeBreak();
+    } catch (error) {
+      console.error('Error pausing timer:', error);
+      // Graceful fallback - no crash
+    }
+  }, [takeBreak]);
+
+  const handleResume = React.useCallback(() => {
+    try {
+      resumeFromBreak();
+    } catch (error) {
+      console.error('Error resuming timer:', error);
+      // Graceful fallback - no crash
+    }
+  }, [resumeFromBreak]);
+
+  const handleBack = React.useCallback(() => {
+    try {
+      reset(); // Reset timer when going back
+      router.back();
+    } catch (error) {
+      console.error('Error navigating back:', error);
+      reset();
+      router.back();
+    }
+  }, [reset]);
 
   return (
-    <View style={[GlobalStyles.safeArea, { backgroundColor: Colors.background, paddingTop: 50 }]}>
+    <View style={styles.customSafeArea}>
       <StatusBar style="light" translucent backgroundColor="transparent" />
 
       <View style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={GlobalStyles.title}>Focus Session</Text>
-          <Text style={GlobalStyles.textSecondary}>
-            Stay focused and productive
-          </Text>
-        </View>
-
-        {/* Burning Flame Animation */}
-        <View style={styles.flameWrapper}>
-          <BurningFlame isActive={isRunning && !currentSession?.isBreak} />
-        </View>
-
         {/* Timer Display */}
         <View style={styles.timerContainer}>
           <Text style={styles.timerText}>{formattedTime}</Text>
@@ -160,15 +157,35 @@ export default function TimerScreen() {
           </Text>
         </View>
 
+        {/* Lottie Animation */}
+        <View style={styles.animationWrapper}>
+          <AnimatedLottie
+            isActive={isStudying && !currentSession?.isBreak}
+            animationSource={currentAnimation}
+          />
+        </View>
+
         {/* Action Buttons */}
         <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={[GlobalStyles.glassCard, styles.actionButton]}
-            onPress={handlePause}
-          >
-            <Ionicons name="pause" size={20} color={Colors.warning} />
-            <Text style={[styles.buttonText, { color: Colors.warning }]}>Pause</Text>
-          </TouchableOpacity>
+          {currentSession?.isBreak ? (
+            // Show Resume button when on break
+            <TouchableOpacity
+              style={[GlobalStyles.glassCard, styles.actionButton]}
+              onPress={handleResume}
+            >
+              <Ionicons name="play" size={20} color={Colors.primary} />
+              <Text style={[styles.buttonText, { color: Colors.primary }]}>Resume</Text>
+            </TouchableOpacity>
+          ) : (
+            // Show Pause button when actively studying
+            <TouchableOpacity
+              style={[GlobalStyles.glassCard, styles.actionButton]}
+              onPress={handlePause}
+            >
+              <Ionicons name="pause" size={20} color={Colors.warning} />
+              <Text style={[styles.buttonText, { color: Colors.warning }]}>Pause</Text>
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity
             style={[GlobalStyles.glassCard, styles.actionButton]}
@@ -187,22 +204,43 @@ export default function TimerScreen() {
             </Text>
           </View>
         )}
+
+        {/* Back Button */}
+        <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+          <Ionicons name="arrow-back" size={24} color={Colors.text} />
+          <Text style={styles.backButtonText}>Back</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  customSafeArea: {
+    flex: 1,
+    backgroundColor: Colors.background,
+    paddingTop: 0,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: Colors.background,
+    gap: 16,
+  },
+  loadingText: {
+    color: Colors.text,
+    fontSize: 16,
+    marginTop: 8,
+  },
   container: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 40,
+    paddingTop: 0,
+    paddingBottom: 20,
+    paddingHorizontal: 0,
     backgroundColor: Colors.background,
-  },
-  header: {
-    alignItems: 'center',
-    paddingHorizontal: 20,
   },
   timerContainer: {
     alignItems: 'center',
@@ -215,17 +253,18 @@ const styles = StyleSheet.create({
     fontFamily: 'monospace',
     marginBottom: 10,
   },
-  flameWrapper: {
+  lottieContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  lottie: {
+    width: 200,
+    height: 200,
+  },
+  animationWrapper: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  flameContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  flameLayer: {
-    position: 'absolute',
   },
   buttonContainer: {
     flexDirection: 'row',
@@ -254,4 +293,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     marginBottom: 20,
   },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: Colors.surfaceElevated,
+    borderRadius: 12,
+    marginBottom: 20,
+  },
+  backButtonText: {
+    color: Colors.text,
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
 });
+
+export default TimerScreen;
