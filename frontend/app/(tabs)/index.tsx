@@ -28,7 +28,10 @@ export default function Index() {
       onPrimary: () => {
         closePopup();
         startSession();
-        router.push('/timer');
+        router.push({
+          pathname: '/timer',
+          params: { modal: 'true' }
+        });
       },
       onSecondary: () => closePopup(),
     });

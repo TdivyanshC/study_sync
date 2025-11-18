@@ -7,7 +7,6 @@ import {
   Dimensions,
   ActivityIndicator,
 } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import LottieView from 'lottie-react-native';
 import { Colors } from '../../constants/Colors';
@@ -146,8 +145,6 @@ function TimerScreen() {
 
   return (
     <View style={styles.customSafeArea}>
-      <StatusBar style="light" translucent backgroundColor="transparent" />
-
       <View style={styles.container}>
         {/* Timer Display */}
         <View style={styles.timerContainer}>
@@ -237,14 +234,14 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 0,
-    paddingBottom: 20,
+    paddingTop: 40,
+    paddingBottom: 0,
     paddingHorizontal: 0,
     backgroundColor: Colors.background,
   },
   timerContainer: {
     alignItems: 'center',
-    marginTop: 20,
+    marginTop: 0,
   },
   timerText: {
     fontSize: 48,
@@ -258,8 +255,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   lottie: {
-    width: 200,
-    height: 200,
+    width: 280,
+    height: 280,
   },
   animationWrapper: {
     flex: 1,

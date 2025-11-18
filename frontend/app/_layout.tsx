@@ -18,8 +18,9 @@ export default function RootLayout() {
     <UserProvider>
       <QueryClientProvider client={queryClient}>
         <PopupProvider>
-          <Stack>
+          <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="timer" options={{ headerShown: false }} />
           </Stack>
         </PopupProvider>
       </QueryClientProvider>
