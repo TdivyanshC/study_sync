@@ -127,3 +127,76 @@ CREATE POLICY "Allow all operations on space_memberships" ON space_memberships F
 CREATE POLICY "Allow all operations on user_badges" ON user_badges FOR ALL USING (true);
 CREATE POLICY "Allow all operations on space_activity" ON space_activity FOR ALL USING (true);
 CREATE POLICY "Allow all operations on space_chat" ON space_chat FOR ALL USING (true);
+
+-- ================ GAMIFIED STUDY SYSTEM TABLES ================
+
+-- XP History Table
+CREATE TABLE IF NOT EXISTS xp_history (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  amount INTEGER NOT NULL,
+  source VARCHAR(50) NOT NULL,  -- 'session', 'streak', 'daily_bonus', etc.
+  meta JSONB DEFAULT '{}'::jsonb,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Session Audit Table
+CREATE TABLE IF NOT EXISTS session_audit (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  session_id UUID REFERENCES study_sessions(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  suspicion_score INTEGER DEFAULT 0,
+  reasons TEXT[] DEFAULT ARRAY[]::text[],
+  events JSONB DEFAULT '{}'::jsonb,
+  is_flagged BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Session Events Table
+CREATE TABLE IF NOT EXISTS session_events (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  session_id UUID REFERENCES study_sessions(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  event_type VARCHAR(50) NOT NULL,  -- 'heartbeat', 'pause', 'resume', 'end'
+  event_payload JSONB DEFAULT '{}'::jsonb,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Daily User Metrics Table
+CREATE TABLE IF NOT EXISTS daily_user_metrics (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  date DATE NOT NULL,
+  total_minutes INTEGER DEFAULT 0,
+  xp_earned INTEGER DEFAULT 0,
+  streak_active BOOLEAN DEFAULT FALSE,
+  space_breakdown JSONB DEFAULT '{}'::jsonb,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(user_id, date)
+);
+
+-- Indexes for gamification tables
+CREATE INDEX IF NOT EXISTS idx_xp_history_user_id ON xp_history(user_id);
+CREATE INDEX IF NOT EXISTS idx_xp_history_created_at ON xp_history(created_at);
+
+CREATE INDEX IF NOT EXISTS idx_session_events_session_id ON session_events(session_id);
+CREATE INDEX IF NOT EXISTS idx_session_events_user_id ON session_events(user_id);
+CREATE INDEX IF NOT EXISTS idx_session_events_created_at ON session_events(created_at);
+
+CREATE INDEX IF NOT EXISTS idx_session_audit_session_id ON session_audit(session_id);
+CREATE INDEX IF NOT EXISTS idx_session_audit_user_id ON session_audit(user_id);
+CREATE INDEX IF NOT EXISTS idx_session_audit_created_at ON session_audit(created_at);
+
+CREATE INDEX IF NOT EXISTS idx_daily_metrics_user_id ON daily_user_metrics(user_id);
+CREATE INDEX IF NOT EXISTS idx_daily_metrics_date ON daily_user_metrics(date);
+
+-- RLS for gamification tables
+ALTER TABLE xp_history ENABLE ROW LEVEL SECURITY;
+ALTER TABLE session_audit ENABLE ROW LEVEL SECURITY;
+ALTER TABLE session_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE daily_user_metrics ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow all on xp_history" ON xp_history FOR ALL USING (true);
+CREATE POLICY "Allow all on session_audit" ON session_audit FOR ALL USING (true);
+CREATE POLICY "Allow all on session_events" ON session_events FOR ALL USING (true);
+CREATE POLICY "Allow all on daily_user_metrics" ON daily_user_metrics FOR ALL USING (true);

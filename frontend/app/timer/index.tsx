@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Dimensions,
   ActivityIndicator,
+  Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import LottieView from 'lottie-react-native';
@@ -14,6 +15,8 @@ import { GlobalStyles } from '../../constants/Theme';
 import { useTimer, useStudyStore } from '../../hooks/useStudySession';
 import { useUser } from '../../providers/UserProvider';
 import { router } from 'expo-router';
+import { sessionApi, SessionSummary } from '../../src/api/sessionApi';
+import SessionCompleteScreen from '../../components/SessionCompleteScreen';
 
 const { width } = Dimensions.get('window');
 
@@ -76,6 +79,11 @@ function TimerScreen() {
   // State for animation selection
   const [currentAnimation, setCurrentAnimation] = useState(availableAnimations[0]);
   const [isStudying, setIsStudying] = useState(false);
+  
+  // State for session completion
+  const [showCompleteScreen, setShowCompleteScreen] = useState(false);
+  const [sessionSummary, setSessionSummary] = useState<SessionSummary | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // Show loading state while user data is being loaded
   if (!user?.isLoaded) {
@@ -102,17 +110,48 @@ function TimerScreen() {
   }, [currentSession, start, stop]);
 
   // Defensive error handling for all handlers
-  const handleCompleteTask = React.useCallback(() => {
+  const handleCompleteTask = React.useCallback(async () => {
     try {
-      reset(); // Reset timer to 0
+      setIsProcessing(true);
+      
+      // Stop the session and get session ID
+      const sessionId = currentSession?.id;
+      if (!sessionId) {
+        console.error('No session ID found');
+        reset();
+        stopSession();
+        router.back();
+        return;
+      }
+      
+      // Stop the timer
+      reset();
       stopSession();
-      router.back();
+      
+      // Process session through unified game engine
+      console.log('Processing session:', sessionId);
+      const summary = await sessionApi.processSession(sessionId);
+      
+      // Show completion screen with results
+      setSessionSummary(summary);
+      setShowCompleteScreen(true);
+      
     } catch (error) {
       console.error('Error completing task:', error);
-      reset(); // Reset timer even on error
+      // Fallback: just go back without showing results
+      reset();
       router.back();
+    } finally {
+      setIsProcessing(false);
     }
-  }, [stopSession, reset]);
+  }, [currentSession, stopSession, reset]);
+  
+  // Handle closing the completion screen
+  const handleCloseCompleteScreen = React.useCallback(() => {
+    setShowCompleteScreen(false);
+    setSessionSummary(null);
+    router.back();
+  }, []);
 
   const handlePause = React.useCallback(() => {
     try {
@@ -187,9 +226,16 @@ function TimerScreen() {
           <TouchableOpacity
             style={[GlobalStyles.glassCard, styles.actionButton]}
             onPress={handleCompleteTask}
+            disabled={isProcessing}
           >
-            <Ionicons name="checkmark" size={20} color={Colors.success} />
-            <Text style={[styles.buttonText, { color: Colors.success }]}>Complete Task</Text>
+            {isProcessing ? (
+              <ActivityIndicator size="small" color={Colors.success} />
+            ) : (
+              <>
+                <Ionicons name="checkmark" size={20} color={Colors.success} />
+                <Text style={[styles.buttonText, { color: Colors.success }]}>Complete Task</Text>
+              </>
+            )}
           </TouchableOpacity>
         </View>
 
@@ -208,6 +254,21 @@ function TimerScreen() {
           <Text style={styles.backButtonText}>Back</Text>
         </TouchableOpacity>
       </View>
+      
+      {/* Session Complete Modal */}
+      <Modal
+        visible={showCompleteScreen}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={handleCloseCompleteScreen}
+      >
+        {sessionSummary && (
+          <SessionCompleteScreen
+            summary={sessionSummary}
+            onClose={handleCloseCompleteScreen}
+          />
+        )}
+      </Modal>
     </View>
   );
 }

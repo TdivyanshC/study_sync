@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
 import { GlobalStyles } from '../../constants/Theme';
 import { useUser } from '../../providers/UserProvider';
+import StreakWidget from '../../src/components/StreakWidget';
 
 // Character levels mapping
 const getCharacterInfo = (level: number) => {
@@ -150,6 +151,14 @@ export default function ProfileScreen() {
           <Text style={GlobalStyles.title}>Profile</Text>
           <Text style={GlobalStyles.textSecondary}>Your study journey</Text>
         </View>
+
+        {/* Streak Widget */}
+        <StreakWidget
+          userId="user1"
+          onStreakUpdate={(streakData) => {
+            console.log('[Profile] Streak updated:', streakData);
+          }}
+        />
 
         {/* Character Card */}
         <View style={[GlobalStyles.glassCard, styles.characterCard]}>

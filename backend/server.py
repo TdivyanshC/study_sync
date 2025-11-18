@@ -14,6 +14,13 @@ import bcrypt
 import jwt
 from services.supabase_db import supabase_db
 
+# Import gamification components
+from services.gamification.xp_service import XPService
+from services.gamification.ranking_service import RankingService
+from routes.gamification_routes import create_gamification_routes
+from routes.ranking_routes import create_ranking_routes
+from routes.session_routes import session_bp
+
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -887,6 +894,31 @@ async def insert_sample_data():
             "success": False,
             "error": str(e)
         }
+
+# Initialize Gamification and Ranking Services
+if supabase:
+    try:
+        # Initialize Gamification Service
+        xp_service = XPService(supabase)
+        gamification_router = create_gamification_routes(xp_service)
+        app.include_router(gamification_router)
+        print("Gamification system initialized successfully")
+        
+        # Initialize Ranking Service (Module D3)
+        ranking_service = RankingService(supabase)
+        ranking_router = create_ranking_routes(ranking_service)
+        app.include_router(ranking_router)
+        print("Ranking system (Module D3) initialized successfully")
+        
+        # Initialize Session Processing Routes (Unified Game Engine)
+        app.include_router(session_bp)
+        print("Session processing engine initialized successfully")
+        
+    except Exception as e:
+        print(f"Failed to initialize gamification/ranking systems: {e}")
+        print("Gamification and ranking features will not be available")
+else:
+    print("Cannot initialize gamification/ranking systems: Supabase client not available")
 
 # Include the router in the main app
 app.include_router(api_router)
