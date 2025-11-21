@@ -16,7 +16,8 @@
         "backgroundColor": "#000000"
       },
       "edgeToEdgeEnabled": true,
-      "jsEngine": "hermes"
+      "jsEngine": "hermes",
+      "networkSecurityConfig": "./android/app/src/main/res/xml/network_security_config.xml"
     },
     "web": {
       "bundler": "metro",

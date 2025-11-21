@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { create } from 'zustand';
 import { apiService, DashboardData, StudySession as ApiStudySession } from '../services/apiService';
+import { DEMO_USER } from '../lib/constants';
 
 // Use real user ID from populated data
-const USER_ID = 'user1';
+const USER_ID = DEMO_USER;
 
 // Enhanced character progression system
 export const getCharacterLevel = (totalHours: number) => {

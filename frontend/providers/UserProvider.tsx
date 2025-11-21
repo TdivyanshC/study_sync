@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { apiService } from '../services/apiService';
+import { DEMO_USER } from '../lib/constants';
 
 // User context interface
 interface UserContextType {
@@ -24,7 +25,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     async function loadUser() {
       try {
         console.log('🔄 Loading user data...');
-        const data = await apiService.getUserDashboard('user1');
+        const data = await apiService.getUserDashboard(DEMO_USER);
         
         // Even if data is undefined, we provide safe fallbacks
         const profile = data?.profile || {};

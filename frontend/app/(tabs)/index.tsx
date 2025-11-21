@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -14,10 +14,60 @@ import { router } from 'expo-router';
 import { useStudyStore } from '../../hooks/useStudySession';
 import { usePopup } from '../../providers/PopupProvider';
 import { getRandomJoke } from '../../data/jokes';
+import { gamificationApi } from '../../src/api/gamificationApi';
+import { DEMO_USER } from '../../lib/constants';
 
 export default function Index() {
   const { startSession } = useStudyStore();
   const { openPopup, closePopup } = usePopup();
+  
+  // State for today's metrics
+  const [todayMetrics, setTodayMetrics] = useState({
+    hoursStudied: 0,
+    streak: 0,
+    xpEarned: 0,
+    loading: true,
+  });
+
+  // Fetch today's metrics on component mount and when screen is focused
+  useEffect(() => {
+    loadTodayMetrics();
+    
+    // Refresh data when user returns to this screen
+    const interval = setInterval(() => {
+      loadTodayMetrics();
+    }, 30000); // Refresh every 30 seconds
+    
+    return () => clearInterval(interval);
+  }, []);
+
+  const loadTodayMetrics = async () => {
+    try {
+      const userId = DEMO_USER;
+      
+      // Fetch today's metrics (hours and XP)
+      const metrics = await gamificationApi.getTodayMetrics(userId);
+      
+      // Fetch user XP stats (includes streak)
+      const xpStats = await gamificationApi.getUserXPStats(userId);
+      
+      setTodayMetrics({
+        hoursStudied: Math.round((metrics.total_focus_time || 0) / 60 * 10) / 10, // Convert to hours with 1 decimal
+        streak: xpStats.current_streak || 0,
+        xpEarned: 0, // XP earned is no longer available from this endpoint
+        loading: false,
+      });
+    } catch (error) {
+      console.error('Failed to load today metrics:', error);
+      // Set to 0 if error
+      setTodayMetrics({
+        hoursStudied: 0,
+        streak: 0,
+        xpEarned: 0,
+        loading: false,
+      });
+    }
+  };
 
   const handleStartSession = () => {
     openPopup({
@@ -68,17 +118,23 @@ export default function Index() {
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
               <Ionicons name="time" size={24} color={Colors.accent} />
-              <Text style={styles.statNumber}>0h</Text>
+              <Text style={styles.statNumber}>
+                {todayMetrics.loading ? '...' : `${todayMetrics.hoursStudied}h`}
+              </Text>
               <Text style={GlobalStyles.textMuted}>Studied</Text>
             </View>
             <View style={styles.statItem}>
               <Ionicons name="flame" size={24} color={Colors.fire} />
-              <Text style={styles.statNumber}>0</Text>
+              <Text style={styles.statNumber}>
+                {todayMetrics.loading ? '...' : todayMetrics.streak}
+              </Text>
               <Text style={GlobalStyles.textMuted}>Streak</Text>
             </View>
             <View style={styles.statItem}>
               <Ionicons name="trophy" size={24} color={Colors.streak} />
-              <Text style={styles.statNumber}>0</Text>
+              <Text style={styles.statNumber}>
+                {todayMetrics.loading ? '...' : todayMetrics.xpEarned}
+              </Text>
               <Text style={GlobalStyles.textMuted}>XP</Text>
             </View>
           </View>

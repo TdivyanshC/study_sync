@@ -14,6 +14,7 @@ import { Colors } from '../../constants/Colors';
 import { GlobalStyles } from '../../constants/Theme';
 import { useUser } from '../../providers/UserProvider';
 import StreakWidget from '../../src/components/StreakWidget';
+import { DEMO_USER } from '../../lib/constants';
 
 // Character levels mapping
 const getCharacterInfo = (level: number) => {
@@ -154,7 +155,7 @@ export default function ProfileScreen() {
 
         {/* Streak Widget */}
         <StreakWidget
-          userId="user1"
+          userId={DEMO_USER}
           onStreakUpdate={(streakData) => {
             console.log('[Profile] Streak updated:', streakData);
           }}

@@ -22,9 +22,10 @@ import { realtimeClient } from '../services/realtimeClient';
 import ActivityCard from '../components/ActivityCard';
 import ChatInput from '../components/ChatInput';
 import BadgePopup from '../components/BadgePopup';
+import { DEMO_USER } from '../lib/constants';
 
 // Use real user ID from populated data
-const USER_ID = 'user1';
+const USER_ID = DEMO_USER;
 
 interface ExtendedSpace extends Space {
   isJoined: boolean;

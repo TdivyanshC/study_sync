@@ -44,8 +44,8 @@ class StreakService:
                 'user_id', user_id
             ).order('created_at').execute()
             
-            if sessions_result.error:
-                logger.error(f"Failed to fetch sessions: {sessions_result.error}")
+            if not sessions_result.data:
+                logger.error("Failed to fetch sessions")
                 return {'success': False, 'message': 'Failed to fetch sessions'}
             
             sessions = sessions_result.data
@@ -114,7 +114,7 @@ class StreakService:
                 'user_id', user_id
             ).order('created_at').execute()
             
-            if sessions_result.error:
+            if not sessions_result.data:
                 return {'success': False, 'message': 'Failed to check streak continuity'}
             
             sessions = sessions_result.data
@@ -161,7 +161,7 @@ class StreakService:
                 'user_id', user_id
             ).order('created_at').execute()
             
-            if sessions_result.error:
+            if not sessions_result.data:
                 return {'success': False, 'message': 'Failed to calculate streak bonus'}
             
             sessions = sessions_result.data
@@ -202,7 +202,7 @@ class StreakService:
                 'user_id', user_id
             ).order('created_at').execute()
             
-            if sessions_result.error:
+            if not sessions_result.data:
                 return {'success': False, 'message': 'Failed to apply streak multiplier'}
             
             sessions = sessions_result.data
@@ -246,7 +246,7 @@ class StreakService:
                 'user_id', user_id
             ).gte('date', start_date.isoformat()).lte('date', end_date.isoformat()).order('date').execute()
             
-            if daily_result.error:
+            if not daily_result.data:
                 return {'success': False, 'message': 'Failed to fetch streak analytics'}
             
             daily_records = daily_result.data

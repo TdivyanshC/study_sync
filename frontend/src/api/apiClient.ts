@@ -5,6 +5,22 @@
 
 import { gamificationApi } from './gamificationApi';
 import { sessionApi } from './sessionApi';
+import { getApiBaseUrl, buildApiUrl, API_ENDPOINTS } from '../lib/apiConfig';
+
+// Custom error classes for better error handling
+class NetworkError extends Error {
+  constructor(message: string, public status: number, public responseText: string) {
+    super(message);
+    this.name = 'NetworkError';
+  }
+}
+
+class NetworkRetryableError extends Error {
+  constructor(message: string, public status: number, public responseText: string) {
+    super(message);
+    this.name = 'NetworkRetryableError';
+  }
+}
 
 // Optional imports with fallbacks for web compatibility
 let SecureStore: any = null;
@@ -180,12 +196,31 @@ export interface BackendSessionSummary {
 }
 
 class ApiClient {
-  private baseUrl: string;
-  private maxRetries: number = 3;
+  private baseUrl: string = "";
+  private apiBaseUrl: string = ""; // API routes with /api prefix
+  private maxRetries: number = 5;
   private retryDelay: number = 1000;
+  private maxRetryDelay: number = 8000;
+  private initialized: boolean = false;
 
   constructor() {
-    this.baseUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000/api';
+    // Use centralized API configuration
+    this.baseUrl = getApiBaseUrl().replace('/api', '');
+    this.apiBaseUrl = getApiBaseUrl();
+    this.initialized = true;
+    
+    console.log(`🎯 ApiClient initialized with URL: ${this.apiBaseUrl}`);
+  }
+
+
+
+  private ensureInitialized() {
+    if (!this.initialized) {
+      console.warn('⚠️ API Client not initialized yet, using fallback URL');
+      this.baseUrl = "http://localhost:8000";
+      this.apiBaseUrl = "http://localhost:8000/api";
+      this.initialized = true;
+    }
   }
 
   /**
@@ -201,14 +236,46 @@ class ApiClient {
   }
 
   /**
-   * Make authenticated API request with retry logic
+   * Create AbortController with timeout for cross-platform compatibility
+   */
+  private createTimeoutController(timeoutMs: number = 30000): AbortController | { signal?: AbortSignal } {
+    // Fallback for environments without AbortController
+    if (typeof AbortController === 'undefined') {
+      console.log('⚠️ AbortController not available, skipping timeout');
+      return { signal: undefined };
+    }
+    
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      try {
+        controller.abort();
+      } catch (e) {
+        console.log('Timeout abort failed:', e);
+      }
+    }, timeoutMs);
+    
+    // Cleanup timeout when signal is aborted
+    controller.signal.addEventListener('abort', () => {
+      clearTimeout(timeoutId);
+    });
+    
+    return controller;
+  }
+
+  /**
+   * Make authenticated API request with exponential backoff retry logic
    */
   private async makeRequest<T>(
     endpoint: string,
     options: RequestInit = {},
     retryCount: number = 0
   ): Promise<T> {
+    const url = `${this.apiBaseUrl}${endpoint}`;
+    const method = options.method || 'GET';
+    
     try {
+      console.log(`🌐 [${retryCount > 0 ? 'RETRY' : 'REQUEST'}] ${method} ${url}`);
+      
       // Check network connectivity
       const state = await NetInfo.fetch();
       if (!state.isConnected) {
@@ -218,6 +285,8 @@ class ApiClient {
       const token = await this.getAuthToken();
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
+        'X-Client': 'StudySync-Frontend',
+        'X-Request-ID': `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         ...options.headers as Record<string, string>,
       };
 
@@ -225,115 +294,142 @@ class ApiClient {
         headers.Authorization = `Bearer ${token}`;
       }
 
-      const response = await fetch(`${this.baseUrl}${endpoint}`, {
+      // Create timeout controller for cross-platform compatibility
+      const timeoutController = this.createTimeoutController(30000); // 30 second timeout
+      
+      const response = await fetch(url, {
         ...options,
         headers,
+        signal: timeoutController.signal,
       });
 
+      console.log(`📡 Response: ${response.status} ${response.statusText} for ${method} ${url}`);
+
       if (!response.ok) {
+        const errorText = await response.text().catch(() => 'Unable to read error response');
+        const errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        
+        console.error(`❌ Network Error: ${errorMessage}`);
+        console.error(`🔍 Error Details: ${errorText}`);
+        
         if (response.status === 401 && retryCount < this.maxRetries) {
-          console.log('Token expired, retrying...');
+          console.log('🔑 Token expired, retrying...');
           return this.makeRequest(endpoint, options, retryCount + 1);
         }
         
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        if (response.status >= 500 && retryCount < this.maxRetries) {
+          console.log(`🔄 Server error ${response.status}, retrying... (${retryCount + 1}/${this.maxRetries})`);
+          throw new NetworkRetryableError(errorMessage, response.status, errorText);
+        }
+        
+        throw new NetworkError(errorMessage, response.status, errorText);
       }
 
-      return await response.json();
+      const data = await response.json();
+      console.log(`✅ Success: ${method} ${url}`);
+      return data;
+      
     } catch (error) {
+      // Handle timeout errors specifically
+      if (error instanceof Error) {
+        if (error.name === 'AbortError' || error.message.includes('aborted')) {
+          console.error(`⏰ Request timeout: ${url}`);
+          if (retryCount < this.maxRetries) {
+            const delay = Math.min(this.retryDelay * Math.pow(2, retryCount), this.maxRetryDelay);
+            console.log(`⏳ Retrying due to timeout in ${delay}ms... (${retryCount + 1}/${this.maxRetries})`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+            return this.makeRequest(endpoint, options, retryCount + 1);
+          }
+          throw new NetworkRetryableError('Request timeout', 408, 'Request timed out');
+        }
+      }
+      
+      // Handle network timeouts and connection errors
+      if (error instanceof TypeError && error.message.includes('Network request failed')) {
+        console.error(`🔥 Network Error: ${error.message}`);
+      } else if (error instanceof NetworkRetryableError) {
+        console.error(`🔄 Retryable Error: ${error.message}`);
+      } else if (error instanceof NetworkError) {
+        console.error(`❌ Network Error: ${error.message}`);
+      } else if (error instanceof Error) {
+        console.error(`💥 Unexpected Error: ${error.message}`);
+      } else {
+        console.error(`💥 Unknown Error: ${error}`);
+      }
+
       if (retryCount < this.maxRetries) {
-        console.log(`Request failed, retrying... (${retryCount + 1}/${this.maxRetries})`);
-        await new Promise(resolve => setTimeout(resolve, this.retryDelay * Math.pow(2, retryCount)));
+        const delay = Math.min(this.retryDelay * Math.pow(2, retryCount), this.maxRetryDelay);
+        console.log(`⏳ Retrying in ${delay}ms... (${retryCount + 1}/${this.maxRetries})`);
+        
+        await new Promise(resolve => setTimeout(resolve, delay));
         return this.makeRequest(endpoint, options, retryCount + 1);
       }
       
-      throw error;
+      // Final failure - provide helpful error message
+      let finalError: Error;
+      if (error instanceof NetworkError || error instanceof NetworkRetryableError) {
+        finalError = error;
+      } else if (error instanceof Error) {
+        finalError = new NetworkError(`Request failed after ${this.maxRetries} retries: ${error.message}`, 0, String(error));
+      } else {
+        finalError = new NetworkError(`Request failed after ${this.maxRetries} retries: ${String(error)}`, 0, String(error));
+      }
+        
+      console.error(`💀 Final failure: ${finalError.message}`);
+      throw finalError;
     }
   }
 
   // Health Check
   async getHealth(): Promise<BackendHealthResponse> {
-    return this.makeRequest<BackendHealthResponse>('/health');
+    return this.makeRequest<BackendHealthResponse>(API_ENDPOINTS.HEALTH);
   }
 
   // Session Management Endpoints
   async startSession(request: SessionStartRequest): Promise<SessionStartResponse> {
-    return this.makeRequest<SessionStartResponse>('/session/start', {
+    return this.makeRequest<SessionStartResponse>(API_ENDPOINTS.SESSION_START, {
       method: 'POST',
       body: JSON.stringify(request),
     });
   }
 
   async confirmSession(request: SessionConfirmRequest): Promise<{ success: boolean; message: string }> {
-    return this.makeRequest('/session/confirm', {
+    return this.makeRequest(API_ENDPOINTS.SESSION_CONFIRM, {
       method: 'POST',
       body: JSON.stringify(request),
     });
   }
 
   async endSession(request: SessionEndRequest): Promise<{ success: boolean; xp_gained: number; level_up: boolean }> {
-    return this.makeRequest('/session/end', {
+    return this.makeRequest(API_ENDPOINTS.SESSION_END, {
       method: 'POST',
       body: JSON.stringify(request),
     });
   }
 
-  // XP Endpoints
-  async getXPUser(userId: string): Promise<XPUserResponse> {
-    return this.makeRequest<XPUserResponse>(`/xp/user/${userId}`);
-  }
-
-  // Streak Endpoints
-  async getStreakUser(userId: string): Promise<StreakUserResponse> {
-    return this.makeRequest<StreakUserResponse>(`/streak/user/${userId}`);
-  }
-
-  // Audit Endpoints
-  async getAuditUser(userId: string): Promise<AuditUserResponse> {
-    return this.makeRequest<AuditUserResponse>(`/audit/user/${userId}`);
-  }
-
-  // Ranking Endpoints
-  async getRankingUser(userId: string): Promise<RankingUserResponse> {
-    return this.makeRequest<RankingUserResponse>(`/ranking/user/${userId}`);
-  }
-
-  // Badges Endpoints
-  async getBadgesUser(userId: string): Promise<BadgesUserResponse> {
-    return this.makeRequest<BadgesUserResponse>(`/badges/user/${userId}`);
-  }
-
   // Extended Session Processing
   async processSession(sessionId: string): Promise<BackendSessionSummary> {
-    return this.makeRequest<BackendSessionSummary>(`/session/process/${sessionId}`, {
+    return this.makeRequest<BackendSessionSummary>(`${API_ENDPOINTS.SESSION_PROCESS}/${sessionId}`, {
       method: 'POST',
     });
   }
 
   async getSessionStatus(sessionId: string): Promise<{ success: boolean; session_id: string; user_id: string; processed: boolean }> {
-    return this.makeRequest(`/session/status/${sessionId}`);
+    return this.makeRequest(`${API_ENDPOINTS.SESSION_STATUS}/${sessionId}`);
   }
 
   // Real-time Health Check for Session Service
   async checkSessionHealth(): Promise<{ status: string; services: string[] }> {
-    return this.makeRequest('/session/health');
+    return this.makeRequest(API_ENDPOINTS.SESSION_HEALTH);
   }
 
   // Enhanced XP Stats (extends existing gamificationApi)
   async getEnhancedUserXPStats(userId: string) {
     try {
-      // Get both basic XP data and enhanced stats
-      const [xpUser, xpStats] = await Promise.all([
-        this.getXPUser(userId),
-        gamificationApi.getUserXPStats(userId),
-      ]);
+      // Get enhanced stats from gamificationApi
+      const xpStats = await gamificationApi.getUserXPStats(userId);
 
-      return {
-        ...xpStats,
-        total_xp: xpUser.total_xp,
-        level: xpUser.level,
-        xp_history: xpUser.xp_history,
-      };
+      return xpStats;
     } catch (error) {
       console.error('Failed to get enhanced XP stats:', error);
       throw error;
@@ -343,13 +439,11 @@ class ApiClient {
   // Enhanced Streak Data (combines multiple sources)
   async getEnhancedStreakData(userId: string) {
     try {
-      const [streakUser, todayMetrics] = await Promise.all([
-        this.getStreakUser(userId),
-        gamificationApi.getTodayMetrics(userId),
-      ]);
+      const todayMetrics = await gamificationApi.getTodayMetrics(userId);
+      const streakData = await gamificationApi.updateDailyLoginStreak(userId);
 
       return {
-        ...streakUser,
+        ...streakData.data,
         today_metrics: todayMetrics,
       };
     } catch (error) {
@@ -361,16 +455,13 @@ class ApiClient {
   // Enhanced Ranking Data
   async getEnhancedRankingData(userId: string) {
     try {
-      const [rankingUser, leaderboard] = await Promise.all([
-        this.getRankingUser(userId),
-        gamificationApi.getLeaderboard('weekly'),
-      ]);
+      const leaderboard = await gamificationApi.getLeaderboard('weekly');
 
       // Find user's position in leaderboard
-      const userPosition = leaderboard.data.entries.findIndex(entry => entry.user_id === userId) + 1;
+      const userPosition = leaderboard.data.entries.findIndex((entry: any) => entry.user_id === userId) + 1;
 
       return {
-        ...rankingUser,
+        tier: 'bronze', // Default tier since we're not implementing full ranking API yet
         leaderboard_position: userPosition || null,
         leaderboard_data: leaderboard.data,
       };
@@ -383,22 +474,16 @@ class ApiClient {
   // Complete User Profile Aggregation
   async getCompleteUserProfile(userId: string) {
     try {
-      const [health, xpData, streakData, auditData, rankingData, badgesData] = await Promise.all([
+      const [health, xpData, streakData] = await Promise.all([
         this.getHealth().catch(() => ({ status: 'unknown' })),
         this.getEnhancedUserXPStats(userId),
         this.getEnhancedStreakData(userId),
-        this.getAuditUser(userId),
-        this.getEnhancedRankingData(userId),
-        this.getBadgesUser(userId),
       ]);
 
       return {
         health,
         xp: xpData,
         streak: streakData,
-        audit: auditData,
-        ranking: rankingData,
-        badges: badgesData,
         last_updated: new Date().toISOString(),
       };
     } catch (error) {

@@ -103,7 +103,7 @@ class RankingService:
         try:
             # Get user data
             user_result = self.supabase.table('users').select('*').eq('id', user_id).execute()
-            if user_result.error or not user_result.data:
+            if not user_result.data:
                 return {'success': False, 'message': 'User not found'}
             
             user = user_result.data[0]
@@ -299,7 +299,7 @@ class RankingService:
             
             # Get all users with their current tiers
             users_result = self.supabase.table('users').select('id, xp, updated_at').execute()
-            if users_result.error:
+            if not users_result.data:
                 return {'success': False, 'message': 'Failed to fetch users'}
             
             for user in users_result.data:
@@ -353,7 +353,7 @@ class RankingService:
         try:
             # Get top users by XP
             users_result = self.supabase.table('users').select('id, xp, level').order('xp', desc=True).limit(limit).execute()
-            if users_result.error:
+            if not users_result.data:
                 return {'success': False, 'message': 'Failed to fetch leaderboard'}
             
             leaderboard = []
@@ -508,7 +508,7 @@ class RankingService:
                 'user_id', user_id
             ).order('created_at', desc=True).limit(100).execute()
             
-            if sessions_result.error or not sessions_result.data:
+            if not sessions_result.data:
                 return 0
             
             from datetime import date
@@ -546,7 +546,7 @@ class RankingService:
         # Check inactive period
         try:
             user_result = self.supabase.table('users').select('updated_at').eq('id', user_id).execute()
-            if user_result.error or not user_result.data:
+            if not user_result.data:
                 return {'should_downgrade': False, 'reason': 'No data', 'inactive_days': 0, 'new_tier': current_tier}
             
             last_update = datetime.fromisoformat(user_result.data[0]['updated_at'].replace('Z', '+00:00'))
@@ -590,7 +590,7 @@ class RankingService:
         try:
             # Count users with higher XP
             higher_users_result = self.supabase.table('users').select('id', count='exact').gt('xp', user_xp).execute()
-            if higher_users_result.error:
+            if not higher_users_result.data:
                 return 0
             
             higher_count = higher_users_result.count or 0

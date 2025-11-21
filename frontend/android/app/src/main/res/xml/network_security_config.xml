@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Allow HTTP connections for local development and backend -->
+    <domain-config cleartextTrafficPermitted="true">
+        <!-- Android emulator access to host machine -->
+        <domain includeSubdomains="true">10.0.2.2</domain>
+        <!-- Local development -->
+        <domain includeSubdomains="true">localhost</domain>
+        <domain includeSubdomains="true">127.0.0.1</domain>
+        <!-- LAN IP range for your network -->
+        <domain includeSubdomains="true">192.168.1.11</domain>
+        <domain includeSubdomains="true">192.168.1.0</domain>
+        <domain includeSubdomains="true">192.168.1.1</domain>
+        <domain includeSubdomains="true">192.168.1.100</domain>
+        <domain includeSubdomains="true">192.168.1.101</domain>
+        <domain includeSubdomains="true">192.168.1.102</domain>
+        <domain includeSubdomains="true">192.168.1.103</domain>
+        <domain includeSubdomains="true">192.168.1.104</domain>
+        <!-- Alternative LAN IP ranges -->
+        <domain includeSubdomains="true">192.168.0.1</domain>
+        <domain includeSubdomains="true">192.168.0.100</domain>
+        <domain includeSubdomains="true">192.168.0.101</domain>
+        <domain includeSubdomains="true">192.168.0.102</domain>
+        <!-- NGROK domains for tunnel connections -->
+        <domain includeSubdomains="true">ngrok-free.app</domain>
+        <domain includeSubdomains="true">ngrok.io</domain>
+        <domain includeSubdomains="true">localtunnel.me</domain>
+        <!-- Alternative NGROK patterns -->
+        <domain includeSubdomains="true">*.ngrok.io</domain>
+        <domain includeSubdomains="true">*.ngrok-free.app</domain>
+        <domain includeSubdomains="true">*.localtunnel.me</domain>
+    </domain-config>
+    <!-- Base configuration - fallback for other domains -->
+    <base-config cleartextTrafficPermitted="false" />
+</network-security-config>

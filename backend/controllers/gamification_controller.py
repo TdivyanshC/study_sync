@@ -7,7 +7,7 @@ from typing import Dict, Any
 from fastapi import HTTPException
 
 from services.gamification.xp_service import XPService
-from types.gamification import (
+from models.gamification import (
     XPAwardRequest, SessionCalculationRequest, LeaderboardPeriod,
     AuditValidationRequest, OfflineSyncRequest
 )
@@ -289,8 +289,8 @@ class GamificationController:
                 'user_id', user_id
             ).order('created_at', desc=True).limit(limit).execute()
             
-            if result.error:
-                raise HTTPException(status_code=500, detail=f"Database error: {result.error}")
+            if not result.data:
+                raise HTTPException(status_code=500, detail="Database error")
             
             # Format response
             xp_history = []
@@ -345,8 +345,8 @@ class GamificationController:
                 'user_id', user_id
             ).gte('date', start_date.isoformat()).lte('date', end_date.isoformat()).order('date').execute()
             
-            if result.error:
-                raise HTTPException(status_code=500, detail=f"Database error: {result.error}")
+            if not result.data:
+                raise HTTPException(status_code=500, detail="Database error")
             
             # Format response
             daily_metrics = []

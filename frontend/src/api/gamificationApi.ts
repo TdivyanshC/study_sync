@@ -1,5 +1,23 @@
+import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
-import { NetInfo } from '@react-native-netinfo/netinfo';
+import NetInfo from '@react-native-community/netinfo';
+import { buildApiUrl, API_ENDPOINTS } from '../lib/apiConfig';
+import { findWorkingBackendUrl, getManualConnectionInstructions } from '../../lib/networkDetector';
+
+// Custom error classes for better error handling
+class NetworkError extends Error {
+  constructor(message: string, public status: number, public responseText: string) {
+    super(message);
+    this.name = 'NetworkError';
+  }
+}
+
+class NetworkRetryableError extends Error {
+  constructor(message: string, public status: number, public responseText: string) {
+    super(message);
+    this.name = 'NetworkRetryableError';
+  }
+}
 
 // Types for gamification system
 export interface XPAwardRequest {
@@ -67,10 +85,9 @@ export interface LeaderboardResponse {
 }
 
 export interface TodayMetrics {
-  total_minutes: number;
-  xp_earned: number;
-  streak_active: boolean;
-  space_breakdown: Record<string, number>;
+  session_id: string | null;
+  total_focus_time: number;
+  tasks_completed: number;
 }
 
 export interface XPHistoryEntry {
@@ -89,102 +106,6 @@ export interface XPHistoryResponse {
     total_records: number;
   };
   message: string;
-}
-
-export interface SessionEvent {
-  session_id: string;
-  event_type: 'start' | 'heartbeat' | 'pause' | 'resume' | 'end';
-  event_payload: Record<string, any>;
-  created_at: string;
-}
-
-export interface OfflineSyncRequest {
-  user_id: string;
-  events: SessionEvent[];
-  last_sync?: string;
-}
-
-export interface OfflineSyncResponse {
-  success: boolean;
-  data: {
-    synced_events: number;
-    pending_events: number;
-    conflicts_resolved: number;
-    total_events: number;
-  };
-  message: string;
-}
-
-export interface UserRankingStatus {
-  user_id: string;
-  current_ranking: {
-    tier: string;
-    tier_info: {
-      name: string;
-      emoji: string;
-      color: string;
-      min_xp: number;
-      min_streak: number;
-      promotion_threshold_xp: number | null;
-      promotion_threshold_streak: number | null;
-    };
-    user_stats: {
-      xp: number;
-      level: number;
-      current_streak: number;
-    };
-  };
-  progress: {
-    at_max_tier: boolean;
-    progress_to_next: number;
-    next_tier: string | null;
-    next_tier_info?: {
-      name: string;
-      emoji: string;
-      color: string;
-      min_xp: number;
-      min_streak: number;
-      promotion_threshold_xp: number | null;
-      promotion_threshold_streak: number | null;
-    };
-    xp_progress: number;
-    streak_progress: number;
-    requirements: {
-      xp: number | null;
-      streak: number | null;
-    };
-  };
-  leaderboard: {
-    position: number;
-    total_users: number;
-  };
-  next_milestones: {
-    next_tier: {
-      type: string;
-      target: string;
-      target_name?: string;
-      target_emoji?: string;
-      xp_needed: number;
-      streak_needed: number;
-      message?: string;
-    };
-    streak_milestones: Array<{
-      type: string;
-      target: string;
-      current: number;
-      needed: number;
-    }>;
-    xp_milestones: Array<{
-      type: string;
-      target: string;
-      current: number;
-      needed: number;
-    }>;
-  };
-  downgrade_info: {
-    should_downgrade: boolean;
-    reason: string | null;
-  };
 }
 
 export interface UserXPStats {
@@ -212,23 +133,14 @@ export interface StreakData {
   time_until_break?: string;
 }
 
-export interface StreakBonusData {
-  user_id: string;
-  current_streak: number;
-  best_streak: number;
-  streak_multiplier: number;
-  bonus_xp: number;
-  bonus_applied: boolean;
-  multiplier_applied: boolean;
-}
-
 class GamificationApi {
-  private baseUrl: string;
-  private maxRetries: number = 3;
-  private retryDelay: number = 1000; // 1 second
+  private maxRetries: number = 1; // Stop infinite loops - only 1 retry for network errors
+  private retryDelay: number = 1000; // 1 second base delay
+  private maxRetryDelay: number = 1000; // 1 second max delay for immediate failure feedback
+  private backendReachable: boolean = false; // Track backend availability
 
   constructor() {
-    this.baseUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/api';
+    console.log(`🎯 Gamification API initialized`);
   }
 
   /**
@@ -236,6 +148,10 @@ class GamificationApi {
    */
   private async getAuthToken(): Promise<string | null> {
     try {
+      // SecureStore is not available on web
+      if (Platform.OS === 'web') {
+        return localStorage.getItem('auth_token');
+      }
       return await SecureStore.getItemAsync('auth_token');
     } catch (error) {
       console.error('Failed to get auth token:', error);
@@ -244,23 +160,112 @@ class GamificationApi {
   }
 
   /**
-   * Make authenticated API request with retry logic
+   * Create AbortController with timeout for cross-platform compatibility
+   */
+  private createTimeoutController(timeoutMs: number = 30000): AbortController | { signal?: AbortSignal } {
+    // Fallback for environments without AbortController
+    if (typeof AbortController === 'undefined') {
+      console.log('⚠️ AbortController not available, skipping timeout');
+      return { signal: undefined };
+    }
+    
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      try {
+        controller.abort();
+      } catch (e) {
+        console.log('Timeout abort failed:', e);
+      }
+    }, timeoutMs);
+    
+    // Cleanup timeout when signal is aborted
+    controller.signal.addEventListener('abort', () => {
+      clearTimeout(timeoutId);
+    });
+    
+    return controller;
+  }
+
+  /**
+   * Check backend server availability
+   */
+  private async checkBackendAvailability(): Promise<boolean> {
+    try {
+      if (this.backendReachable) {
+        return true; // Already confirmed reachable
+      }
+
+      const url = buildApiUrl(API_ENDPOINTS.HEALTH);
+      
+      console.log(`🏥 Checking backend availability at: ${url}`);
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout for ngrok
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        signal: controller.signal,
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (response.ok) {
+        console.log('✅ Backend is reachable');
+        this.backendReachable = true;
+        return true;
+      } else {
+        console.log(`⚠️ Backend returned ${response.status} - but backend is running, not marking as unreachable`);
+        // Don't mark as unreachable for HTTP errors - backend might still be working
+        // Just log the warning and continue
+        this.backendReachable = true; // Assume reachable for non-critical HTTP errors
+        return true;
+      }
+    } catch (error) {
+      console.log('🔥 Backend unreachable – check ngrok or LAN IP');
+      // Don't permanently mark as unreachable on connection errors
+      // This was causing the blocking behavior
+      console.log('🔄 Attempting to continue despite connection error...');
+      this.backendReachable = false;
+      return false;
+    }
+  }
+
+  /**
+   * Make authenticated API request with limited retry logic
    */
   private async makeRequest<T>(
     endpoint: string,
     options: RequestInit = {},
     retryCount: number = 0
   ): Promise<T> {
+    const url = buildApiUrl(endpoint);
+    const method = options.method || 'GET';
+    
     try {
-      // Check network connectivity
-      const state = await NetInfo.fetch();
-      if (!state.isConnected) {
-        throw new Error('No internet connection');
+      console.log(`🌐 [${retryCount > 0 ? 'RETRY' : 'REQUEST'}] ${method} ${url}`);
+      
+      // Check if backend is reachable - but don't permanently block all calls
+      if (endpoint !== API_ENDPOINTS.HEALTH && !this.backendReachable) {
+        console.log('⚠️ Backend reachability unknown – attempting API call anyway');
+        // Don't block the call, just attempt it and handle the error appropriately
+      }
+      
+      // Check network connectivity (skip on web)
+      if (Platform.OS !== 'web') {
+        const state = await NetInfo.fetch();
+        if (!state.isConnected) {
+          throw new Error('No internet connection');
+        }
       }
 
       const token = await this.getAuthToken();
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
+        'X-Client': 'StudySync-Frontend',
+        'X-Request-ID': `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         ...options.headers as Record<string, string>,
       };
 
@@ -268,30 +273,106 @@ class GamificationApi {
         headers.Authorization = `Bearer ${token}`;
       }
 
-      const response = await fetch(`${this.baseUrl}${endpoint}`, {
+      // Create timeout controller for cross-platform compatibility
+      const timeoutController = this.createTimeoutController(30000); // 30 second timeout
+      
+      const response = await fetch(url, {
         ...options,
         headers,
+        signal: timeoutController.signal,
       });
 
+      console.log(`📡 Response: ${response.status} ${response.statusText} for ${method} ${url}`);
+
       if (!response.ok) {
+        const errorText = await response.text().catch(() => 'Unable to read error response');
+        const errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        
+        console.error(`❌ Network Error: ${errorMessage}`);
+        console.error(`🔍 Error Details: ${errorText}`);
+        
         if (response.status === 401 && retryCount < this.maxRetries) {
-          // Token might be expired, try refreshing (implement token refresh logic here)
-          console.log('Token expired, retrying...');
+          console.log('🔑 Token expired, retrying...');
           return this.makeRequest(endpoint, options, retryCount + 1);
         }
         
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        if (response.status >= 500 && retryCount < this.maxRetries) {
+          console.log(`🔄 Server error ${response.status}, retrying... (${retryCount + 1}/${this.maxRetries})`);
+          throw new NetworkRetryableError(errorMessage, response.status, errorText);
+        }
+        
+        throw new NetworkError(errorMessage, response.status, errorText);
       }
 
-      return await response.json();
+      const data = await response.json();
+      console.log(`✅ Success: ${method} ${url}`);
+      return data;
+      
     } catch (error) {
-      if (retryCount < this.maxRetries) {
-        console.log(`Request failed, retrying... (${retryCount + 1}/${this.maxRetries})`);
-        await new Promise(resolve => setTimeout(resolve, this.retryDelay * Math.pow(2, retryCount)));
+      // Handle timeout errors specifically
+      if (error instanceof Error) {
+        if (error.name === 'AbortError' || error.message.includes('aborted')) {
+          console.error(`⏰ Request timeout: ${url}`);
+          if (retryCount < this.maxRetries) {
+            const delay = Math.min(this.retryDelay * Math.pow(2, retryCount), this.maxRetryDelay);
+            console.log(`⏳ Retrying due to timeout in ${delay}ms... (${retryCount + 1}/${this.maxRetries})`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+            return this.makeRequest(endpoint, options, retryCount + 1);
+          }
+          throw new NetworkRetryableError('Request timeout', 408, 'Request timed out');
+        }
+      }
+      
+      // Handle network timeouts and connection errors - improved handling for ngrok
+      if (error instanceof TypeError && error.message.includes('Network request failed')) {
+        console.error(`🔥 Network Error: ${error.message} - Backend unreachable`);
+        console.log('🔄 Ngrok connection may be slow, attempting one more retry...');
+        // For ngrok URLs, give one extra chance due to potential slow startup
+        if (url.includes('ngrok')) {
+          const delay = 3000; // 3 second delay for ngrok
+          console.log(`⏳ Retrying ngrok request in ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          return this.makeRequest(endpoint, options, retryCount + 1);
+        }
+        console.log('⛔ Stopping retry attempts due to network failure');
+        throw new Error('Backend unreachable – check ngrok or LAN IP');
+      } else if (error instanceof NetworkRetryableError) {
+        console.error(`🔄 Retryable Error: ${error.message}`);
+        if (retryCount === 0) {
+          const delay = Math.min(this.retryDelay, this.maxRetryDelay);
+          console.log(`⏳ Single retry attempt for server error... (${retryCount + 1}/${this.maxRetries})`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          return this.makeRequest(endpoint, options, retryCount + 1);
+        }
+      } else if (error instanceof NetworkError) {
+        console.error(`❌ Network Error: ${error.message}`);
+      } else if (error instanceof Error) {
+        console.error(`💥 Unexpected Error: ${error.message}`);
+      } else {
+        console.error(`💥 Unknown Error: ${error}`);
+      }
+
+      // No additional retries for timeout errors after the first attempt
+      if (retryCount < this.maxRetries && error instanceof Error && !error.message.includes('timeout') && !error.message.includes('Network request failed')) {
+        const delay = Math.min(this.retryDelay, this.maxRetryDelay);
+        console.log(`⏳ Final retry attempt... (${retryCount + 1}/${this.maxRetries})`);
+        
+        await new Promise(resolve => setTimeout(resolve, delay));
         return this.makeRequest(endpoint, options, retryCount + 1);
       }
       
-      throw error;
+      // Final failure - provide helpful error message
+      let finalError: Error;
+      if (error instanceof NetworkError || error instanceof NetworkRetryableError) {
+        finalError = error;
+      } else if (error instanceof Error) {
+        finalError = new NetworkError(`Request failed after ${this.maxRetries} retries: ${error.message}`, 0, String(error));
+      } else {
+        finalError = new NetworkError(`Request failed after ${this.maxRetries} retries: ${String(error)}`, 0, String(error));
+      }
+        
+      console.error(`💀 Final failure: ${finalError.message}`);
+      throw finalError;
     }
   }
 
@@ -306,7 +387,7 @@ class GamificationApi {
       metadata,
     };
 
-    return this.makeRequest<XPAwardResponse>('/xp/award', {
+    return this.makeRequest<XPAwardResponse>(API_ENDPOINTS.XP_AWARD, {
       method: 'POST',
       body: JSON.stringify(request),
     });
@@ -320,7 +401,7 @@ class GamificationApi {
       session_id: sessionId,
     };
 
-    return this.makeRequest<SessionCalculationResponse>('/xp/calculate-session', {
+    return this.makeRequest<SessionCalculationResponse>(API_ENDPOINTS.XP_CALCULATE_SESSION, {
       method: 'POST',
       body: JSON.stringify(request),
     });
@@ -330,43 +411,21 @@ class GamificationApi {
    * Get XP leaderboard for specified period
    */
   async getLeaderboard(period: 'weekly' | 'monthly' | 'all-time' = 'weekly'): Promise<LeaderboardResponse> {
-    return this.makeRequest<LeaderboardResponse>(`/xp/leaderboard?period=${period}`);
+    return this.makeRequest<LeaderboardResponse>(`${API_ENDPOINTS.XP_LEADERBOARD}?period=${period}`);
   }
 
   /**
    * Get today's metrics for a user
    */
   async getTodayMetrics(userId: string): Promise<TodayMetrics> {
-    const response = await this.makeRequest<{
-      success: boolean;
-      data: {
-        user_id: string;
-        daily_metrics: Array<{
-          date: string;
-          total_minutes: number;
-          xp_earned: number;
-          streak_active: boolean;
-          space_breakdown: Record<string, number>;
-        }>;
-      };
-    }>(`/xp/metrics/daily/${userId}?days=1`);
-
-    const today = new Date().toISOString().split('T')[0];
-    const todayMetrics = response.data.daily_metrics.find(m => m.date === today);
-    
-    return todayMetrics || {
-      total_minutes: 0,
-      xp_earned: 0,
-      streak_active: false,
-      space_breakdown: {},
-    };
+    return this.makeRequest<TodayMetrics>(`${API_ENDPOINTS.METRICS_TODAY}?user_id=${userId}`);
   }
 
   /**
    * Get XP history for a user
    */
   async getXPHistory(userId: string, limit: number = 50, offset: number = 0): Promise<XPHistoryResponse> {
-    return this.makeRequest<XPHistoryResponse>(`/xp/history/${userId}?limit=${limit}&offset=${offset}`);
+    return this.makeRequest<XPHistoryResponse>(`${API_ENDPOINTS.XP_HISTORY}/${userId}?limit=${limit}&offset=${offset}`);
   }
 
   /**
@@ -376,142 +435,57 @@ class GamificationApi {
     const response = await this.makeRequest<{
       success: boolean;
       data: UserXPStats;
-    }>(`/xp/stats/${userId}`);
+    }>(`${API_ENDPOINTS.XP_STATS}/${userId}`);
 
     return response.data;
-  }
-
-  /**
-   * Validate session for audit purposes
-   */
-  async validateSessionAudit(sessionId: string, userId: string, validationMode: 'soft' | 'strict' = 'soft') {
-    const request = {
-      session_id: sessionId,
-      user_id: userId,
-      validation_mode: validationMode,
-    };
-
-    return this.makeRequest('/xp/audit/validate', {
-      method: 'POST',
-      body: JSON.stringify(request),
-    });
-  }
-
-  /**
-   * Synchronize offline session events
-   */
-  async syncOfflineEvents(userId: string, events: SessionEvent[], lastSync?: string): Promise<OfflineSyncResponse> {
-    const request: OfflineSyncRequest = {
-      user_id: userId,
-      events,
-      last_sync: lastSync,
-    };
-
-    return this.makeRequest<OfflineSyncResponse>('/xp/sync/offline', {
-      method: 'POST',
-      body: JSON.stringify(request),
-    });
-  }
-
-  /**
-   * Get session events for debugging/audit
-   */
-  async getSessionEvents(sessionId: string) {
-    return this.makeRequest(`/xp/events/${sessionId}`);
-  }
-
-  /**
-   * Get user's audit summary
-   */
-  async getUserAuditSummary(userId: string, days: number = 30) {
-    return this.makeRequest(`/xp/audit/sessions/${userId}?days=${days}`);
-  }
-
-  /**
-   * Get user's ranking status from backend
-   */
-  async getUserRankingStatus(userId: string): Promise<{ success: boolean; data: UserRankingStatus; message: string }> {
-    return this.makeRequest(`/ranking/status/${userId}`);
-  }
-
-  /**
-   * Get detailed progress information for user
-   */
-  async getUserRankingProgress(userId: string) {
-    return this.makeRequest(`/ranking/user/${userId}/progress`);
-  }
-
-  /**
-   * Get user's ranking event history
-   */
-  async getUserRankingEvents(userId: string, limit: number = 20) {
-    return this.makeRequest(`/ranking/events/${userId}?limit=${limit}`);
-  }
-
-  /**
-   * Check promotion eligibility
-   */
-  async checkPromotionEligibility(userId: string) {
-    return this.makeRequest(`/ranking/promotion/check/${userId}`, { method: 'POST' });
-  }
-
-  /**
-   * Promote user if eligible
-   */
-  async promoteUser(userId: string) {
-    return this.makeRequest(`/ranking/promote/${userId}`, { method: 'POST' });
-  }
-
-  /**
-   * Get ranking leaderboard
-   */
-  async getRankingLeaderboard(limit: number = 50) {
-    return this.makeRequest(`/ranking/leaderboard?limit=${limit}`);
-  }
-
-  /**
-   * Get all ranking tiers information
-   */
-  async getRankingTiers() {
-    return this.makeRequest('/ranking/tiers');
   }
 
   /**
    * Update user's daily login streak
    */
   async updateDailyLoginStreak(userId: string): Promise<{ success: boolean; data: StreakData; message: string }> {
-    return this.makeRequest(`/streak/update/${userId}`, { method: 'POST' });
+    return this.makeRequest(`${API_ENDPOINTS.STREAK_UPDATE}/${userId}`, { method: 'POST' });
   }
 
   /**
    * Check streak continuity
    */
   async checkStreakContinuity(userId: string): Promise<{ success: boolean; data: StreakData; message: string }> {
-    return this.makeRequest(`/streak/continuity/${userId}`);
-  }
-
-  /**
-   * Get streak bonus information
-   */
-  async getStreakBonus(userId: string): Promise<{ success: boolean; data: StreakBonusData; message: string }> {
-    return this.makeRequest(`/streak/bonus/${userId}`);
+    return this.makeRequest(`${API_ENDPOINTS.STREAK_CONTINUITY}/${userId}`);
   }
 
   /**
    * Apply streak multiplier to XP
    */
   async applyStreakMultiplier(userId: string, baseXP: number) {
-    return this.makeRequest('/streak/apply-multiplier', {
+    return this.makeRequest(API_ENDPOINTS.STREAK_APPLY_MULTIPLIER, {
       method: 'POST',
       body: JSON.stringify({ user_id: userId, base_xp: baseXP }),
     });
   }
 
   /**
-   * Get streak analytics
+   * Try to find working backend URL manually
+   * Call this method when automatic detection fails
    */
-  async getStreakAnalytics(userId: string, days: number = 30) {
-    return this.makeRequest(`/streak/analytics/${userId}?days=${days}`);
+  public async manuallyDetectBackend(): Promise<boolean> {
+    try {
+      console.log('🔍 Attempting manual backend detection...');
+      const workingUrl = await findWorkingBackendUrl();
+      
+      if (workingUrl) {
+        console.log(`🎯 Manually found working backend: ${workingUrl}`);
+        // Reset backend reachable flag to force re-check
+        this.backendReachable = false;
+        return true;
+      }
+      
+      console.log('❌ Manual detection failed');
+      return false;
+    } catch (error) {
+      console.error('❌ Manual detection error:', error);
+      return false;
+    }
   }
 }
 

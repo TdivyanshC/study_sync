@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
+import { BASE_URL } from '../../lib/constants';
 
 interface QueuedRequest {
   id: string;
@@ -161,7 +162,7 @@ class OfflineQueueManager {
    */
   private async executeRequest(request: QueuedRequest): Promise<boolean> {
     try {
-      const url = `${process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/api'}${request.endpoint}`;
+      const url = `${process.env.EXPO_PUBLIC_API_URL || `${BASE_URL}/api`}${request.endpoint}`;
       
       const response = await fetch(url, {
         method: request.method,

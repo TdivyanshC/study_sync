@@ -105,16 +105,19 @@ const StreakWidget: React.FC<StreakWidgetProps> = ({
       setLoading(true);
       setError(null);
       
-      // Get today's metrics which includes streak info
+      // Get today's metrics for session info
       const todayMetrics = await gamificationApi.getTodayMetrics(userId);
       
       // Also get XP stats for better streak calculation
       const xpStats = await gamificationApi.getUserXPStats(userId);
       
+      // Determine if streak is active based on whether there's a session today
+      const streak_active = todayMetrics.total_focus_time > 0;
+      
       const newStreakData = {
         current_streak: xpStats.current_streak || 0,
         best_streak: xpStats.current_streak || 0, // You might want to store this separately
-        streak_active: todayMetrics.streak_active,
+        streak_active: streak_active,
       };
       
       setStreakData(newStreakData);

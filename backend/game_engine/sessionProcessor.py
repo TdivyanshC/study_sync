@@ -12,14 +12,14 @@ from services.gamification.xp_service import XPService
 from services.gamification.streak_service import StreakService
 from services.gamification.soft_audit_service import SoftAuditService
 from services.gamification.ranking_service import RankingService
-from types.gamification import SessionCalculationRequest
+from models.gamification import SessionCalculationRequest
 
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('backend/logs/session_engine.log'),
+        logging.FileHandler('logs/session_engine.log'),
         logging.StreamHandler()
     ]
 )

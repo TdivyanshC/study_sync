@@ -67,8 +67,8 @@ class SoftAuditService:
                 'session_id', session_id
             ).order('created_at').execute()
             
-            if events_result.error:
-                return self._create_error_response(session_id, user_id, events_result.error)
+            if not events_result.data:
+                return self._create_error_response(session_id, user_id, "Failed to fetch events")
             
             events = events_result.data
             
@@ -214,7 +214,7 @@ class SoftAuditService:
             # Get XP information
             user_result = self.supabase.table('users').select('xp, level').eq('id', user_id).execute()
             xp_data = {'total_xp': 0, 'level': 1}
-            if not user_result.error and user_result.data:
+            if user_result.data:
                 xp_data = {
                     'total_xp': user_result.data[0]['xp'],
                     'level': user_result.data[0]['level']
@@ -240,7 +240,7 @@ class SoftAuditService:
             # Good behavior bonus based on recent clean sessions
             clean_sessions = 0
             total_sessions = 0
-            if not audit_result.error:
+            if audit_result.data:
                 for record in audit_result.data:
                     total_sessions += 1
                     if record['suspicion_score'] < 30:  # Clean session
@@ -375,7 +375,7 @@ class SoftAuditService:
                 'user_id', user_id
             ).order('created_at').execute()
             
-            if sessions_result.error:
+            if not sessions_result.data:
                 return {'current_streak': 0, 'best_streak': 0}
             
             sessions = sessions_result.data
@@ -389,7 +389,7 @@ class SoftAuditService:
         """Get user's XP history"""
         try:
             user_result = self.supabase.table('users').select('xp').eq('id', user_id).execute()
-            if user_result.error or not user_result.data:
+            if not user_result.data:
                 return {'total_xp': 0}
             
             return {'total_xp': user_result.data[0]['xp']}
@@ -403,7 +403,7 @@ class SoftAuditService:
                 'user_id', user_id
             ).gte('created_at', start_date.isoformat()).lte('created_at', end_date.isoformat()).order('created_at', desc=True).execute()
             
-            if audit_result.error:
+            if not audit_result.data:
                 return {'recent_audits': []}
             
             return {

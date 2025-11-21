@@ -157,7 +157,7 @@ def create_gamification_routes(xp_service: XPService) -> APIRouter:
             # Get user profile
             user_result = xp_service.supabase.table('users').select('username, xp, level, streak_count').eq('id', user_id).execute()
             
-            if user_result.error or not user_result.data:
+            if not user_result.data:
                 raise HTTPException(status_code=404, detail="User not found")
             
             user = user_result.data[0]
@@ -172,7 +172,7 @@ def create_gamification_routes(xp_service: XPService) -> APIRouter:
             
             recent_xp_total = 0
             xp_sources = {}
-            if not xp_history_result.error:
+            if xp_history_result.data:
                 for record in xp_history_result.data:
                     recent_xp_total += record['amount']
                     source = record['source']
@@ -184,7 +184,7 @@ def create_gamification_routes(xp_service: XPService) -> APIRouter:
             ).order('created_at', desc=True).limit(100).execute()
             
             current_streak = 0
-            if not streak_result.error and streak_result.data:
+            if streak_result.data:
                 # Calculate streak logic (simplified)
                 dates = []
                 for record in streak_result.data:
@@ -242,8 +242,8 @@ def create_gamification_routes(xp_service: XPService) -> APIRouter:
                 'session_id', session_id
             ).order('created_at').execute()
             
-            if result.error:
-                raise HTTPException(status_code=500, detail=f"Database error: {result.error}")
+            if not result.data:
+                raise HTTPException(status_code=500, detail="Database error")
             
             events = []
             for record in result.data:
@@ -299,8 +299,8 @@ def create_gamification_routes(xp_service: XPService) -> APIRouter:
                 'user_id', user_id
             ).gte('created_at', start_date.isoformat()).lte('created_at', end_date.isoformat()).order('created_at', desc=True).execute()
             
-            if result.error:
-                raise HTTPException(status_code=500, detail=f"Database error: {result.error}")
+            if not result.data:
+                raise HTTPException(status_code=500, detail="Database error")
             
             # Aggregate audit statistics
             total_sessions = len(result.data)

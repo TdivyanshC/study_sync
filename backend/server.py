@@ -1,14 +1,21 @@
-from fastapi import FastAPI, APIRouter, HTTPException
+from fastapi import FastAPI, APIRouter, HTTPException, Query
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from supabase import create_client, Client
 import os
 import logging
 from pathlib import Path
+
+# Try to import PUBLIC_BASE_URL from main.py if available
+try:
+    from main import PUBLIC_BASE_URL
+except ImportError:
+    # Fallback if main.py is not available
+    PUBLIC_BASE_URL = os.environ.get('PUBLIC_BASE_URL', 'http://127.0.0.1:8000')
 from pydantic import BaseModel, Field
 from typing import List, Optional
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import socketio
 import bcrypt
 import jwt
@@ -19,7 +26,8 @@ from services.gamification.xp_service import XPService
 from services.gamification.ranking_service import RankingService
 from routes.gamification_routes import create_gamification_routes
 from routes.ranking_routes import create_ranking_routes
-from routes.session_routes import session_bp
+from routes.session_routes import session_router
+from routes.tunnel import tunnel_router
 
 
 ROOT_DIR = Path(__file__).parent
@@ -167,6 +175,11 @@ class DashboardResponse(BaseModel):
     spaces: List[dict]
     recent_sessions: List[dict]
 
+class TodayMetrics(BaseModel):
+    session_id: Optional[str] = None
+    total_focus_time: int
+    tasks_completed: int
+
 # Socket.IO Events
 @sio.event
 async def connect(sid, environ):
@@ -244,6 +257,42 @@ async def session_stopped(sid, data):
 @api_router.get("/")
 async def root():
     return {"message": "Study Together API"}
+
+@api_router.get("/health")
+async def health():
+    """
+    Health check endpoint for backend connectivity
+    """
+    try:
+        # Check database connectivity
+        db_status = "connected"
+        if supabase:
+            try:
+                result = supabase.table('users').select('id').limit(1).execute()
+                db_status = "connected" if result.data is not None else "error"
+            except Exception as e:
+                db_status = f"error: {str(e)}"
+        else:
+            db_status = "not_configured"
+
+        return {
+            "status": "ok",
+            "timestamp": datetime.utcnow().isoformat(),
+            "database": db_status,
+            "services": ["backend", "api", "gamification"],
+            "uptime": "healthy",
+            "version": "1.0.0"
+        }
+    except Exception as e:
+        return {
+            "status": "error", 
+            "timestamp": datetime.utcnow().isoformat(),
+            "database": "unreachable",
+            "services": ["backend"],
+            "uptime": "degraded",
+            "version": "1.0.0",
+            "error": str(e)
+        }
 
 @api_router.post("/status", response_model=StatusCheck)
 async def create_status_check(input: StatusCheckCreate):
@@ -428,6 +477,83 @@ async def end_session(session_id: str, duration_minutes: int, efficiency: Option
 async def get_user_sessions(user_id: str):
     result = supabase.table('study_sessions').select('*').eq('user_id', user_id).order('created_at', desc=True).limit(100).execute()
     return result.data
+
+# Metrics endpoint
+@api_router.get("/metrics/today", response_model=TodayMetrics)
+async def get_today_metrics(user_id: str = Query(..., description="User ID to fetch metrics for")):
+    """
+    Get today's study metrics for a user.
+    Returns session_id, total_focus_time, and tasks_completed for today's sessions.
+    """
+    try:
+        logger.debug(f"Fetching today's metrics for user: {user_id}")
+        
+        # Validate user_id format (should be UUID)
+        import uuid
+        try:
+            uuid.UUID(user_id)
+        except (ValueError, TypeError):
+            logger.warning(f"Invalid UUID format provided: {user_id}")
+            # Return empty metrics for invalid user ID format
+            return TodayMetrics(
+                session_id=None,
+                total_focus_time=0,
+                tasks_completed=0
+            )
+        
+        # Get today's date in UTC
+        today = datetime.utcnow().date()
+        today_start = datetime.combine(today, datetime.min.time())
+        today_end = datetime.combine(today, datetime.max.time())
+        
+        try:
+            # Query sessions for today
+            result = supabase.table('study_sessions').select('id, duration_minutes, created_at').eq('user_id', user_id).gte('created_at', today_start.isoformat()).lte('created_at', today_end.isoformat()).order('created_at', desc=True).execute()
+            
+            sessions = result.data if result.data else []
+            
+        except Exception as db_error:
+            logger.error(f"Database error fetching sessions for user {user_id}: {db_error}")
+            # Return empty metrics on database errors instead of crashing
+            return TodayMetrics(
+                session_id=None,
+                total_focus_time=0,
+                tasks_completed=0
+            )
+        
+        if not sessions:
+            return TodayMetrics(
+                session_id=None,
+                total_focus_time=0,
+                tasks_completed=0
+            )
+        
+        # Calculate total focus time (sum of all session durations)
+        total_focus_time = sum(session['duration_minutes'] for session in sessions)
+        
+        # Get the most recent session ID
+        latest_session_id = sessions[0]['id'] if sessions else None
+        
+        # For now, we'll assume 1 task completed per session
+        # In a real implementation, you might track tasks separately
+        tasks_completed = len(sessions)
+        
+        logger.debug(f"Found {len(sessions)} sessions for user {user_id}, total focus time: {total_focus_time} minutes")
+        
+        return TodayMetrics(
+            session_id=latest_session_id,
+            total_focus_time=total_focus_time,
+            tasks_completed=tasks_completed
+        )
+        
+    except Exception as e:
+        logger.error(f"Error fetching today's metrics for user {user_id}: {e}")
+        # Return empty metrics instead of crashing on unexpected errors
+        return TodayMetrics(
+            session_id=None,
+            total_focus_time=0,
+            tasks_completed=0
+        )
 
 # Streak endpoint
 @api_router.get("/streaks/{user_id}", response_model=StreakData)
@@ -901,7 +1027,7 @@ if supabase:
         # Initialize Gamification Service
         xp_service = XPService(supabase)
         gamification_router = create_gamification_routes(xp_service)
-        app.include_router(gamification_router)
+        api_router.include_router(gamification_router)  # Mount on /api/xp
         print("Gamification system initialized successfully")
         
         # Initialize Ranking Service (Module D3)
@@ -911,7 +1037,7 @@ if supabase:
         print("Ranking system (Module D3) initialized successfully")
         
         # Initialize Session Processing Routes (Unified Game Engine)
-        app.include_router(session_bp)
+        app.include_router(session_router)
         print("Session processing engine initialized successfully")
         
     except Exception as e:
@@ -920,7 +1046,10 @@ if supabase:
 else:
     print("Cannot initialize gamification/ranking systems: Supabase client not available")
 
-# Include the router in the main app
+# Include the tunnel router in the API router with /api prefix
+api_router.include_router(tunnel_router)
+
+# Include the API router in the main app
 app.include_router(api_router)
 
 app.add_middleware(

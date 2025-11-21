@@ -72,3 +72,4 @@ urllib3==2.5.0
 uvicorn==0.25.0
 watchfiles==1.1.0
 wsproto==1.2.0
+pyngrok==7.0.0

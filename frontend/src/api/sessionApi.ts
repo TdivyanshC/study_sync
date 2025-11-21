@@ -4,6 +4,7 @@
  */
 
 import { supabase } from '../../lib/supabaseClient';
+import { buildSessionApiUrl, API_ENDPOINTS } from '../lib/apiConfig';
 
 interface SessionSummary {
   success: boolean;
@@ -82,7 +83,9 @@ class SessionApi {
       }
 
       // Call backend API endpoint
-      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/session/process/${sessionId}`, {
+      const apiUrl = buildSessionApiUrl('');
+      console.log(`🔗 Session API URL: ${apiUrl}`);
+      const response = await fetch(`${buildSessionApiUrl(API_ENDPOINTS.SESSION_PROCESS)}/${sessionId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -115,7 +118,7 @@ class SessionApi {
         throw new Error('No active session');
       }
 
-      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/session/status/${sessionId}`, {
+      const response = await fetch(`${buildSessionApiUrl(API_ENDPOINTS.SESSION_STATUS)}/${sessionId}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${session.access_token}`
@@ -147,7 +150,7 @@ class SessionApi {
         throw new Error('No active session');
       }
 
-      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/session/reprocess/${sessionId}`, {
+      const response = await fetch(`${buildSessionApiUrl(API_ENDPOINTS.SESSION_REPROCESS)}/${sessionId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -174,7 +177,7 @@ class SessionApi {
    */
   async checkHealth(): Promise<any> {
     try {
-      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/session/health`, {
+      const response = await fetch(buildSessionApiUrl(API_ENDPOINTS.SESSION_HEALTH), {
         method: 'GET'
       });
 

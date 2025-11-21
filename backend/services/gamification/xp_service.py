@@ -7,7 +7,7 @@ from datetime import datetime, timedelta, date
 from typing import Dict, Any, List, Optional, Tuple
 from supabase import create_client, Client
 
-from types.gamification import (
+from models.gamification import (
     XPSource, XPAwardRequest, XPAwardResponse, XPCalculationDetails,
     SessionCalculationRequest, SessionCalculationResponse, LeaderboardPeriod,
     LeaderboardEntry, LeaderboardResponse, SessionEventType, AuditValidationRequest,
@@ -57,13 +57,14 @@ class XPService:
                 'meta': request.metadata or {}
             }).execute()
             
-            if xp_history_result.error:
-                logger.error(f"Failed to insert XP history: {xp_history_result.error}")
+            if not xp_history_result.data:
+                error_msg = f"Failed to insert XP history"
+                logger.error(error_msg)
                 return XPAwardResponse(
                     success=False,
                     total_xp=0,
                     level=0,
-                    message=f"Failed to record XP history: {xp_history_result.error}"
+                    message=error_msg
                 )
             
             xp_history_id = xp_history_result.data[0]['id']
@@ -125,7 +126,7 @@ class XPService:
             # 1. Get session details
             session_result = self.supabase.table('study_sessions').select('*').eq('id', request.session_id).execute()
             
-            if session_result.error or not session_result.data:
+            if not session_result.data:
                 return SessionCalculationResponse(
                     success=False,
                     session_id=request.session_id,
@@ -235,14 +236,14 @@ class XPService:
             
             xp_result = xp_query.execute()
             
-            if xp_result.error:
+            if not xp_result.data:
                 return LeaderboardResponse(
                     success=False,
                     period=period,
                     entries=[],
                     total_users=0,
                     generated_at=datetime.now(),
-                    message=f"Failed to fetch XP data: {xp_result.error}"
+                    message="Failed to fetch XP data"
                 )
             
             # Aggregate XP by user
@@ -325,13 +326,13 @@ class XPService:
             # Get session events
             events_result = self.supabase.table('session_events').select('*').eq('session_id', request.session_id).order('created_at').execute()
             
-            if events_result.error:
+            if not events_result.data:
                 return AuditValidationResponse(
                     session_id=request.session_id,
                     user_id=request.user_id,
                     is_valid=False,
                     suspicion_score=100,
-                    validation_details={'error': events_result.error},
+                    validation_details={'error': 'Failed to fetch session events'},
                     message="Failed to fetch session events"
                 )
             
@@ -402,8 +403,8 @@ class XPService:
                 'is_flagged': suspicion_score >= 50
             }).execute()
             
-            if audit_result.error:
-                logger.warning(f"Failed to insert audit record: {audit_result.error}")
+            if not audit_result.data:
+                logger.warning("Failed to insert audit record")
             
             return AuditValidationResponse(
                 session_id=request.session_id,
@@ -460,8 +461,8 @@ class XPService:
                     'created_at': event_data['created_at']
                 }).execute()
                 
-                if insert_result.error:
-                    logger.warning(f"Failed to sync event: {insert_result.error}")
+                if not insert_result.data:
+                    logger.warning("Failed to sync event")
                     continue
                 
                 synced_events += 1
@@ -492,7 +493,7 @@ class XPService:
             # Get current user data
             user_result = self.supabase.table('users').select('xp, level').eq('id', user_id).execute()
             
-            if user_result.error or not user_result.data:
+            if not user_result.data:
                 return {'success': False, 'message': 'User not found'}
             
             user = user_result.data[0]
@@ -508,8 +509,8 @@ class XPService:
                 'level': new_level
             }).eq('id', user_id).execute()
             
-            if update_result.error:
-                return {'success': False, 'message': f'Failed to update user: {update_result.error}'}
+            if not update_result.data:
+                return {'success': False, 'message': 'Failed to update user'}
             
             return {
                 'success': True,
@@ -534,8 +535,8 @@ class XPService:
                 'updated_at': datetime.now().isoformat()
             }, on_conflict='user_id,date').execute()
             
-            if result.error:
-                logger.warning(f"Failed to update daily metrics: {result.error}")
+            if not result.data:
+                logger.warning("Failed to update daily metrics")
             
         except Exception as e:
             logger.warning(f"Error updating daily metrics: {str(e)}")
@@ -680,8 +681,8 @@ class XPService:
                 'event_payload': payload
             }).execute()
             
-            if result.error:
-                logger.warning(f"Failed to log session event: {result.error}")
+            if not result.data:
+                logger.warning("Failed to log session event")
                 
         except Exception as e:
             logger.warning(f"Error logging session event: {str(e)}")
