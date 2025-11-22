@@ -10,6 +10,7 @@ import {
 import { useStreakEvents } from '../hooks/useStreakEvents';
 import { streakEventEmitter } from '../events/streakEvents';
 import { gamificationApi } from '../api/gamificationApi';
+import { buildApiUrl } from '../lib/apiConfig';
 
 const { width } = Dimensions.get('window');
 
@@ -17,6 +18,45 @@ interface StreakData {
   current_streak: number;
   best_streak: number;
   streak_active: boolean;
+  streak_multiplier?: number;
+  streak_bonus_xp?: number;
+  bonus_applied?: boolean;
+  streak_bonus_details?: {
+    bonus_reason: string;
+    bonus_tier: number;
+    next_tier_streak: number;
+    tier_progress: number;
+    is_bonus_active: boolean;
+  };
+}
+
+interface ComprehensiveStreakData {
+  success: boolean;
+  message: string;
+  streak_info: {
+    current_streak: number;
+    best_streak: number;
+    streak_active: boolean;
+    hours_since_last?: number;
+  };
+  bonus_info: {
+    multiplier: number;
+    bonus_xp: number;
+    bonus_reason: string;
+    bonus_tier: number;
+    is_bonus_active: boolean;
+  };
+  milestone_info: {
+    next_milestone: number | null;
+    days_to_next: number | null;
+    tier_progress: number;
+    progress_percentage: number;
+  };
+  today_stats: {
+    minutes_studied: number;
+    xp_earned: number;
+    daily_goal_progress: number;
+  };
 }
 
 interface StreakWidgetProps {
@@ -37,7 +77,18 @@ const StreakWidget: React.FC<StreakWidgetProps> = ({
     current_streak: 0,
     best_streak: 0,
     streak_active: false,
+    streak_multiplier: 1.0,
+    streak_bonus_xp: 0,
+    bonus_applied: false,
+    streak_bonus_details: {
+      bonus_reason: '',
+      bonus_tier: 0,
+      next_tier_streak: 7,
+      tier_progress: 0,
+      is_bonus_active: false,
+    },
   });
+  const [comprehensiveData, setComprehensiveData] = useState<ComprehensiveStreakData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [streakAnimation, setStreakAnimation] = useState<StreakAnimationState>({
@@ -105,23 +156,41 @@ const StreakWidget: React.FC<StreakWidgetProps> = ({
       setLoading(true);
       setError(null);
       
-      // Get today's metrics for session info
-      const todayMetrics = await gamificationApi.getTodayMetrics(userId);
+      // Get comprehensive streak data from the new endpoint
+      const comprehensiveStreakUrl = buildApiUrl(`/xp/streak/comprehensive/${userId}`);
+      const response = await fetch(comprehensiveStreakUrl);
+      const comprehensiveData: ComprehensiveStreakData = await response.json();
       
-      // Also get XP stats for better streak calculation
-      const xpStats = await gamificationApi.getUserXPStats(userId);
-      
-      // Determine if streak is active based on whether there's a session today
-      const streak_active = todayMetrics.total_focus_time > 0;
-      
-      const newStreakData = {
-        current_streak: xpStats.current_streak || 0,
-        best_streak: xpStats.current_streak || 0, // You might want to store this separately
-        streak_active: streak_active,
-      };
-      
-      setStreakData(newStreakData);
-      onStreakUpdate?.(newStreakData);
+      if (comprehensiveData.success) {
+        setComprehensiveData(comprehensiveData);
+        
+        // Transform comprehensive data to match existing interface
+        const newStreakData: StreakData = {
+          current_streak: comprehensiveData.streak_info.current_streak,
+          best_streak: comprehensiveData.streak_info.best_streak,
+          streak_active: comprehensiveData.streak_info.streak_active,
+          streak_multiplier: comprehensiveData.bonus_info.multiplier,
+          streak_bonus_xp: comprehensiveData.bonus_info.bonus_xp,
+          bonus_applied: comprehensiveData.bonus_info.is_bonus_active,
+          streak_bonus_details: {
+            bonus_reason: comprehensiveData.bonus_info.bonus_reason,
+            bonus_tier: comprehensiveData.bonus_info.bonus_tier,
+            next_tier_streak: comprehensiveData.milestone_info.next_milestone || 7,
+            tier_progress: comprehensiveData.milestone_info.tier_progress,
+            is_bonus_active: comprehensiveData.bonus_info.is_bonus_active,
+          },
+        };
+        
+        setStreakData(newStreakData);
+        onStreakUpdate?.(newStreakData);
+        
+        // Trigger animation if bonus is active
+        if (comprehensiveData.bonus_info.is_bonus_active) {
+          animateBonus();
+        }
+      } else {
+        throw new Error(comprehensiveData.message || 'Failed to load comprehensive streak data');
+      }
       
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load streak data');
@@ -129,6 +198,38 @@ const StreakWidget: React.FC<StreakWidgetProps> = ({
     } finally {
       setLoading(false);
     }
+  };
+
+  const animateBonus = () => {
+    // Bonus animation - glowing golden effect
+    Animated.sequence([
+      Animated.timing(fireAnim, {
+        toValue: 1.3,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(fireAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Bonus pulse animation
+    Animated.sequence([
+      Animated.spring(pulseAnim, {
+        toValue: 1.2,
+        tension: 150,
+        friction: 6,
+        useNativeDriver: true,
+      }),
+      Animated.spring(pulseAnim, {
+        toValue: 1,
+        tension: 150,
+        friction: 6,
+        useNativeDriver: true,
+      }),
+    ]).start();
   };
 
   const animateFire = () => {
@@ -316,6 +417,32 @@ const StreakWidget: React.FC<StreakWidgetProps> = ({
             <Text style={styles.milestoneSubtext}>
               {milestoneProgress.daysToNext} days to go
             </Text>
+          </View>
+        )}
+
+        {/* Streak Bonus Display */}
+        {comprehensiveData?.bonus_info.is_bonus_active && (
+          <View style={styles.bonusContainer}>
+            <Text style={styles.bonusTitle}>🎁 Active Streak Bonus</Text>
+            <View style={styles.bonusDetails}>
+              <Text style={styles.bonusReason}>{comprehensiveData.bonus_info.bonus_reason}</Text>
+              <View style={styles.bonusRow}>
+                <Text style={styles.bonusText}>
+                  ✨ {comprehensiveData.bonus_info.multiplier}x Multiplier
+                </Text>
+                {comprehensiveData.bonus_info.bonus_xp > 0 && (
+                  <Text style={styles.bonusText}>
+                    +{comprehensiveData.bonus_info.bonus_xp} XP
+                  </Text>
+                )}
+              </View>
+              {comprehensiveData.milestone_info.next_milestone && (
+                <Text style={styles.bonusNextTier}>
+                  Next tier in {comprehensiveData.milestone_info.days_to_next} days 
+                  ({comprehensiveData.milestone_info.progress_percentage}% progress)
+                </Text>
+              )}
+            </View>
           </View>
         )}
 
@@ -521,6 +648,47 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: 'white',
+  },
+  bonusContainer: {
+    marginTop: 10,
+    padding: 12,
+    backgroundColor: 'rgba(255, 215, 0, 0.15)',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#ffd700',
+  },
+  bonusTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#ff8c00',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  bonusDetails: {
+    alignItems: 'center',
+  },
+  bonusReason: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#ff8c00',
+    marginBottom: 6,
+  },
+  bonusRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 20,
+    marginBottom: 6,
+  },
+  bonusText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#ff8c00',
+  },
+  bonusNextTier: {
+    fontSize: 11,
+    color: '#ff8c00',
+    textAlign: 'center',
+    opacity: 0.8,
   },
 });
 

@@ -316,7 +316,7 @@ export const useStudySessionEnhanced = () => {
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [store.isTimerRunning, store.currentSession]);
+  }, [store.isTimerRunning, store.currentSession?.id, store.currentSession?.startTime]);
 
   // Record heartbeat every 10 seconds during active session
   useEffect(() => {
@@ -331,7 +331,7 @@ export const useStudySessionEnhanced = () => {
         }
       };
     }
-  }, [store.isTimerRunning, store.currentSession]);
+  }, [store.isTimerRunning, store.currentSession?.id, store.currentSession?.isOnBreak, store.recordHeartbeat]);
 
   // Auto-sync offline events when back online
   useEffect(() => {
@@ -406,8 +406,8 @@ export const useSessionAudit = (sessionId?: string) => {
       const result = await gamificationApi.validateSessionAudit(sessionId, userId, validationMode);
       
       setAuditStatus({
-        isValid: result.data.is_valid,
-        suspicionScore: result.data.suspicion_score,
+        isValid: (result as any).data?.is_valid || false,
+        suspicionScore: (result as any).data?.suspicion_score || 0,
         lastValidated: new Date().toISOString(),
       });
 

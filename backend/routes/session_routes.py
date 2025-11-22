@@ -2,8 +2,7 @@
 Session Routes - API endpoints for unified session processing
 """
 
-from fastapi import APIRouter, HTTPException, Depends
-from functools import wraps
+from fastapi import APIRouter, HTTPException, Query
 import logging
 import os
 from typing import Optional, Dict, Any
@@ -33,7 +32,7 @@ async def get_current_user():
 
 
 @session_router.post("/process/{session_id}")
-async def process_session(session_id: str):
+async def process_session(session_id: str, user_id: Optional[str] = Query(None, description="User ID")):
     """
     Process a completed study session through the unified game engine pipeline
     
@@ -48,8 +47,15 @@ async def process_session(session_id: str):
             - Notification triggers
     """
     try:
-        # For now, use a default user_id - in production this would come from auth
-        user_id = "default-user"  # Placeholder - replace with actual user ID from auth
+        # Extract user_id from query params or use provided default
+        if not user_id:
+            # For now, use a real user ID from the database - in production this would come from auth
+            # Get a real user from the database
+            user_result = supabase.table('users').select('id').limit(1).execute()
+            if user_result.data:
+                user_id = user_result.data[0]['id']
+            else:
+                raise HTTPException(status_code=400, detail="No users found in database")
         
         logger.info(f"Processing session {session_id} for user {user_id}")
         
@@ -71,7 +77,7 @@ async def process_session(session_id: str):
 
 
 @session_router.get("/status/{session_id}")
-async def get_session_status(session_id: str):
+async def get_session_status(session_id: str, user_id: Optional[str] = Query(None, description="User ID")):
     """
     Get processing status for a session
     
@@ -81,9 +87,6 @@ async def get_session_status(session_id: str):
         Session processing status
     """
     try:
-        # For now, use a default user_id - in production this would come from auth
-        user_id = "default-user"  # Placeholder - replace with actual user ID from auth
-        
         # Get session from database
         session_result = supabase.table('study_sessions').select('*').eq(
             'id', session_id
@@ -94,17 +97,20 @@ async def get_session_status(session_id: str):
         
         session = session_result.data[0]
         
+        # Use the user_id from the session data, or fallback to provided user_id
+        actual_user_id = session['user_id'] if not user_id else user_id
+        
         # Check if session has been processed (has XP history entry)
         xp_history_result = supabase.table('xp_history').select('*').eq(
             'meta->>session_id', session_id
-        ).execute()
+        ).eq('user_id', actual_user_id).execute()
         
         processed = bool(xp_history_result.data)
         
         return {
             'success': True,
             'session_id': session_id,
-            'user_id': user_id,
+            'user_id': actual_user_id,
             'processed': processed,
             'session_data': session,
             'xp_awarded': xp_history_result.data[0] if processed else None
@@ -121,7 +127,7 @@ async def get_session_status(session_id: str):
 
 
 @session_router.post("/reprocess/{session_id}")
-async def reprocess_session(session_id: str):
+async def reprocess_session(session_id: str, user_id: Optional[str] = Query(None, description="User ID")):
     """
     Reprocess a session (admin/debug endpoint)
     
@@ -131,8 +137,14 @@ async def reprocess_session(session_id: str):
         Reprocessed session summary
     """
     try:
-        # For now, use a default user_id - in production this would come from auth
-        user_id = "default-user"  # Placeholder - replace with actual user ID from auth
+        # Get actual user_id from session data or use provided
+        if not user_id:
+            # Get the session to extract user_id
+            session_result = supabase.table('study_sessions').select('user_id').eq('id', session_id).execute()
+            if session_result.data:
+                user_id = session_result.data[0]['user_id']
+            else:
+                raise HTTPException(status_code=404, detail="Session not found")
         
         logger.warning(f"Reprocessing session {session_id} for user {user_id}")
         

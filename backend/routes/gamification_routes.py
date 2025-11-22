@@ -354,4 +354,134 @@ def create_gamification_routes(xp_service: XPService) -> APIRouter:
             logger.error(f"Error in get_user_audit_summary_endpoint: {str(e)}")
             raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
     
+    @router.get("/streak/comprehensive/{user_id}")
+    async def get_comprehensive_streak_endpoint(user_id: str):
+        """
+        Get comprehensive streak information including bonuses and multipliers
+        
+        **Path Parameters:**
+        - user_id: User UUID
+        
+        **Returns:**
+        Detailed streak information with bonus details, multipliers, and milestones
+        """
+        try:
+            if not user_id:
+                raise HTTPException(status_code=400, detail="Missing user_id")
+            
+            # Initialize streak service
+            from services.gamification.streak_service import StreakService
+            streak_service = StreakService(xp_service.supabase)
+            
+            # Get comprehensive streak information
+            return await streak_service.get_comprehensive_streak_info(user_id)
+            
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error in get_comprehensive_streak_endpoint: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+    @router.get("/summary/{user_id}")
+    async def get_gamification_summary_endpoint(user_id: str):
+        """
+        Get comprehensive gamification summary for a user
+        
+        **Path Parameters:**
+        - user_id: User UUID
+        
+        **Returns:**
+        Consolidated gamification data including today's hours, streak, XP, and level
+        """
+        try:
+            if not user_id:
+                raise HTTPException(status_code=400, detail="Missing user_id")
+            
+            import pytz
+            from datetime import datetime, timedelta
+            
+            # Use IST timezone for calculations
+            ist_tz = pytz.timezone("Asia/Kolkata")
+            today_ist = datetime.now(ist_tz).date()
+            
+            # Get user profile
+            user_result = xp_service.supabase.table('users').select('username, xp, level, streak_count').eq('id', user_id).execute()
+            
+            if not user_result.data:
+                raise HTTPException(status_code=404, detail="User not found")
+            
+            user = user_result.data[0]
+            
+            # Get today's study sessions
+            today_start = datetime.combine(today_ist, datetime.min.time()).replace(tzinfo=ist_tz)
+            today_end = today_start + timedelta(days=1)
+            
+            sessions_result = xp_service.supabase.table('study_sessions').select('duration_minutes').eq(
+                'user_id', user_id
+            ).gte('created_at', today_start.isoformat()).lt('created_at', today_end.isoformat()).execute()
+            
+            # Calculate today's total minutes
+            today_minutes = 0
+            if sessions_result.data:
+                today_minutes = sum(session['duration_minutes'] for session in sessions_result.data)
+            
+            # Get current streak using the updated streak calculator
+            sessions_all_result = xp_service.supabase.table('study_sessions').select('created_at').eq(
+                'user_id', user_id
+            ).order('created_at').execute()
+            
+            current_streak = 0
+            if sessions_all_result.data:
+                from utils.gamification_helpers import StreakCalculator
+                current_streak, best_streak, multiplier = StreakCalculator.calculate_streak(sessions_all_result.data)
+            
+            # Calculate decimal hours for display
+            today_hours = round(today_minutes / 60, 1) if today_minutes >= 60 else today_minutes / 60
+            
+            # Format hours for display based on user requirements
+            if today_minutes == 0:
+                hours_display = "0h"
+            elif today_minutes < 1:
+                hours_display = "Just started!"
+            elif today_minutes < 60:
+                hours_display = f"{today_minutes} min"
+            else:
+                hours_display = f"{today_hours}h"
+            
+            return {
+                "success": True,
+                "data": {
+                    "user_id": user_id,
+                    "username": user['username'],
+                    "today": {
+                        "hours_studied": today_hours,
+                        "hours_display": hours_display,
+                        "minutes_studied": today_minutes
+                    },
+                    "streak": {
+                        "current": current_streak,
+                        "best": user.get('streak_count', current_streak)
+                    },
+                    "xp": {
+                        "total": user['xp'],
+                        "level": user['level'],
+                        "next_level_xp": (user['level'] * 100) - user['xp'],
+                        "level_progress": user['xp'] % 100
+                    },
+                    "gamification_summary": {
+                        "hours_today": hours_display,
+                        "current_streak": f"{current_streak} days",
+                        "total_xp": user['xp'],
+                        "level": user['level']
+                    }
+                },
+                "message": "Gamification summary retrieved successfully"
+            }
+            
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error in get_gamification_summary_endpoint: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+    
     return router

@@ -7,7 +7,6 @@ import {
   Animated,
   Dimensions,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { gamificationApi, UserXPStats } from '../api/gamificationApi';
 import { apiClient } from '../api/apiClient';
 import { useXPEvents } from '../hooks/useXPEvents';
@@ -59,6 +58,31 @@ const XPCard: React.FC<XPCardProps> = ({
       animateProgress();
     }
   }, [xpStats]);
+
+  // Listen to real-time XP events
+  useXPEvents({
+    userId,
+    onXPUpdated: (event) => {
+      // Trigger XP animation
+      if (event.amountAwarded > 0) {
+        triggerXPAnimation(event.amountAwarded, event.source);
+      }
+      
+      // Refresh XP stats to get updated values
+      loadXPStats();
+    },
+    onLevelUp: (event) => {
+      console.log('🎉 Level up!', event);
+      // Refresh XP stats after level up
+      loadXPStats();
+    },
+    onMilestone: (event) => {
+      console.log('🏆 Milestone reached!', event);
+      // Refresh XP stats after milestone
+      loadXPStats();
+    },
+    enableDebug: false,
+  });
 
   const loadXPStats = async () => {
     try {
@@ -168,90 +192,85 @@ const XPCard: React.FC<XPCardProps> = ({
 
   return (
     <View style={styles.container}>
-      <LinearGradient
-        colors={[levelColor, levelColor + '80']}
-        style={styles.gradient}
-      >
-        <View style={styles.card}>
-          {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.levelText}>Level {xpStats.level}</Text>
-            <Text style={styles.totalXPText}>{xpStats.total_xp.toLocaleString()} XP</Text>
-          </View>
+      <View style={styles.card}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.levelText}>Level {xpStats.level}</Text>
+          <Text style={styles.totalXPText}>{xpStats.total_xp.toLocaleString()} XP</Text>
+        </View>
 
-          {/* Progress Bar */}
-          <View style={styles.progressContainer}>
-            <View style={styles.progressBar}>
-              <Animated.View 
-                style={[
-                  styles.progressFill,
-                  { 
-                    width: progressWidth,
-                    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-                  }
-                ]} 
-              />
-            </View>
-            <Text style={styles.progressText}>
-              {xpStats.level_progress} / {XP_PER_LEVEL} XP to next level
-            </Text>
-          </View>
-
-          {/* Today's Stats */}
-          <View style={styles.todayStats}>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{xpStats.recent_30_days_xp}</Text>
-              <Text style={styles.statLabel}>Today's XP</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{xpStats.current_streak}</Text>
-              <Text style={styles.statLabel}>Day Streak</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{xpStats.next_level_xp}</Text>
-              <Text style={styles.statLabel}>To Next Level</Text>
-            </View>
-          </View>
-
-          {/* XP Sources */}
-          <View style={styles.sourcesContainer}>
-            <Text style={styles.sourcesTitle}>Recent Sources:</Text>
-            {Object.entries(xpStats.xp_sources).slice(0, 3).map(([source, amount]) => (
-              <View key={source} style={styles.sourceItem}>
-                <Text style={styles.sourceLabel}>{getSourceLabel(source)}</Text>
-                <Text style={styles.sourceAmount}>+{amount}</Text>
-              </View>
-            ))}
-          </View>
-
-          {/* XP Animation Popup */}
-          {xpAnimation.isVisible && (
+        {/* Progress Bar */}
+        <View style={styles.progressContainer}>
+          <View style={styles.progressBar}>
             <Animated.View 
               style={[
-                styles.xpPopup,
-                {
-                  opacity: popupAnim,
-                  transform: [
-                    { scale: popupAnim },
-                    { translateY: popupAnim.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [50, -20],
-                      })
-                    }
-                  ],
+                styles.progressFill,
+                { 
+                  width: progressWidth,
+                  backgroundColor: levelColor,
                 }
-              ]}
-            >
-              <Text style={styles.xpPopupText}>
-                +{xpAnimation.amount} XP
-              </Text>
-              <Text style={styles.xpPopupSubtext}>
-                {getSourceLabel(xpAnimation.source)}
-              </Text>
-            </Animated.View>
-          )}
+              ]} 
+            />
+          </View>
+          <Text style={styles.progressText}>
+            {xpStats.level_progress} / {XP_PER_LEVEL} XP to next level
+          </Text>
         </View>
-      </LinearGradient>
+
+        {/* Today's Stats */}
+        <View style={styles.todayStats}>
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>{xpStats.recent_30_days_xp}</Text>
+            <Text style={styles.statLabel}>Today's XP</Text>
+          </View>
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>{xpStats.current_streak}</Text>
+            <Text style={styles.statLabel}>Day Streak</Text>
+          </View>
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>{xpStats.next_level_xp}</Text>
+            <Text style={styles.statLabel}>To Next Level</Text>
+          </View>
+        </View>
+
+        {/* XP Sources */}
+        <View style={styles.sourcesContainer}>
+          <Text style={styles.sourcesTitle}>Recent Sources:</Text>
+          {Object.entries(xpStats.xp_sources).slice(0, 3).map(([source, amount]) => (
+            <View key={source} style={styles.sourceItem}>
+              <Text style={styles.sourceLabel}>{getSourceLabel(source)}</Text>
+              <Text style={styles.sourceAmount}>+{amount}</Text>
+            </View>
+          ))}
+        </View>
+
+        {/* XP Animation Popup */}
+        {xpAnimation.isVisible && (
+          <Animated.View 
+            style={[
+              styles.xpPopup,
+              {
+                opacity: popupAnim,
+                transform: [
+                  { scale: popupAnim },
+                  { translateY: popupAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [50, -20],
+                    })
+                  }
+                ],
+              }
+            ]}
+          >
+            <Text style={styles.xpPopupText}>
+              +{xpAnimation.amount} XP
+            </Text>
+            <Text style={styles.xpPopupSubtext}>
+              {getSourceLabel(xpAnimation.source)}
+            </Text>
+          </Animated.View>
+        )}
+      </View>
     </View>
   );
 };
@@ -260,10 +279,6 @@ const styles = StyleSheet.create({
   container: {
     marginHorizontal: 20,
     marginVertical: 10,
-  },
-  gradient: {
-    borderRadius: 16,
-    padding: 1,
   },
   card: {
     backgroundColor: 'rgba(255, 255, 255, 0.95)',

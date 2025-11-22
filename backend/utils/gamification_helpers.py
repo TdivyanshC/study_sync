@@ -3,6 +3,7 @@ Gamification Helper Utilities
 """
 
 import logging
+import pytz
 from datetime import datetime, timedelta, date
 from typing import Dict, Any, List, Optional, Tuple
 from supabase import create_client, Client
@@ -13,12 +14,12 @@ logger = logging.getLogger(__name__)
 class XPConstants:
     """XP calculation constants"""
     
-    # Base XP rates
-    XP_PER_MINUTE = 1
+    # Base XP rates - Updated: 10 XP per 60 min = 1/6 XP per minute
+    XP_PER_MINUTE = 1/6  # 10 XP per 60 minutes
     
     # Bonus XP amounts
-    POMODORO_BONUS = 10  # 25-minute session
-    DAILY_GOAL_BONUS = 20  # 2-hour daily goal
+    POMODORO_BONUS = 10  # 25-minute session bonus
+    DAILY_GOAL_BONUS = 20  # 2-hour daily goal bonus
     MILESTONE_500 = 100  # Every 500 XP
     MILESTONE_10000 = 1000  # Every 10,000 XP
     
@@ -27,19 +28,25 @@ class XPConstants:
     DAILY_GOAL_MINUTES = 120  # 2 hours
     XP_PER_LEVEL = 100  # XP needed per level
     
-    # Streak multipliers
+    # Streak multipliers - Updated based on user's request
     STREAK_MULTIPLIER_BASE = 1.0
     STREAK_MULTIPLIER_INCREMENT = 0.1  # 10% per day of streak
     STREAK_MULTIPLIER_MAX = 2.0  # Max 2x multiplier
+    
+    # Timezone settings for streak calculations
+    IST_TIMEZONE = pytz.timezone("Asia/Kolkata")
+    
+    # 36-hour rule for streak break
+    STREAK_BREAK_HOURS = 36
 
 
 class StreakCalculator:
-    """Utility class for calculating study streaks"""
+    """Utility class for calculating study streaks with IST timezone and 36-hour rule"""
     
     @staticmethod
     def calculate_streak(sessions: List[Dict[str, Any]]) -> Tuple[int, int, float]:
         """
-        Calculate current and best streaks from session data
+        Calculate current and best streaks from session data using IST timezone
         
         Args:
             sessions: List of session dictionaries with 'created_at' field
@@ -50,20 +57,26 @@ class StreakCalculator:
         if not sessions:
             return 0, 0, 1.0
         
-        # Extract and sort dates
+        # Convert to IST timezone for calculations
+        ist_tz = XPConstants.IST_TIMEZONE
+        today_ist = datetime.now(ist_tz).date()
+        
+        # Extract and sort dates in IST
         dates = set()
         for session in sessions:
-            session_date = datetime.fromisoformat(session['created_at'].replace('Z', '+00:00')).date()
+            # Convert to IST timezone first
+            session_dt = datetime.fromisoformat(session['created_at'].replace('Z', '+00:00'))
+            session_dt_ist = session_dt.astimezone(ist_tz)
+            session_date = session_dt_ist.date()
             dates.add(session_date)
         
         sorted_dates = sorted(dates)
-        today = date.today()
         
         # Calculate best streak
         best_streak = StreakCalculator._find_best_streak(sorted_dates)
         
-        # Calculate current streak
-        current_streak = StreakCalculator._calculate_current_streak(sorted_dates, today)
+        # Calculate current streak using 36-hour rule
+        current_streak = StreakCalculator._calculate_current_streak_36h(sessions, today_ist, ist_tz)
         
         # Calculate streak multiplier
         multiplier = min(
@@ -92,8 +105,55 @@ class StreakCalculator:
         return best_streak
     
     @staticmethod
+    def _calculate_current_streak_36h(sessions: List[Dict[str, Any]], today_ist: date, ist_tz) -> int:
+        """Calculate current active streak using 36-hour rule"""
+        if not sessions:
+            return 0
+        
+        # Convert sessions to IST and sort by datetime
+        ist_sessions = []
+        for session in sessions:
+            session_dt = datetime.fromisoformat(session['created_at'].replace('Z', '+00:00'))
+            session_dt_ist = session_dt.astimezone(ist_tz)
+            ist_sessions.append((session_dt_ist, session))
+        
+        # Sort by datetime (most recent first)
+        ist_sessions.sort(key=lambda x: x[0], reverse=True)
+        
+        now_ist = datetime.now(ist_tz)
+        
+        # Check if last session was within 36 hours
+        last_session_dt = ist_sessions[0][0]
+        hours_since_last = (now_ist - last_session_dt).total_seconds() / 3600
+        
+        if hours_since_last > XPConstants.STREAK_BREAK_HOURS:
+            return 0  # Streak broken due to 36-hour rule
+        
+        # Count consecutive days including today if within 36 hours
+        streak = 1
+        current_date = last_session_dt.date()
+        
+        # Check if we have a session today (within 36 hours)
+        if (now_ist.date() - current_date).days == 0 and hours_since_last <= 36:
+            streak = 1
+        else:
+            streak = 0
+        
+        # Count backwards from the previous day
+        check_date = current_date - timedelta(days=1)
+        for session_dt, _ in ist_sessions[1:]:
+            session_date = session_dt.date()
+            if session_date == check_date:
+                streak += 1
+                check_date -= timedelta(days=1)
+            elif session_date < check_date:
+                break  # Gap found, streak ends
+        
+        return streak
+    
+    @staticmethod
     def _calculate_current_streak(dates: List[date], today: date) -> int:
-        """Calculate current active streak"""
+        """Calculate current active streak (legacy method)"""
         if not dates:
             return 0
         

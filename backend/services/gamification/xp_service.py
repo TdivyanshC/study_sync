@@ -30,13 +30,20 @@ class XPService:
     def __init__(self, supabase_client: Client):
         self.supabase = supabase_client
         
-        # XP calculation constants
-        self.XP_PER_MINUTE = 1
+        # XP calculation constants - Updated: 10 XP per 60 min = 1/6 XP per minute
+        self.XP_PER_MINUTE = 1/6  # 10 XP per 60 minutes as requested
         self.POMODORO_BONUS = 10  # 25-minute session bonus
         self.DAILY_GOAL_BONUS = 20  # 2-hour daily goal bonus
         self.MILESTONE_500 = 100  # Every 500 XP milestone
         self.MILESTONE_10000 = 1000  # Every 10,000 XP milestone
         self.DAILY_GOAL_MINUTES = 120  # 2 hours
+        
+        # Initialize streak service for integration
+        try:
+            from .streak_service import StreakService
+            self.streak_service = StreakService(supabase_client)
+        except ImportError:
+            self.streak_service = None
         
     async def award_xp(self, request: XPAwardRequest) -> XPAwardResponse:
         """
@@ -523,16 +530,19 @@ class XPService:
             return {'success': False, 'message': str(e)}
     
     async def _update_daily_metrics(self, user_id: str, xp_earned: int, source: XPSource):
-        """Update daily user metrics"""
+        """Update daily user metrics using IST timezone"""
         try:
-            today = date.today()
+            # Use IST timezone for daily reset
+            import pytz
+            ist_tz = pytz.timezone("Asia/Kolkata")
+            today_ist = datetime.now(ist_tz).date()
             
             # Upsert daily metrics
             result = self.supabase.table('daily_user_metrics').upsert({
                 'user_id': user_id,
-                'date': today.isoformat(),
+                'date': today_ist.isoformat(),
                 'xp_earned': xp_earned,
-                'updated_at': datetime.now().isoformat()
+                'updated_at': datetime.now(ist_tz).isoformat()
             }, on_conflict='user_id,date').execute()
             
             if not result.data:

@@ -3,6 +3,7 @@ Streak Service - Enhanced streak management for Module B2
 """
 
 import logging
+import pytz
 from datetime import datetime, timedelta, date
 from typing import Dict, Any, List, Optional, Tuple
 from supabase import create_client, Client
@@ -73,14 +74,18 @@ class StreakService:
             # Create or update daily streak record
             await self._record_daily_streak(user_id, today, current_streak, streak_broken)
             
+            # Calculate enhanced streak bonus
+            streak_bonus_details = self._calculate_streak_bonus(current_streak)
+            
             return {
                 'success': True,
                 'current_streak': current_streak,
                 'best_streak': best_streak,
                 'streak_broken': streak_broken,
                 'milestone_reached': milestone_reached,
-                'streak_multiplier': multiplier,
-                'streak_bonus_xp': self._calculate_streak_bonus(current_streak),
+                'streak_multiplier': streak_bonus_details['multiplier'],
+                'streak_bonus_xp': streak_bonus_details['bonus_xp'],
+                'streak_bonus_details': streak_bonus_details,
                 'message': f'Streak updated: {current_streak} days'
             }
             
@@ -167,18 +172,19 @@ class StreakService:
             sessions = sessions_result.data
             current_streak, best_streak, multiplier = StreakCalculator.calculate_streak(sessions)
             
-            # Calculate streak bonus
-            bonus_xp = self._calculate_streak_bonus(current_streak)
-            bonus_applied = bonus_xp > 0
+            # Calculate enhanced streak bonus
+            streak_bonus_details = self._calculate_streak_bonus(current_streak)
+            bonus_applied = streak_bonus_details['bonus_xp'] > 0 or streak_bonus_details['multiplier'] > 1.0
             
             return {
                 'success': True,
                 'current_streak': current_streak,
                 'best_streak': best_streak,
-                'streak_multiplier': multiplier,
-                'bonus_xp': bonus_xp,
+                'streak_multiplier': streak_bonus_details['multiplier'],
+                'bonus_xp': streak_bonus_details['bonus_xp'],
                 'bonus_applied': bonus_applied,
-                'message': f'Streak bonus: {bonus_xp} XP for {current_streak}-day streak'
+                'streak_bonus_details': streak_bonus_details,
+                'message': f'Streak bonus: {streak_bonus_details["bonus_xp"]} XP for {current_streak}-day streak'
             }
             
         except Exception as e:
@@ -226,6 +232,98 @@ class StreakService:
             logger.error(f"Error applying streak multiplier: {str(e)}")
             return {'success': False, 'message': f'Internal error: {str(e)}'}
     
+    async def get_comprehensive_streak_info(self, user_id: str) -> Dict[str, Any]:
+        """
+        Get comprehensive streak information including bonuses, multipliers, and upcoming milestones
+        
+        Args:
+            user_id: User UUID
+            
+        Returns:
+            Dictionary with comprehensive streak information
+        """
+        try:
+            # Get sessions for streak calculation
+            sessions_result = self.supabase.table('study_sessions').select('created_at').eq(
+                'user_id', user_id
+            ).order('created_at').execute()
+            
+            if not sessions_result.data:
+                return {'success': False, 'message': 'Failed to fetch sessions'}
+            
+            sessions = sessions_result.data
+            current_streak, best_streak, base_multiplier = StreakCalculator.calculate_streak(sessions)
+            
+            # Calculate enhanced streak bonus
+            streak_bonus_details = self._calculate_streak_bonus(current_streak)
+            
+            # Get today's metrics
+            today = date.today()
+            daily_result = self.supabase.table('daily_user_metrics').select('total_minutes, xp_earned').eq(
+                'user_id', user_id
+            ).eq('date', today.isoformat()).execute()
+            
+            today_minutes = 0
+            today_xp = 0
+            if daily_result.data:
+                today_minutes = daily_result.data[0].get('total_minutes', 0)
+                today_xp = daily_result.data[0].get('xp_earned', 0)
+            
+            # Calculate next milestone
+            next_milestone = None
+            days_to_next = None
+            milestone_thresholds = [7, 14, 30, 60, 100, 365]
+            
+            for threshold in milestone_thresholds:
+                if threshold > current_streak:
+                    next_milestone = threshold
+                    days_to_next = threshold - current_streak
+                    break
+            
+            # Check if streak is active
+            streak_active = True
+            if sessions:
+                last_session_dt = datetime.fromisoformat(
+                    sessions[-1]['created_at'].replace('Z', '+00:00')
+                )
+                ist_tz = pytz.timezone("Asia/Kolkata")
+                last_session_ist = last_session_dt.astimezone(ist_tz)
+                hours_since_last = (datetime.now(ist_tz) - last_session_ist).total_seconds() / 3600
+                streak_active = hours_since_last <= 36
+            
+            return {
+                'success': True,
+                'streak_info': {
+                    'current_streak': current_streak,
+                    'best_streak': best_streak,
+                    'streak_active': streak_active,
+                    'hours_since_last': round(hours_since_last, 1) if sessions else None
+                },
+                'bonus_info': {
+                    'multiplier': streak_bonus_details['multiplier'],
+                    'bonus_xp': streak_bonus_details['bonus_xp'],
+                    'bonus_reason': streak_bonus_details['bonus_reason'],
+                    'bonus_tier': streak_bonus_details['bonus_tier'],
+                    'is_bonus_active': streak_bonus_details['is_bonus_active']
+                },
+                'milestone_info': {
+                    'next_milestone': next_milestone,
+                    'days_to_next': days_to_next,
+                    'tier_progress': streak_bonus_details['tier_progress'],
+                    'progress_percentage': round(streak_bonus_details['tier_progress'] * 100, 1)
+                },
+                'today_stats': {
+                    'minutes_studied': today_minutes,
+                    'xp_earned': today_xp,
+                    'daily_goal_progress': min((today_minutes / 120) * 100, 100)
+                },
+                'message': f'Streak: {current_streak} days, Bonus: {streak_bonus_details["bonus_xp"]} XP'
+            }
+            
+        except Exception as e:
+            logger.error(f"Error getting comprehensive streak info: {str(e)}")
+            return {'success': False, 'message': f'Internal error: {str(e)}'}
+
     async def get_streak_analytics(self, user_id: str, days: int = 30) -> Dict[str, Any]:
         """
         Get detailed streak analytics
@@ -269,16 +367,59 @@ class StreakService:
             logger.error(f"Error generating streak analytics: {str(e)}")
             return {'success': False, 'message': f'Internal error: {str(e)}'}
     
-    def _calculate_streak_bonus(self, current_streak: int) -> int:
-        """Calculate streak bonus XP"""
+    def _calculate_streak_bonus(self, current_streak: int) -> Dict[str, Any]:
+        """Calculate comprehensive streak bonus XP with detailed breakdown"""
         if current_streak <= 0:
-            return 0
+            return {
+                'bonus_xp': 0,
+                'multiplier': 1.0,
+                'bonus_reason': 'No active streak',
+                'bonus_tier': 0,
+                'next_tier_streak': 7,
+                'tier_progress': 0.0
+            }
         
-        # Bonus increases every 7 days, max 50 XP
-        bonus_periods = current_streak // 7
-        bonus_xp = min(bonus_periods * self.STREAK_BONUS_MULTIPLIER, self.STREAK_BONUS_MAX)
+        # Base bonus: 2 XP per week of streak, capped at 50
+        base_bonus_periods = current_streak // 7
+        base_bonus_xp = min(base_bonus_periods * 2, 50)
         
-        return bonus_xp
+        # Streak multiplier: 10% per day, capped at 2.0x
+        multiplier = min(1.0 + (current_streak * 0.1), 2.0)
+        
+        # Bonus tier system
+        if current_streak >= 100:
+            bonus_tier = 5
+            bonus_reason = "Legendary Streak Bonus"
+        elif current_streak >= 60:
+            bonus_tier = 4
+            bonus_reason = "Master Streak Bonus"
+        elif current_streak >= 30:
+            bonus_tier = 3
+            bonus_reason = "Expert Streak Bonus"
+        elif current_streak >= 14:
+            bonus_tier = 2
+            bonus_reason = "Advanced Streak Bonus"
+        elif current_streak >= 7:
+            bonus_tier = 1
+            bonus_reason = "Weekly Streak Bonus"
+        else:
+            bonus_tier = 0
+            bonus_reason = "Streak Building"
+        
+        # Next tier calculation
+        next_tier_thresholds = [7, 14, 30, 60, 100]
+        next_tier_streak = next((t for t in next_tier_thresholds if t > current_streak), None)
+        next_tier_progress = (current_streak % 7) / 7.0 if bonus_tier < 5 else 1.0
+        
+        return {
+            'bonus_xp': base_bonus_xp,
+            'multiplier': round(multiplier, 2),
+            'bonus_reason': bonus_reason,
+            'bonus_tier': bonus_tier,
+            'next_tier_streak': next_tier_streak,
+            'tier_progress': round(next_tier_progress, 2),
+            'is_bonus_active': base_bonus_xp > 0 or multiplier > 1.0
+        }
     
     def _check_milestone_reached(self, user_id: str, current_streak: int, best_streak: int) -> Optional[str]:
         """Check if a milestone was just reached"""

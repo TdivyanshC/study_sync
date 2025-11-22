@@ -4,6 +4,7 @@ import { DEMO_USER } from '../lib/constants';
 
 // User context interface
 interface UserContextType {
+  id: string;
   level: number;
   streak: number;
   isLoaded: boolean;
@@ -15,6 +16,7 @@ const UserContext = createContext<UserContextType | null>(null);
 
 export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<UserContextType>({
+    id: DEMO_USER,
     level: 1,
     streak: 0,
     isLoaded: false,
@@ -32,6 +34,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const streak = data?.streak || {};
         
         setUser({
+          id: DEMO_USER,
           level: profile.level ?? 1,
           streak: streak.current_streak ?? 0,
           isLoaded: true,
@@ -43,6 +46,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.log('⚠️ Failed to load user, using safe defaults:', e);
         // On error, still provide a fully loaded user with defaults
         setUser({
+          id: DEMO_USER,
           level: 1,
           streak: 0,
           isLoaded: true,

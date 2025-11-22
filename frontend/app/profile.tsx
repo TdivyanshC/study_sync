@@ -17,12 +17,23 @@ import { useUser } from '../providers/UserProvider';
 // Character levels mapping
 const getCharacterInfo = (level: number) => {
   const characters = [
-    { name: 'Beginner Scholar', icon: '🎓', minXP: 0, maxXP: 999 },
-    { name: 'Focused Knight', icon: '⚔️', minXP: 1000, maxXP: 2499 },
-    { name: 'Master Sage', icon: '🧙‍♂️', minXP: 2500, maxXP: 4999 },
-    { name: 'Legendary Mentor', icon: '👑', minXP: 5000, maxXP: 9999 },
+    { name: 'Beginner Scholar', icon: '🎓', minXP: 0, maxXP: 399 },
+    { name: 'Focused Knight', icon: '⚔️', minXP: 400, maxXP: 1199 },
+    { name: 'Master Sage', icon: '🧙‍♂️', minXP: 1200, maxXP: 2399 },
+    { name: 'Legendary Mentor', icon: '👑', minXP: 2400, maxXP: 99999 },
   ];
-  return characters[level - 1] || characters[characters.length - 1];
+  return characters[Math.min(level - 1, characters.length - 1)];
+};
+
+// Calculate next streak milestone
+const getNextStreakMilestone = (currentStreak: number) => {
+  if (currentStreak === 0) return 3;
+  if (currentStreak >= 3 && currentStreak < 7) return 7;
+  if (currentStreak >= 7 && currentStreak < 30) return 30;
+  if (currentStreak >= 30 && currentStreak < 60) return 60;
+  if (currentStreak >= 60 && currentStreak < 100) return 100;
+  if (currentStreak >= 100) return 365;
+  return 3;
 };
 
 // Mock achievements data
@@ -130,13 +141,20 @@ export default function ProfileScreen() {
 
   const character = getCharacterInfo(safeUser.level);
 
-  // Calculate XP progress for next level
+  // Calculate XP progress for next level (100 XP per level)
   const currentXP = safeUser.xp;
-  const nextLevelXP = character.maxXP + 1;
-  const progressPercent = ((currentXP - character.minXP) / (character.maxXP - character.minXP)) * 100;
+  const xpForCurrentLevel = (safeUser.level - 1) * 100;
+  const xpForNextLevel = safeUser.level * 100;
+  const currentLevelProgress = currentXP - xpForCurrentLevel;
+  const xpNeededForNext = xpForNextLevel - currentXP;
+  const progressPercent = (currentLevelProgress / 100) * 100;
 
-  // Mock calculation for total hours
-  const totalHours = Math.floor(currentXP / 100); // Rough estimate
+  // Calculate total hours based on new XP formula (10 XP per 60 min = 1/6 XP per min)
+  const totalHours = Math.floor(currentXP * 6 / 60); // Reverse of 1/6 XP per minute
+
+  // Calculate streak milestones
+  const nextMilestone = getNextStreakMilestone(safeUser.streak);
+  const daysToNextMilestone = Math.max(0, nextMilestone - safeUser.streak);
 
   const unlockedAchievements = mockAchievements.filter(a => a.unlocked);
 
@@ -167,7 +185,7 @@ export default function ProfileScreen() {
               <View style={[styles.xpProgress, { width: `${Math.min(progressPercent, 100)}%` }]} />
             </View>
             <Text style={GlobalStyles.textMuted}>
-              {currentXP} / {nextLevelXP} XP
+              {currentLevelProgress} / 100 XP
             </Text>
           </View>
         </View>
@@ -203,6 +221,28 @@ export default function ProfileScreen() {
           </View>
         </View>
 
+        {/* Streak Milestone Card */}
+        <View style={[GlobalStyles.glassCard, styles.performanceCard]}>
+          <Text style={GlobalStyles.subtitle}>Study Streak</Text>
+          
+          <View style={styles.performanceStats}>
+            <View style={styles.performanceStat}>
+              <Text style={styles.performanceNumber}>{safeUser.streak}</Text>
+              <Text style={GlobalStyles.textMuted}>Current Streak</Text>
+            </View>
+            
+            <View style={styles.performanceStat}>
+              <Text style={styles.performanceNumber}>{nextMilestone}</Text>
+              <Text style={GlobalStyles.textMuted}>Next Milestone</Text>
+            </View>
+            
+            <View style={styles.performanceStat}>
+              <Text style={styles.performanceNumber}>{daysToNextMilestone}</Text>
+              <Text style={GlobalStyles.textMuted}>Days to Go</Text>
+            </View>
+          </View>
+        </View>
+
         {/* Recent Performance */}
         <View style={[GlobalStyles.glassCard, styles.performanceCard]}>
           <Text style={GlobalStyles.subtitle}>This Week</Text>
@@ -219,8 +259,8 @@ export default function ProfileScreen() {
             </View>
             
             <View style={styles.performanceStat}>
-              <Text style={styles.performanceNumber}>2h</Text>
-              <Text style={GlobalStyles.textMuted}>Today</Text>
+              <Text style={styles.performanceNumber}>{Math.floor(totalHours / 7)}h</Text>
+              <Text style={GlobalStyles.textMuted}>Avg/Day</Text>
             </View>
           </View>
         </View>

@@ -117,6 +117,12 @@ export const API_ENDPOINTS = {
   STREAK_APPLY_MULTIPLIER: '/streak/apply-multiplier',
   STREAK_ANALYTICS: '/streak/analytics',
   
+  // Badge endpoints (under /api/badges/)
+  BADGES_USER: '/badges/user',
+  BADGES_CHECK: '/badges/check',
+  BADGES_LEADERBOARD: '/badges/leaderboard',
+  BADGES_COLLECTION: '/badges/collection',
+  
   // Test endpoints (under /api/)
   TEST_SEED: '/test/seed',
   TEST_INSERT_SAMPLE: '/test/insert-sample-data',

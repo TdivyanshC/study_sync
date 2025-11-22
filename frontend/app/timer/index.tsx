@@ -16,7 +16,9 @@ import { useTimer, useStudyStore } from '../../hooks/useStudySession';
 import { useUser } from '../../providers/UserProvider';
 import { router } from 'expo-router';
 import { sessionApi, SessionSummary } from '../../src/api/sessionApi';
+import { supabase } from '../../lib/supabaseClient';
 import SessionCompleteScreen from '../../components/SessionCompleteScreen';
+import BadgePopup from '../../components/BadgePopup';
 
 const { width } = Dimensions.get('window');
 
@@ -84,6 +86,14 @@ function TimerScreen() {
   const [showCompleteScreen, setShowCompleteScreen] = useState(false);
   const [sessionSummary, setSessionSummary] = useState<SessionSummary | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  
+  // State for badge management
+  const [newBadges, setNewBadges] = useState<any[]>([]);
+  const [showBadgePopup, setShowBadgePopup] = useState(false);
+  const [currentBadgeIndex, setCurrentBadgeIndex] = useState(0);
+  
+  // Auto-save timer state
+  const [lastAutoSave, setLastAutoSave] = useState<Date | null>(null);
 
   // Show loading state while user data is being loaded
   if (!user?.isLoaded) {
@@ -109,6 +119,38 @@ function TimerScreen() {
     }
   }, [currentSession, start, stop]);
 
+  // Auto-save functionality - save session every 30 seconds when running
+  useEffect(() => {
+    if (!isStudying || !currentSession?.id) {
+      return;
+    }
+
+    const autoSaveInterval = setInterval(async () => {
+      try {
+        const now = new Date();
+        const timeSinceLastSave = lastAutoSave ? (now.getTime() - lastAutoSave.getTime()) / 1000 : Infinity;
+        
+        // Save every 30 seconds
+        if (timeSinceLastSave >= 30) {
+          console.log('Auto-saving session progress...');
+          
+          // Send heartbeat/auto-save to backend
+          await sessionApi.saveSessionProgress(currentSession.id, {
+            last_heartbeat: now.toISOString(),
+            auto_save: true
+          });
+          
+          setLastAutoSave(now);
+        }
+      } catch (error) {
+        console.error('Auto-save failed:', error);
+        // Don't show error to user for auto-save failures
+      }
+    }, 5000); // Check every 5 seconds
+
+    return () => clearInterval(autoSaveInterval);
+  }, [isStudying, currentSession?.id, lastAutoSave]);
+
   // Defensive error handling for all handlers
   const handleCompleteTask = React.useCallback(async () => {
     try {
@@ -124,17 +166,170 @@ function TimerScreen() {
         return;
       }
       
+      // Calculate session duration
+      const timeParts = formattedTime.split(':');
+      const sessionDuration = parseInt(timeParts[0]) * 60 + parseInt(timeParts[1]);
+      
       // Stop the timer
       reset();
       stopSession();
       
-      // Process session through unified game engine
-      console.log('Processing session:', sessionId);
-      const summary = await sessionApi.processSession(sessionId);
+      // First, create the session in backend with proper gamification
+      console.log('Creating session in backend with duration:', sessionDuration, 'minutes');
       
-      // Show completion screen with results
-      setSessionSummary(summary);
-      setShowCompleteScreen(true);
+      try {
+        // Create session in Supabase with user association
+        const { data: newSession, error: sessionError } = await supabase
+          .from('study_sessions')
+          .insert({
+            user_id: user.id,
+            space_id: currentSession?.spaceId || null,
+            duration_minutes: sessionDuration,
+            efficiency: 85.0, // Default efficiency
+            created_at: new Date().toISOString()
+          })
+          .select()
+          .single();
+
+        if (sessionError) {
+          throw new Error(`Failed to create session: ${sessionError.message}`);
+        }
+
+        console.log('✅ Session created in backend:', newSession.id);
+
+        // Now process the session through unified game engine
+        console.log('Processing session through gamification:', newSession.id);
+        const summary = await sessionApi.processSession(newSession.id, user.id);
+        
+        // Check for new badges after session completion
+        console.log('Checking for new badges...');
+        const { gamificationApi } = await import('../../src/api/gamificationApi');
+        const badgeResponse = await gamificationApi.checkAndAwardBadges(user.id);
+        
+        // Store newly unlocked badges for popup display
+        const unlockedBadges = badgeResponse.data?.new_badges || [];
+        setNewBadges(unlockedBadges);
+        if (unlockedBadges.length > 0) {
+          console.log(`🎖️ Found ${unlockedBadges.length} new badges!`);
+          
+          // Emit badge events
+          const { badgeEventEmitter } = await import('../../src/events/badgeEvents');
+          unlockedBadges.forEach((badge, index) => {
+            badgeEventEmitter.emitBadgeUnlocked({
+              userId: user.id,
+              badge: {
+                id: badge.badge_id,
+                title: badge.title,
+                description: badge.description,
+                icon_url: badge.icon
+              },
+              earnedAt: new Date(),
+              totalBadges: index + 1,
+              timestamp: new Date()
+            });
+          });
+        }
+        
+        // Show completion screen with results
+        setSessionSummary(summary);
+        setShowCompleteScreen(true);
+        
+        // Emit XP event to update frontend components
+        if (summary.xp_delta > 0) {
+          // Import the event emitter
+          const { xpEventEmitter } = await import('../../src/events/xpEvents');
+          
+          // Determine if this was a level up (estimate old level)
+          const estimatedOldLevel = Math.floor((summary.total_xp - summary.xp_delta) / 100);
+          const newLevel = summary.level;
+          const levelUp = newLevel > estimatedOldLevel;
+          
+          // Emit XP updated event
+          xpEventEmitter.emitXPUpdated({
+            userId: user.id,
+            amountAwarded: summary.xp_delta,
+            totalXP: summary.total_xp,
+            level: summary.level,
+            source: 'session',
+            timestamp: new Date(),
+            levelUp
+          });
+          
+          // If level up occurred, emit level up event
+          if (levelUp) {
+            xpEventEmitter.emitLevelUp({
+              userId: user.id,
+              oldLevel: estimatedOldLevel,
+              newLevel,
+              totalXP: summary.total_xp,
+              timestamp: new Date()
+            });
+          }
+          
+          // Check for milestone achievements
+          if (summary.total_xp >= 500 && summary.total_xp < 1000) {
+            xpEventEmitter.emitMilestone({
+              userId: user.id,
+              milestoneType: '500_xp',
+              totalXP: summary.total_xp,
+              bonusAwarded: 100,
+              timestamp: new Date()
+            });
+          } else if (summary.total_xp >= 10000) {
+            xpEventEmitter.emitMilestone({
+              userId: user.id,
+              milestoneType: '10000_xp',
+              totalXP: summary.total_xp,
+              bonusAwarded: 1000,
+              timestamp: new Date()
+            });
+          }
+        }
+        
+      } catch (error) {
+        console.error('Failed to create/process session:', error);
+        // Still show a basic completion screen with error info
+        setSessionSummary({
+          success: false,
+          user_id: user.id,
+          session_id: currentSession?.id || '',
+          processed_at: new Date().toISOString(),
+          xp_delta: 0,
+          xp_reason: `Session creation failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          total_xp: 0,
+          level: 1,
+          streak_status: 'unknown' as const,
+          streak_delta: 0,
+          current_streak: 0,
+          best_streak: 0,
+          audit_risk: 0,
+          audit_valid: false,
+          audit_patterns: [],
+          forgiveness_percent: 0,
+          audit_messages: [],
+          ranking: {
+            tier: 'bronze',
+            tier_info: {
+              name: 'Bronze',
+              emoji: '🥉',
+              color: '#CD7F32',
+              min_xp: 0,
+              min_streak: 0
+            },
+            score: 0,
+            progress_percent: 0,
+            promoted: false
+          },
+          notifications: {
+            xp_gained: false,
+            streak_maintained: false,
+            streak_milestone: false,
+            ranking_promoted: false,
+            confetti_trigger: false
+          }
+        });
+        setShowCompleteScreen(true);
+      }
       
     } catch (error) {
       console.error('Error completing task:', error);
@@ -144,14 +339,47 @@ function TimerScreen() {
     } finally {
       setIsProcessing(false);
     }
-  }, [currentSession, stopSession, reset]);
+  }, [currentSession, stopSession, reset, user.id, formattedTime]);
   
   // Handle closing the completion screen
   const handleCloseCompleteScreen = React.useCallback(() => {
     setShowCompleteScreen(false);
     setSessionSummary(null);
+    
+    // Check if we have new badges to show
+    if (newBadges.length > 0 && !showBadgePopup) {
+      setCurrentBadgeIndex(0);
+      setShowBadgePopup(true);
+      return; // Don't navigate back yet, show badges first
+    }
+    
+    // Invalidate and refresh home screen data
+    // This will trigger a refresh of the home screen metrics
+    console.log('Refreshing home screen data after session completion...');
+    
+    // Navigate back to home screen and trigger refresh
     router.back();
-  }, []);
+    
+    // You could also use a global state management solution here
+    // For now, the home screen will refresh automatically when it comes into focus
+  }, [newBadges, showBadgePopup]);
+
+  // Handle closing badge popup
+  const handleCloseBadgePopup = React.useCallback(() => {
+    setShowBadgePopup(false);
+    
+    // Show next badge if available
+    const nextIndex = currentBadgeIndex + 1;
+    if (nextIndex < newBadges.length) {
+      setCurrentBadgeIndex(nextIndex);
+      setTimeout(() => setShowBadgePopup(true), 300);
+    } else {
+      // All badges shown, proceed to home screen
+      setNewBadges([]);
+      setCurrentBadgeIndex(0);
+      router.back();
+    }
+  }, [currentBadgeIndex, newBadges]);
 
   const handlePause = React.useCallback(() => {
     try {
@@ -269,6 +497,16 @@ function TimerScreen() {
           />
         )}
       </Modal>
+      
+      {/* Badge Popup */}
+      {newBadges.length > 0 && (
+        <BadgePopup
+          visible={showBadgePopup}
+          badgeTitle={newBadges[currentBadgeIndex]?.title || ''}
+          badgeDescription={newBadges[currentBadgeIndex]?.description}
+          onClose={handleCloseBadgePopup}
+        />
+      )}
     </View>
   );
 }

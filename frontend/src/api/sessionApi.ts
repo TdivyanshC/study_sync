@@ -74,7 +74,7 @@ class SessionApi {
    * @param sessionId - The session ID to process
    * @returns Session summary with all gamification results
    */
-  async processSession(sessionId: string): Promise<SessionSummary> {
+  async processSession(sessionId: string, userId?: string): Promise<SessionSummary> {
     try {
       // Get current user session
       const { data: { session } } = await supabase.auth.getSession();
@@ -82,10 +82,20 @@ class SessionApi {
         throw new Error('No active session');
       }
 
-      // Call backend API endpoint
-      const apiUrl = buildSessionApiUrl('');
-      console.log(`🔗 Session API URL: ${apiUrl}`);
-      const response = await fetch(`${buildSessionApiUrl(API_ENDPOINTS.SESSION_PROCESS)}/${sessionId}`, {
+      // Use provided userId or get from session
+      const actualUserId = userId || session.user?.id;
+      if (!actualUserId) {
+        throw new Error('No user ID available');
+      }
+
+      // Call backend API endpoint with user ID
+      const apiUrl = buildSessionApiUrl(API_ENDPOINTS.SESSION_PROCESS);
+      const fullUrl = `${apiUrl}/${sessionId}?user_id=${actualUserId}`;
+      
+      console.log(`🔗 Processing session: ${sessionId} for user: ${actualUserId}`);
+      console.log(`🔗 Full URL: ${fullUrl}`);
+      
+      const response = await fetch(fullUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -94,13 +104,16 @@ class SessionApi {
       });
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`❌ Session processing failed: ${response.status} - ${errorText}`);
         throw new Error(`Session processing failed: ${response.statusText}`);
       }
 
       const data = await response.json();
+      console.log('✅ Session processed successfully:', data);
       return data;
     } catch (error) {
-      console.error('Error processing session:', error);
+      console.error('❌ Error processing session:', error);
       throw error;
     }
   }
@@ -170,6 +183,33 @@ class SessionApi {
     }
   }
   
+  /**
+   * Save session progress/heartbeat for auto-save functionality
+   * 
+   * @param sessionId - The session ID to update
+   * @param progressData - Progress data to save
+   * @returns Success status
+   */
+  async saveSessionProgress(sessionId: string, progressData: any): Promise<boolean> {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.warn('No active session for auto-save');
+        return false;
+      }
+
+      // For now, just log the auto-save attempt (backend heartbeat endpoint can be added later)
+      console.log(`Auto-save for session ${sessionId}:`, progressData);
+      
+      // You could implement this with session events or direct database updates
+      // For now, we'll just return true to indicate the auto-save was attempted
+      return true;
+    } catch (error) {
+      console.warn('Error saving session progress:', error);
+      return false;
+    }
+  }
+
   /**
    * Check health of session processing service
    * 

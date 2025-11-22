@@ -14,12 +14,13 @@ class EnhancedAuditAnalyzer:
     """Enhanced utility class for analyzing session audits with sophisticated pattern detection"""
     
     @staticmethod
-    def analyze_session_patterns(events: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def analyze_session_patterns(events: List[Dict[str, Any]], session_metadata: Dict[str, Any] = None) -> Dict[str, Any]:
         """
         Enhanced analysis of session events for patterns and anomalies (non-blocking)
         
         Args:
             events: List of session events
+            session_metadata: Optional session metadata (device_info, study_type, etc.)
             
         Returns:
             Enhanced analysis results dictionary with detailed patterns and risk assessment
@@ -33,8 +34,18 @@ class EnhancedAuditAnalyzer:
                 'risk_assessment': 'critical',
                 'pattern_details': {},
                 'recommendations': [],
-                'forgiveness_factors': {}
+                'forgiveness_factors': {},
+                'session_integrity': {
+                    'metadata_consistency': False,
+                    'device_signature': None,
+                    'study_type_validation': False,
+                    'timing_integrity': False,
+                    'payload_integrity': True
+                }
             }
+        
+        # Initialize session integrity validation
+        session_integrity = EnhancedAuditAnalyzer._analyze_session_integrity(events, session_metadata)
         
         analysis = {
             'total_events': len(events),
@@ -46,7 +57,8 @@ class EnhancedAuditAnalyzer:
             'risk_assessment': 'low',
             'pattern_details': {},
             'recommendations': [],
-            'forgiveness_factors': {}
+            'forgiveness_factors': {},
+            'session_integrity': session_integrity
         }
         
         # Analyze event types distribution
@@ -356,6 +368,238 @@ class EnhancedAuditAnalyzer:
         
         # Cap at 100
         return min(max(adjusted_score, 0), 100)
+    
+    @staticmethod
+    def _analyze_session_integrity(events: List[Dict[str, Any]], session_metadata: Dict[str, Any] = None) -> Dict[str, Any]:
+        """
+        Analyze session integrity including metadata consistency and device validation
+        
+        Args:
+            events: List of session events
+            session_metadata: Optional session metadata
+            
+        Returns:
+            Session integrity analysis results
+        """
+        integrity = {
+            'metadata_consistency': True,
+            'device_signature': None,
+            'study_type_validation': True,
+            'timing_integrity': True,
+            'payload_integrity': True,
+            'integrity_score': 100,
+            'integrity_issues': [],
+            'device_consistency': {},
+            'payload_analysis': {},
+            'metadata_analysis': {}
+        }
+        
+        # Analyze device consistency
+        device_signatures = []
+        for event in events:
+            payload = event.get('event_payload', {})
+            if isinstance(payload, dict):
+                device_info = payload.get('device_info', {})
+                if device_info:
+                    signature = f"{device_info.get('platform', 'unknown')}_{device_info.get('model', 'unknown')}"
+                    device_signatures.append(signature)
+        
+        # Check for device consistency
+        if device_signatures:
+            unique_devices = set(device_signatures)
+            if len(unique_devices) > 1:
+                integrity['device_consistency']['multiple_devices'] = True
+                integrity['device_consistency']['device_count'] = len(unique_devices)
+                integrity['integrity_issues'].append('Multiple device signatures detected')
+                integrity['integrity_score'] -= 10
+            else:
+                integrity['device_signature'] = unique_devices.pop()
+                integrity['device_consistency']['single_device'] = True
+        
+        # Analyze metadata consistency
+        if session_metadata:
+            expected_study_type = session_metadata.get('study_type')
+            for event in events:
+                payload = event.get('event_payload', {})
+                if isinstance(payload, dict):
+                    event_study_type = payload.get('study_type')
+                    if event_study_type and expected_study_type:
+                        if event_study_type != expected_study_type:
+                            integrity['metadata_consistency'] = False
+                            integrity['metadata_analysis']['study_type_mismatch'] = True
+                            integrity['integrity_issues'].append('Study type mismatch in events')
+                            integrity['integrity_score'] -= 15
+        
+        # Analyze payload integrity
+        payload_sizes = []
+        invalid_payloads = 0
+        
+        for event in events:
+            payload = event.get('event_payload')
+            if payload is not None:
+                payload_sizes.append(len(str(payload)))
+                if not isinstance(payload, (dict, str, int, float, bool, list)):
+                    invalid_payloads += 1
+        
+        if payload_sizes:
+            avg_size = sum(payload_sizes) / len(payload_sizes)
+            max_size = max(payload_sizes)
+            if max_size > 10000:  # Very large payload
+                integrity['payload_analysis']['large_payload'] = True
+                integrity['integrity_issues'].append('Unusually large event payload detected')
+                integrity['integrity_score'] -= 8
+            
+            if invalid_payloads > 0:
+                integrity['payload_integrity'] = False
+                integrity['payload_analysis']['invalid_payload_types'] = invalid_payloads
+                integrity['integrity_issues'].append(f'{invalid_payloads} events with invalid payload types')
+                integrity['integrity_score'] -= 12
+        
+        # Analyze timing integrity
+        timestamps = []
+        for event in events:
+            try:
+                timestamp = datetime.fromisoformat(event['created_at'].replace('Z', '+00:00'))
+                timestamps.append(timestamp)
+            except:
+                integrity['timing_integrity'] = False
+                integrity['integrity_issues'].append('Invalid timestamp format detected')
+                integrity['integrity_score'] -= 10
+        
+        if timestamps:
+            timestamps.sort()
+            # Check for duplicate timestamps
+            time_duplicates = []
+            for i in range(1, len(timestamps)):
+                if (timestamps[i] - timestamps[i-1]).total_seconds() == 0:
+                    time_duplicates.append(i)
+            
+            if time_duplicates:
+                integrity['timing_integrity'] = False
+                integrity['timing_issues'] = {
+                    'duplicate_timestamps': len(time_duplicates),
+                    'positions': time_duplicates
+                }
+                integrity['integrity_issues'].append(f'{len(time_duplicates)} duplicate timestamps detected')
+                integrity['integrity_score'] -= 8
+        
+        # Ensure integrity score doesn't go below 0
+        integrity['integrity_score'] = max(integrity['integrity_score'], 0)
+        
+        return integrity
+
+    @staticmethod
+    def _enhanced_anomaly_detection(events: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        Enhanced anomaly detection with machine learning-style pattern recognition
+        
+        Args:
+            events: List of session events
+            
+        Returns:
+            List of enhanced anomalies with context and confidence scores
+        """
+        anomalies = []
+        
+        if not events:
+            return anomalies
+        
+        # Behavioral pattern analysis
+        event_types = [e['event_type'] for e in events]
+        heartbeat_ratio = event_types.count('heartbeat') / len(event_types) if event_types else 0
+        
+        # Suspicious heartbeat patterns
+        if heartbeat_ratio > 0.9:
+            anomalies.append({
+                'type': 'excessive_heartbeat',
+                'severity': 'medium',
+                'confidence': 0.8,
+                'details': f'Heartbeat ratio of {heartbeat_ratio:.1%} is unusually high',
+                'context': 'Possible automated behavior or app malfunction',
+                'forgiveness_eligible': True,
+                'impact': 18
+            })
+        
+        # Event frequency analysis
+        time_gaps = []
+        for i in range(1, len(events)):
+            try:
+                current = datetime.fromisoformat(events[i]['created_at'].replace('Z', '+00:00'))
+                prev = datetime.fromisoformat(events[i-1]['created_at'].replace('Z', '+00:00'))
+                gap = (current - prev).total_seconds()
+                time_gaps.append(gap)
+            except:
+                continue
+        
+        if time_gaps:
+            # Check for suspiciously regular intervals (bot-like behavior)
+            if len(time_gaps) > 3:
+                regular_intervals = 0
+                for i in range(1, len(time_gaps)):
+                    if abs(time_gaps[i] - time_gaps[i-1]) < 1.0:  # Within 1 second
+                        regular_intervals += 1
+                
+                if regular_intervals / (len(time_gaps) - 1) > 0.8:
+                    anomalies.append({
+                        'type': 'suspiciously_regular_timing',
+                        'severity': 'high',
+                        'confidence': 0.9,
+                        'details': f'{regular_intervals}/{len(time_gaps)-1} intervals are suspiciously regular',
+                        'context': 'Possible automated behavior - natural user activity varies',
+                        'forgiveness_eligible': True,
+                        'impact': 25
+                    })
+        
+        # Payload diversity analysis
+        payloads = []
+        for event in events:
+            payload = event.get('event_payload')
+            if payload:
+                payloads.append(hash(str(payload)))
+        
+        if payloads:
+            unique_payloads = len(set(payloads))
+            payload_diversity = unique_payloads / len(payloads) if payloads else 0
+            
+            if payload_diversity < 0.1:  # Very low diversity
+                anomalies.append({
+                    'type': 'low_payload_diversity',
+                    'severity': 'medium',
+                    'confidence': 0.7,
+                    'details': f'Payload diversity of {payload_diversity:.1%} is very low',
+                    'context': 'Possible template or automated responses',
+                    'forgiveness_eligible': True,
+                    'impact': 15
+                })
+        
+        # Session completeness analysis
+        expected_events = ['start', 'heartbeat', 'end']
+        present_events = set(event_types)
+        missing_events = [e for e in expected_events if e not in present_events]
+        
+        if missing_events:
+            if 'start' in missing_events and 'end' in missing_events:
+                anomalies.append({
+                    'type': 'missing_session_boundaries',
+                    'severity': 'high',
+                    'confidence': 0.95,
+                    'details': 'Both start and end events are missing',
+                    'context': 'Session boundaries not properly recorded',
+                    'forgiveness_eligible': True,
+                    'impact': 30
+                })
+            elif missing_events:
+                anomalies.append({
+                    'type': 'incomplete_session',
+                    'severity': 'medium',
+                    'confidence': 0.8,
+                    'details': f'Missing events: {", ".join(missing_events)}',
+                    'context': 'Incomplete session tracking',
+                    'forgiveness_eligible': True,
+                    'impact': 20
+                })
+        
+        return anomalies
 
 
 # Demo utility functions for testing

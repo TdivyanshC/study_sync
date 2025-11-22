@@ -25,23 +25,26 @@ class SoftAuditService:
         except:
             self.streak_service = None
         
-        # Soft audit thresholds
-        self.SUSPICION_THRESHOLD_SOFT = 70  # Higher threshold for soft mode
-        self.SUSPICION_THRESHOLD_STRICT = 30  # Lower threshold for strict mode
+        # Soft audit thresholds - enhanced for better accuracy
+        self.SUSPICION_THRESHOLD_SOFT = 75  # Higher threshold for soft mode (was 70)
+        self.SUSPICION_THRESHOLD_STRICT = 25  # Lower threshold for strict mode (was 30)
         
-        # Forgiveness multipliers based on user history
-        self.STREAK_FORGIVENESS_MULTIPLIER = 0.1  # 10% forgiveness per streak day
-        self.XP_FORGIVENESS_MULTIPLIER = 0.05  # 5% forgiveness per 1000 XP
-        self.HISTORY_FORGIVENESS_MAX = 0.5  # Maximum 50% forgiveness
+        # Enhanced forgiveness multipliers based on user history
+        self.STREAK_FORGIVENESS_MULTIPLIER = 0.15  # 15% forgiveness per streak day (was 10%)
+        self.XP_FORGIVENESS_MULTIPLIER = 0.08  # 8% forgiveness per 1000 XP (was 5%)
+        self.HISTORY_FORGIVENESS_MAX = 0.6  # Maximum 60% forgiveness (was 50%)
         
-        # Pattern weights for suspicious behavior
+        # Enhanced pattern weights for suspicious behavior
         self.PATTERN_WEIGHTS = {
-            'missing_start_event': 25,
-            'missing_end_event': 30,
-            'large_time_gap': 15,
-            'irregular_heartbeat': 10,
-            'no_events': 50,
-            'suspicious_duration': 20
+            'missing_start_event': 30,  # Increased from 25
+            'missing_end_event': 35,    # Increased from 30
+            'large_time_gap': 20,       # Increased from 15
+            'irregular_heartbeat': 15,  # Increased from 10
+            'no_events': 60,            # Increased from 50
+            'suspicious_duration': 25,  # Increased from 20
+            'duplicate_events': 10,     # New category
+            'invalid_payload': 15,      # New category
+            'timing_anomaly': 18        # New category
         }
     
     async def validate_session_soft_audit(
@@ -72,8 +75,8 @@ class SoftAuditService:
             
             events = events_result.data
             
-            # 2. Analyze session patterns
-            analysis = AuditAnalyzer.analyze_session_patterns(events)
+            # 2. Analyze session patterns with enhanced detection
+            analysis = self._enhanced_session_analysis(events)
             base_suspicion_score = AuditAnalyzer.calculate_suspicion_score(analysis)
             
             # 3. Apply soft audit forgiveness based on user history
@@ -276,6 +279,193 @@ class SoftAuditService:
                 'user_stats': {'current_streak': 0, 'total_xp': 0, 'clean_sessions': 0, 'total_sessions': 0}
             }
     
+    def _enhanced_session_analysis(self, events: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        Enhanced session analysis with more sophisticated anomaly detection
+        
+        Args:
+            events: List of session events
+            
+        Returns:
+            Enhanced analysis results with better anomaly detection
+        """
+        if not events:
+            return {
+                'total_events': 0,
+                'anomalies': ['No events recorded'],
+                'pattern_score': 0,
+                'enhanced_analysis': True
+            }
+        
+        analysis = {
+            'total_events': len(events),
+            'event_types': {},
+            'time_gaps': [],
+            'anomalies': [],
+            'pattern_score': 100,  # Start with perfect score
+            'enhanced_analysis': True,
+            'timing_patterns': {},
+            'payload_analysis': {},
+            'sequence_analysis': {}
+        }
+        
+        # Enhanced event type analysis
+        for event in events:
+            event_type = event['event_type']
+            analysis['event_types'][event_type] = analysis['event_types'].get(event_type, 0) + 1
+            
+            # Enhanced payload analysis
+            payload = event.get('event_payload', {})
+            if payload:
+                if not isinstance(payload, dict):
+                    analysis['anomalies'].append('Invalid event payload format')
+                    analysis['pattern_score'] -= self.PATTERN_WEIGHTS.get('invalid_payload', 15)
+                elif len(str(payload)) > 5000:  # Payload too large
+                    analysis['anomalies'].append('Event payload unusually large')
+                    analysis['pattern_score'] -= 10
+        
+        # Enhanced timing analysis
+        prev_time = None
+        for i, event in enumerate(events):
+            current_time = datetime.fromisoformat(event['created_at'].replace('Z', '+00:00'))
+            
+            if prev_time:
+                gap = (current_time - prev_time).total_seconds()
+                analysis['time_gaps'].append(gap)
+                
+                # Enhanced gap analysis
+                if gap > 600 and event['event_type'] != 'end':  # 10 minutes
+                    analysis['anomalies'].append(f'Large gap: {gap:.0f} seconds without activity')
+                    analysis['pattern_score'] -= self.PATTERN_WEIGHTS.get('large_time_gap', 20)
+                
+                # Timing anomaly detection
+                if gap < 1:  # Events too close together (potential spam)
+                    analysis['anomalies'].append('Events occurring too rapidly')
+                    analysis['pattern_score'] -= self.PATTERN_WEIGHTS.get('timing_anomaly', 18)
+                
+                # Check for duplicate timing patterns (bots)
+                if i > 0 and i < len(events) - 1:
+                    prev_gap = analysis['time_gaps'][i-1] if i > 0 else 0
+                    if abs(gap - prev_gap) < 0.1:  # Very consistent timing
+                        analysis['anomalies'].append('Suspiciously consistent event timing')
+                        analysis['pattern_score'] -= 15
+            
+            prev_time = current_time
+        
+        # Enhanced sequence analysis
+        event_types = [event['event_type'] for event in events]
+        unique_events = set(event_types)
+        
+        # Check for logical event sequence
+        if 'start' in unique_events and 'end' in unique_events:
+            start_idx = event_types.index('start')
+            end_idx = event_types.index('end')
+            if end_idx <= start_idx:
+                analysis['anomalies'].append('End event occurs before start event')
+                analysis['pattern_score'] -= self.PATTERN_WEIGHTS.get('timing_anomaly', 18)
+        
+        # Check for missing essential events
+        if 'start' not in event_types:
+            analysis['anomalies'].append('Missing start event')
+            analysis['pattern_score'] -= self.PATTERN_WEIGHTS.get('missing_start_event', 30)
+        
+        if 'end' not in event_types:
+            analysis['anomalies'].append('Missing end event')
+            analysis['pattern_score'] -= self.PATTERN_WEIGHTS.get('missing_end_event', 35)
+        
+        # Enhanced heartbeat analysis
+        heartbeat_events = [e for e in event_types if e == 'heartbeat']
+        if len(heartbeat_events) > 0:
+            heartbeat_ratio = len(heartbeat_events) / len(events)
+            if heartbeat_ratio < 0.3:  # Less than 30% heartbeats
+                analysis['anomalies'].append('Insufficient heartbeat events')
+                analysis['pattern_score'] -= self.PATTERN_WEIGHTS.get('irregular_heartbeat', 15)
+            elif heartbeat_ratio > 0.8:  # More than 80% heartbeats (suspicious)
+                analysis['anomalies'].append('Excessive heartbeat events')
+                analysis['pattern_score'] -= 12
+        
+        # Check for duplicate events
+        event_signatures = []
+        for event in events:
+            signature = f"{event['event_type']}_{event['created_at']}"
+            if signature in event_signatures:
+                analysis['anomalies'].append('Duplicate event detected')
+                analysis['pattern_score'] -= self.PATTERN_WEIGHTS.get('duplicate_events', 10)
+            event_signatures.append(signature)
+        
+        # Enhanced duration analysis if we have start and end
+        if 'start' in event_types and 'end' in event_types:
+            try:
+                start_time = None
+                end_time = None
+                for event in events:
+                    if event['event_type'] == 'start':
+                        start_time = datetime.fromisoformat(event['created_at'].replace('Z', '+00:00'))
+                    elif event['event_type'] == 'end':
+                        end_time = datetime.fromisoformat(event['created_at'].replace('Z', '+00:00'))
+                
+                if start_time and end_time:
+                    duration = (end_time - start_time).total_seconds() / 60  # minutes
+                    if duration < 1:  # Less than 1 minute
+                        analysis['anomalies'].append('Session duration unusually short')
+                        analysis['pattern_score'] -= self.PATTERN_WEIGHTS.get('suspicious_duration', 25)
+                    elif duration > 1440:  # More than 24 hours
+                        analysis['anomalies'].append('Session duration unusually long')
+                        analysis['pattern_score'] -= self.PATTERN_WEIGHTS.get('suspicious_duration', 25)
+            except:
+                pass  # Skip duration analysis if parsing fails
+        
+        # Ensure score doesn't go below 0
+        analysis['pattern_score'] = max(analysis['pattern_score'], 0)
+        
+        # Add enhanced metadata
+        analysis['timing_patterns'] = {
+            'avg_gap': sum(analysis['time_gaps']) / len(analysis['time_gaps']) if analysis['time_gaps'] else 0,
+            'max_gap': max(analysis['time_gaps']) if analysis['time_gaps'] else 0,
+            'consistent_timing': self._check_timing_consistency(analysis['time_gaps'])
+        }
+        
+        analysis['payload_analysis'] = {
+            'total_payloads': sum(1 for e in events if e.get('event_payload')),
+            'avg_payload_size': self._calculate_avg_payload_size(events),
+            'payload_types': list(set(type(e.get('event_payload', {})) for e in events))
+        }
+        
+        return analysis
+    
+    def _check_timing_consistency(self, time_gaps: List[float]) -> bool:
+        """Check if timing gaps are suspiciously consistent (bot-like behavior)"""
+        if len(time_gaps) < 3:
+            return False
+        
+        # Check if most gaps are very similar (within 10% variance)
+        consistent_gaps = 0
+        total_gaps = len(time_gaps)
+        
+        for i in range(1, len(time_gaps)):
+            if time_gaps[i] > 0:
+                variance = abs(time_gaps[i] - time_gaps[i-1]) / time_gaps[i]
+                if variance < 0.1:  # Less than 10% variance
+                    consistent_gaps += 1
+        
+        return (consistent_gaps / total_gaps) > 0.7  # 70% consistency threshold
+    
+    def _calculate_avg_payload_size(self, events: List[Dict[str, Any]]) -> float:
+        """Calculate average payload size across events"""
+        if not events:
+            return 0.0
+        
+        total_size = 0
+        payload_count = 0
+        
+        for event in events:
+            payload = event.get('event_payload')
+            if payload:
+                total_size += len(str(payload))
+                payload_count += 1
+        
+        return total_size / payload_count if payload_count > 0 else 0.0
+
     def _apply_forgiveness(self, base_score: int, forgiveness: Dict[str, Any]) -> int:
         """Apply forgiveness to suspicion score"""
         forgiveness_rate = forgiveness['total_forgiveness']

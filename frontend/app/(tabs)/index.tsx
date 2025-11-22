@@ -25,7 +25,9 @@ export default function Index() {
   const [todayMetrics, setTodayMetrics] = useState({
     hoursStudied: 0,
     streak: 0,
-    xpEarned: 0,
+    xp: 0,
+    level: 0,
+    hoursDisplay: "0h",
     loading: true,
   });
 
@@ -45,25 +47,48 @@ export default function Index() {
     try {
       const userId = DEMO_USER;
       
-      // Fetch today's metrics (hours and XP)
-      const metrics = await gamificationApi.getTodayMetrics(userId);
+      // Use new gamification summary API
+      const response = await fetch(`http://localhost:8000/api/xp/summary/${userId}`);
+      const result = await response.json();
       
-      // Fetch user XP stats (includes streak)
-      const xpStats = await gamificationApi.getUserXPStats(userId);
-      
-      setTodayMetrics({
-        hoursStudied: Math.round((metrics.total_focus_time || 0) / 60 * 10) / 10, // Convert to hours with 1 decimal
-        streak: xpStats.current_streak || 0,
-        xpEarned: 0, // XP earned is no longer available from this endpoint
-        loading: false,
-      });
+      if (result.success && result.data) {
+        const data = result.data;
+        
+        // Format hours according to user requirements
+        const minutes = data.today.minutes_studied;
+        let hoursDisplay: string;
+        
+        if (minutes === 0) {
+          hoursDisplay = "0h";
+        } else if (minutes < 1) {
+          hoursDisplay = "Just started!";
+        } else if (minutes < 60) {
+          hoursDisplay = `${minutes} min`;
+        } else {
+          const hours = Math.round((minutes / 60) * 10) / 10; // 1 decimal place
+          hoursDisplay = `${hours}h`;
+        }
+        
+        setTodayMetrics({
+          hoursStudied: data.today.hours_studied,
+          streak: data.streak.current,
+          xp: data.xp.total,
+          level: data.xp.level,
+          hoursDisplay,
+          loading: false,
+        });
+      } else {
+        throw new Error('API returned invalid data');
+      }
     } catch (error) {
       console.error('Failed to load today metrics:', error);
       // Set to 0 if error
       setTodayMetrics({
         hoursStudied: 0,
         streak: 0,
-        xpEarned: 0,
+        xp: 0,
+        level: 0,
+        hoursDisplay: "0h",
         loading: false,
       });
     }
@@ -119,7 +144,7 @@ export default function Index() {
             <View style={styles.statItem}>
               <Ionicons name="time" size={24} color={Colors.accent} />
               <Text style={styles.statNumber}>
-                {todayMetrics.loading ? '...' : `${todayMetrics.hoursStudied}h`}
+                {todayMetrics.loading ? '...' : todayMetrics.hoursDisplay}
               </Text>
               <Text style={GlobalStyles.textMuted}>Studied</Text>
             </View>
@@ -133,7 +158,7 @@ export default function Index() {
             <View style={styles.statItem}>
               <Ionicons name="trophy" size={24} color={Colors.streak} />
               <Text style={styles.statNumber}>
-                {todayMetrics.loading ? '...' : todayMetrics.xpEarned}
+                {todayMetrics.loading ? '...' : todayMetrics.xp}
               </Text>
               <Text style={GlobalStyles.textMuted}>XP</Text>
             </View>

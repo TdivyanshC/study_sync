@@ -12,6 +12,7 @@ from services.gamification.xp_service import XPService
 from services.gamification.streak_service import StreakService
 from services.gamification.soft_audit_service import SoftAuditService
 from services.gamification.ranking_service import RankingService
+from services.gamification.badge_service import BadgeService
 from models.gamification import SessionCalculationRequest
 
 # Configure logging
@@ -46,6 +47,7 @@ class SessionProcessor:
         self.streak_service = StreakService(supabase_client)
         self.soft_audit_service = SoftAuditService(supabase_client)
         self.ranking_service = RankingService(supabase_client)
+        self.badge_service = BadgeService(supabase_client)
         
         logger.info("SessionProcessor initialized with all gamification modules")
     
@@ -100,7 +102,11 @@ class SessionProcessor:
             streak_result = await self._update_streak(user_id)
             logger.info(f"Streak updated: current={streak_result.get('current_streak', 0)}, broken={streak_result.get('streak_broken', False)}")
             
-            # Step 5: Recompute Ranking (D3 composite score)
+            # Step 5: Check and Award Badges (B1 rules)
+            badge_result = await self._check_and_award_badges(user_id)
+            logger.info(f"Badge check completed: {len(badge_result.get('new_badges', []))} new badges awarded")
+            
+            # Step 6: Recompute Ranking (D3 composite score)
             ranking_result = await self._recompute_ranking(user_id)
             logger.info(f"Ranking updated: tier={ranking_result.get('tier', 'bronze')}, score={ranking_result.get('composite_score', 0)}")
             
@@ -113,7 +119,8 @@ class SessionProcessor:
                 xp_result=xp_result,
                 streak_result=streak_result,
                 audit_result=audit_result,
-                ranking_result=ranking_result
+                ranking_result=ranking_result,
+                badge_result=badge_result
             )
             
             logger.info(f"Session processing completed successfully for session {session_id}")
@@ -265,6 +272,27 @@ class SessionProcessor:
                 'message': str(e)
             }
     
+    async def _check_and_award_badges(self, user_id: str) -> Dict[str, Any]:
+        """Check and award badges to user (B1 rules)"""
+        try:
+            newly_awarded_badges = await self.badge_service.check_and_award_badges(user_id)
+            
+            return {
+                'success': True,
+                'new_badges': newly_awarded_badges,
+                'badge_count': len(newly_awarded_badges),
+                'message': f"Awarded {len(newly_awarded_badges)} new badges"
+            }
+            
+        except Exception as e:
+            logger.error(f"Error checking and awarding badges: {str(e)}")
+            return {
+                'success': False,
+                'new_badges': [],
+                'badge_count': 0,
+                'message': f"Badge check failed: {str(e)}"
+            }
+    
     async def _recompute_ranking(self, user_id: str) -> Dict[str, Any]:
         """Recompute ranking using D3 composite score (only after XP + streak update)"""
         try:
@@ -344,7 +372,8 @@ class SessionProcessor:
         xp_result: Dict[str, Any],
         streak_result: Dict[str, Any],
         audit_result: Dict[str, Any],
-        ranking_result: Dict[str, Any]
+        ranking_result: Dict[str, Any],
+        badge_result: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Build the final session_summary object"""
         
@@ -401,13 +430,25 @@ class SessionProcessor:
                 'next_tier': ranking_result.get('next_tier')
             },
             
-            # Notification hooks (placeholder)
+            # Badge Information
+            'badges': {
+                'new_badges': badge_result.get('new_badges', []),
+                'badge_count': badge_result.get('badge_count', 0),
+                'has_new_badges': badge_result.get('badge_count', 0) > 0
+            },
+            
+            # Notification hooks (enhanced)
             'notifications': {
                 'xp_gained': xp_result.get('xp_delta', 0) > 0,
                 'streak_maintained': not streak_result.get('streak_broken', False),
                 'streak_milestone': streak_result.get('milestone_reached') is not None,
                 'ranking_promoted': ranking_result.get('promoted', False),
-                'confetti_trigger': ranking_result.get('promoted', False) or streak_result.get('milestone_reached') is not None
+                'badges_earned': badge_result.get('badge_count', 0) > 0,
+                'confetti_trigger': (
+                    ranking_result.get('promoted', False) or 
+                    streak_result.get('milestone_reached') is not None or
+                    badge_result.get('badge_count', 0) > 0
+                )
             }
         }
     
@@ -465,11 +506,17 @@ class SessionProcessor:
                 'progress_percent': 0,
                 'promoted': False
             },
+            'badges': {
+                'new_badges': [],
+                'badge_count': 0,
+                'has_new_badges': False
+            },
             'notifications': {
                 'xp_gained': False,
                 'streak_maintained': False,
                 'streak_milestone': False,
                 'ranking_promoted': False,
+                'badges_earned': False,
                 'confetti_trigger': False
             }
         }

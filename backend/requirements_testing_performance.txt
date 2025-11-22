@@ -1,0 +1,21 @@
+# Additional requirements for testing, performance, and resilience features
+
+# Testing
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-cov>=4.1.0
+
+# Performance monitoring
+psutil>=5.9.0
+
+# HTTP client for testing
+requests>=2.31.0
+
+# Async support
+aiohttp>=3.8.0
+
+# Already in requirements.txt (verify these are present):
+# fastapi
+# uvicorn
+# python-dotenv
+# supabase

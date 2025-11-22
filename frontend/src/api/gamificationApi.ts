@@ -133,6 +133,72 @@ export interface StreakData {
   time_until_break?: string;
 }
 
+export interface Badge {
+  id: string;
+  badge_id: string;
+  title: string;
+  description: string;
+  icon: string;
+  category: string;
+  requirement_type: string;
+  requirement_value: number;
+  progress: {
+    current: number;
+    target: number;
+    percentage: number;
+    is_complete: boolean;
+  };
+  achieved_at?: string;
+  is_achieved: boolean;
+}
+
+export interface UserBadgesResponse {
+  success: boolean;
+  data: {
+    badges: Badge[];
+    total_badges: number;
+    badge_categories: Record<string, number>;
+    recent_badges: Badge[];
+  };
+  message?: string;
+}
+
+export interface BadgeLeaderboardEntry {
+  rank: number;
+  user_id: string;
+  username: string;
+  badge_count: number;
+  level: number;
+  total_xp: number;
+}
+
+export interface BadgeLeaderboardResponse {
+  success: boolean;
+  data: {
+    leaderboard: BadgeLeaderboardEntry[];
+    total_users: number;
+    generated_at: string;
+  };
+  message?: string;
+}
+
+export interface CheckBadgesResponse {
+  success: boolean;
+  data: {
+    new_badges: Badge[];
+    badge_count: number;
+    message: string;
+  };
+  message?: string;
+}
+
+export interface SessionEvent {
+  session_id: string;
+  event_type: string;
+  event_payload: Record<string, any>;
+  created_at: string;
+}
+
 class GamificationApi {
   private maxRetries: number = 1; // Stop infinite loops - only 1 retry for network errors
   private retryDelay: number = 1000; // 1 second base delay
@@ -461,6 +527,57 @@ class GamificationApi {
     return this.makeRequest(API_ENDPOINTS.STREAK_APPLY_MULTIPLIER, {
       method: 'POST',
       body: JSON.stringify({ user_id: userId, base_xp: baseXP }),
+    });
+  }
+
+  /**
+   * Get user's badge collection
+   */
+  async getUserBadges(userId: string): Promise<UserBadgesResponse> {
+    return this.makeRequest<UserBadgesResponse>(`${API_ENDPOINTS.BADGES_USER}/${userId}`);
+  }
+
+  /**
+   * Check and award badges for a user
+   */
+  async checkAndAwardBadges(userId: string): Promise<CheckBadgesResponse> {
+    return this.makeRequest<CheckBadgesResponse>(API_ENDPOINTS.BADGES_CHECK, {
+      method: 'POST',
+      body: JSON.stringify({ user_id: userId }),
+    });
+  }
+
+  /**
+   * Get badge collection leaderboard
+   */
+  async getBadgeLeaderboard(limit: number = 50): Promise<BadgeLeaderboardResponse> {
+    return this.makeRequest<BadgeLeaderboardResponse>(`${API_ENDPOINTS.BADGES_LEADERBOARD}?limit=${limit}`);
+  }
+
+  /**
+   * Validate session for audit purposes
+   */
+  async validateSessionAudit(sessionId: string, userId: string, validationMode: 'soft' | 'strict' = 'soft') {
+    return this.makeRequest(API_ENDPOINTS.XP_AUDIT_VALIDATE, {
+      method: 'POST',
+      body: JSON.stringify({
+        session_id: sessionId,
+        user_id: userId,
+        validation_mode: validationMode
+      }),
+    });
+  }
+
+  /**
+   * Sync offline session events
+   */
+  async syncOfflineEvents(userId: string, events: any[]) {
+    return this.makeRequest(API_ENDPOINTS.XP_SYNC_OFFLINE, {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id: userId,
+        events: events,
+      }),
     });
   }
 

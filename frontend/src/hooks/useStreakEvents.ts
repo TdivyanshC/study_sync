@@ -163,7 +163,7 @@ export const useStreakEvents = (options: UseStreakEventsOptions) => {
       unsubscribeFunctions.forEach(unsub => unsub());
       setState(prev => ({ ...prev, isListening: false }));
     };
-  }, [userId, onStreakUpdated, onStreakContinuity, onStreakMilestone, onStreakBroken, onStreakBonus, enableDebug]);
+  }, [userId, enableDebug]); // Removed callback functions from dependencies
 
   return state;
 };
