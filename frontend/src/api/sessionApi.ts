@@ -3,7 +3,7 @@
  * Integrates with the Game Engine backend pipeline
  */
 
-import { supabase } from '../../lib/supabaseClient';
+import { supabase } from '../../lib/supabase';
 import { buildSessionApiUrl, API_ENDPOINTS } from '../lib/apiConfig';
 
 interface SessionSummary {

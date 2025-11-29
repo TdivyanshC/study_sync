@@ -1,14 +1,15 @@
 {
   "expo": {
-    "name": "frontend",
-    "slug": "frontend",
+    "name": "StudySync",
+    "slug": "study-sync",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "frontend",
+    "scheme": "com.studystreak.app",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.studystreak.app"
     },
     "android": {
       "adaptiveIcon": {
@@ -17,6 +18,7 @@
       },
       "edgeToEdgeEnabled": true,
       "jsEngine": "hermes",
+      "package": "com.studystreak.app",
       "networkSecurityConfig": "./android/app/src/main/res/xml/network_security_config.xml"
     },
     "web": {

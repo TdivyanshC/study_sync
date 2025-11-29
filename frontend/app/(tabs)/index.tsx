@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,13 +14,14 @@ import { GlobalStyles } from '../../constants/Theme';
 import { router } from 'expo-router';
 import { useStudyStore } from '../../hooks/useStudySession';
 import { usePopup } from '../../providers/PopupProvider';
+import { useAuth } from '../../hooks/useAuth';
 import { getRandomJoke } from '../../data/jokes';
-import { gamificationApi } from '../../src/api/gamificationApi';
-import { DEMO_USER } from '../../lib/constants';
+import { metricsService } from '../../services/metricsService';
 
 export default function Index() {
   const { startSession } = useStudyStore();
   const { openPopup, closePopup } = usePopup();
+  const { user } = useAuth();
   
   // State for today's metrics
   const [todayMetrics, setTodayMetrics] = useState({
@@ -29,10 +31,22 @@ export default function Index() {
     level: 0,
     hoursDisplay: "0h",
     loading: true,
+    error: null as string | null,
   });
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!user) {
+      console.log('No authenticated user, redirecting to login');
+      router.replace('/login');
+      return;
+    }
+  }, [user]);
 
   // Fetch today's metrics on component mount and when screen is focused
   useEffect(() => {
+    if (!user) return;
+    
     loadTodayMetrics();
     
     // Refresh data when user returns to this screen
@@ -41,56 +55,90 @@ export default function Index() {
     }, 30000); // Refresh every 30 seconds
     
     return () => clearInterval(interval);
-  }, []);
+  }, [user]);
 
   const loadTodayMetrics = async () => {
+    if (!user) {
+      console.log('No user available for metrics loading');
+      return;
+    }
+
     try {
-      const userId = DEMO_USER;
+      setTodayMetrics(prev => ({ ...prev, loading: true, error: null }));
       
-      // Use new gamification summary API
-      const response = await fetch(`http://localhost:8000/api/xp/summary/${userId}`);
-      const result = await response.json();
+      console.log(`📊 Loading today's metrics for user: ${user.id}`);
       
-      if (result.success && result.data) {
-        const data = result.data;
-        
-        // Format hours according to user requirements
-        const minutes = data.today.minutes_studied;
-        let hoursDisplay: string;
-        
-        if (minutes === 0) {
-          hoursDisplay = "0h";
-        } else if (minutes < 1) {
-          hoursDisplay = "Just started!";
-        } else if (minutes < 60) {
-          hoursDisplay = `${minutes} min`;
-        } else {
-          const hours = Math.round((minutes / 60) * 10) / 10; // 1 decimal place
-          hoursDisplay = `${hours}h`;
-        }
-        
-        setTodayMetrics({
-          hoursStudied: data.today.hours_studied,
-          streak: data.streak.current,
-          xp: data.xp.total,
-          level: data.xp.level,
-          hoursDisplay,
-          loading: false,
-        });
+      // Use our service layer to get authenticated user data
+      const [todayData, xpStats, streakData] = await Promise.all([
+        metricsService.getTodayMetrics(user.id).catch(err => {
+          console.error('Failed to get today metrics:', err);
+          return { total_focus_time: 0, tasks_completed: 0 };
+        }),
+        metricsService.getXPStats(user.id).catch(err => {
+          console.error('Failed to get XP stats:', err);
+          return { total_xp: 0, level: 0 };
+        }),
+        metricsService.getStreakData(user.id).catch(err => {
+          console.error('Failed to get streak data:', err);
+          return { data: { current_streak: 0 } };
+        })
+      ]);
+
+      // Format hours according to user requirements
+      const minutes = todayData.total_focus_time || 0;
+      let hoursDisplay: string;
+      
+      if (minutes === 0) {
+        hoursDisplay = "0h";
+      } else if (minutes < 1) {
+        hoursDisplay = "Just started!";
+      } else if (minutes < 60) {
+        hoursDisplay = `${Math.round(minutes)} min`;
       } else {
-        throw new Error('API returned invalid data');
+        const hours = Math.round((minutes / 60) * 10) / 10; // 1 decimal place
+        hoursDisplay = `${hours}h`;
       }
-    } catch (error) {
-      console.error('Failed to load today metrics:', error);
-      // Set to 0 if error
+      
       setTodayMetrics({
-        hoursStudied: 0,
-        streak: 0,
-        xp: 0,
-        level: 0,
-        hoursDisplay: "0h",
+        hoursStudied: minutes,
+        streak: streakData.data?.current_streak || 0,
+        xp: xpStats.total_xp || 0,
+        level: xpStats.level || 0,
+        hoursDisplay,
         loading: false,
+        error: null,
       });
+
+      console.log('✅ Today metrics loaded successfully:', {
+        minutes,
+        streak: streakData.data?.current_streak,
+        xp: xpStats.total_xp,
+        level: xpStats.level
+      });
+
+    } catch (error: any) {
+      console.error('❌ Failed to load today metrics:', error);
+      
+      // Show user-friendly error
+      let errorMessage = 'Failed to load today\'s progress';
+      if (error.message?.includes('Network')) {
+        errorMessage = 'Network error - check your connection';
+      } else if (error.message?.includes('Authentication')) {
+        errorMessage = 'Authentication error - please login again';
+        // Redirect to login if auth error
+        router.replace('/login');
+      }
+      
+      setTodayMetrics(prev => ({
+        ...prev,
+        loading: false,
+        error: errorMessage,
+      }));
+      
+      // Show alert for non-auth errors
+      if (!error.message?.includes('Authentication')) {
+        Alert.alert('Error', errorMessage);
+      }
     }
   };
 
@@ -116,6 +164,15 @@ export default function Index() {
     router.push('/spaces');
   };
 
+  // Show loading while checking authentication
+  if (!user) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text style={styles.loadingText}>Checking authentication...</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={{ flex: 1 }}>
       <SafeAreaView style={GlobalStyles.safeArea}>
@@ -126,7 +183,21 @@ export default function Index() {
           <Text style={GlobalStyles.textSecondary}>
             Your journey to academic excellence
           </Text>
+          {/* Show user email for debugging */}
+          {__DEV__ && (
+            <Text style={styles.userDebugText}>
+              Logged in as: {user.email}
+            </Text>
+          )}
         </View>
+
+        {/* Error Banner */}
+        {todayMetrics.error && (
+          <View style={styles.errorBanner}>
+            <Ionicons name="warning" size={20} color={Colors.error} />
+            <Text style={styles.errorText}>{todayMetrics.error}</Text>
+          </View>
+        )}
 
         {/* Welcome Card */}
         <View style={[GlobalStyles.glassCard, styles.welcomeCard]}>
@@ -201,6 +272,36 @@ export default function Index() {
 }
 
 const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: Colors.background,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: Colors.textSecondary,
+  },
+  userDebugText: {
+    fontSize: 12,
+    color: Colors.textMuted,
+    marginTop: 8,
+  },
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    borderRadius: 8,
+    padding: 12,
+    marginHorizontal: 20,
+    marginBottom: 16,
+  },
+  errorText: {
+    color: Colors.error,
+    fontSize: 14,
+    marginLeft: 8,
+    flex: 1,
+  },
   header: {
     paddingHorizontal: 20,
     paddingTop: 20,
