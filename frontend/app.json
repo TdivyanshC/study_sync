@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "com.studystreak.app",
+    "scheme": "studysync",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
@@ -39,6 +39,11 @@
       ],
       "expo-web-browser"
     ],
+    "extra": {
+      "eas": {
+        "projectId": "your-eas-project-id"
+      }
+    },
     "experiments": {
       "typedRoutes": true
     }

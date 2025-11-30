@@ -29,7 +29,7 @@ export default function LoginScreen() {
 
     try {
       await login(email, password);
-      router.replace('/(tabs)');
+      // Navigation will be handled automatically by AuthProvider's onAuthStateChange listener
     } catch (error: any) {
       Alert.alert('Login Failed', error.message || 'Invalid email or password');
     }
@@ -38,8 +38,7 @@ export default function LoginScreen() {
   const handleGoogleLogin = async () => {
     try {
       await loginWithGoogle();
-      // Note: OAuth Flow A handles the redirect automatically
-      // No manual navigation needed - AuthProvider.onAuthStateChange will handle it
+      // Navigation will be handled automatically by AuthProvider's onAuthStateChange listener
     } catch (error: any) {
       Alert.alert('Google Login Failed', error.message || 'Failed to sign in with Google');
     }

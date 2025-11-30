@@ -18,6 +18,33 @@ import { useAuth } from '../../hooks/useAuth';
 import { getRandomJoke } from '../../data/jokes';
 import { metricsService } from '../../services/metricsService';
 
+// Helper function to get user's display name
+const getUserDisplayName = (user: any): string => {
+  if (!user) return 'there';
+  
+  // Try to get name from user metadata first
+  if (user.user_metadata?.full_name) {
+    return user.user_metadata.full_name;
+  }
+  
+  if (user.user_metadata?.name) {
+    return user.user_metadata.name;
+  }
+  
+  // Fallback to email username (part before @)
+  if (user.email) {
+    const emailUsername = user.email.split('@')[0];
+    // Capitalize first letter and handle underscores/dots
+    return emailUsername
+      .split(/[._]/)
+      .map((part: string) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+      .join(' ');
+  }
+  
+  // Final fallback
+  return 'there';
+};
+
 export default function Index() {
   const { startSession } = useStudyStore();
   const { openPopup, closePopup } = usePopup();
@@ -183,12 +210,16 @@ export default function Index() {
           <Text style={GlobalStyles.textSecondary}>
             Your journey to academic excellence
           </Text>
-          {/* Show user email for debugging */}
-          {__DEV__ && (
-            <Text style={styles.userDebugText}>
-              Logged in as: {user.email}
-            </Text>
-          )}
+        </View>
+
+        {/* Personalized Greeting */}
+        <View style={styles.greetingCard}>
+          <Text style={styles.greetingText}>
+            What's up, {getUserDisplayName(user)}! 👋
+          </Text>
+          <Text style={styles.greetingSubtext}>
+            Ready to crush your study goals today?
+          </Text>
         </View>
 
         {/* Error Banner */}
@@ -286,6 +317,25 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Colors.textMuted,
     marginTop: 8,
+  },
+  greetingCard: {
+    marginHorizontal: 20,
+    marginBottom: 16,
+    padding: 20,
+    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(99, 102, 241, 0.2)',
+  },
+  greetingText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: Colors.text,
+    marginBottom: 4,
+  },
+  greetingSubtext: {
+    fontSize: 16,
+    color: Colors.textSecondary,
   },
   errorBanner: {
     flexDirection: 'row',
