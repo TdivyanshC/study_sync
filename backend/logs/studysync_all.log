@@ -1,0 +1,1289 @@
+2025-12-12 22:38:42,879 - studysync - INFO - Monitoring service started
+2025-12-12 22:38:42,890 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:38:57,809 - studysync - INFO - HTTP 0: GET /api/health
+2025-12-12 22:39:00,345 - studysync - INFO - HTTP 200: GET /api/health
+2025-12-12 22:39:12,910 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:39:42,891 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:39:42,922 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:40:12,937 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:40:42,903 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:40:42,949 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:41:12,960 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:41:42,909 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:41:42,971 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:42:12,983 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:42:42,923 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:42:43,001 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:43:13,013 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:43:42,927 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:43:43,020 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:44:13,034 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:44:42,938 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:44:43,046 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:45:13,064 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:45:34,399 - studysync - INFO - HTTP 0: GET /api/health
+2025-12-12 22:45:36,468 - studysync - INFO - HTTP 200: GET /api/health
+2025-12-12 22:45:42,942 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:45:43,079 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:46:13,083 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:46:42,946 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:46:43,100 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:47:13,116 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:47:42,948 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:47:43,120 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:48:13,134 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:48:42,954 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:48:43,140 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:49:13,151 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:49:42,959 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:49:43,161 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:50:13,165 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:50:42,969 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:50:43,169 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:50:43,954 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 22:50:43,956 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 22:50:44,614 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 22:50:44,845 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 22:50:44,858 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 22:50:44,862 - studysync - WARNING - HTTP 404: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 22:51:13,190 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:51:13,570 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 22:51:13,911 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 22:51:13,911 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 22:51:13,920 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 22:51:14,095 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 22:51:14,104 - studysync - WARNING - HTTP 404: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 22:51:42,984 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:51:43,201 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:51:43,573 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 22:51:43,805 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 22:51:43,806 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 22:51:43,816 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 22:51:43,999 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 22:51:44,005 - studysync - WARNING - HTTP 404: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 22:52:13,208 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:52:13,584 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 22:52:13,848 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 22:52:13,849 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 22:52:13,858 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 22:52:14,025 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 22:52:14,032 - studysync - WARNING - HTTP 404: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 22:52:42,993 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:52:43,225 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:52:43,638 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 22:52:43,646 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 22:52:43,659 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 22:52:44,383 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 22:52:44,389 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 22:52:44,393 - studysync - WARNING - HTTP 404: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 22:53:13,244 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 58.82, threshold is 5.0
+2025-12-12 22:53:13,306 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:53:13,604 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 22:53:13,613 - studysync - WARNING - HTTP 404: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 22:53:13,629 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 22:53:13,635 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 22:53:14,061 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 22:53:14,063 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 22:53:43,004 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 60.00, threshold is 5.0
+2025-12-12 22:53:43,006 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:53:43,316 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:53:43,654 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 22:53:43,658 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 22:53:43,892 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 22:53:44,062 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 22:53:44,069 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 22:53:44,083 - studysync - WARNING - HTTP 404: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 22:54:13,326 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 60.87, threshold is 5.0
+2025-12-12 22:54:13,329 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:54:13,622 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 22:54:13,629 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 22:54:13,634 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 22:54:14,422 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 22:54:14,425 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 22:54:14,496 - studysync - WARNING - HTTP 404: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 22:54:43,018 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 61.54, threshold is 5.0
+2025-12-12 22:54:43,021 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:54:43,342 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:54:43,618 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 22:54:43,632 - studysync - WARNING - HTTP 404: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 22:54:43,651 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 22:54:43,656 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 22:54:44,397 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 22:54:44,398 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 22:55:13,350 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 62.07, threshold is 5.0
+2025-12-12 22:55:13,351 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:55:43,037 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 62.07, threshold is 5.0
+2025-12-12 22:55:43,038 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:55:43,363 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:56:01,398 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 22:56:01,411 - studysync - WARNING - HTTP 404: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 22:56:01,473 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 22:56:01,702 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 22:56:01,706 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 22:56:01,884 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 22:56:13,364 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 62.50, threshold is 5.0
+2025-12-12 22:56:13,366 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:56:43,044 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 62.50, threshold is 5.0
+2025-12-12 22:56:43,046 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:56:43,370 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:57:13,380 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 62.50, threshold is 5.0
+2025-12-12 22:57:13,381 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:57:43,048 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 62.50, threshold is 5.0
+2025-12-12 22:57:43,050 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:57:43,391 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:58:13,406 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 62.50, threshold is 5.0
+2025-12-12 22:58:13,407 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:58:43,056 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 62.50, threshold is 5.0
+2025-12-12 22:58:43,060 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:58:43,414 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:59:13,419 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 62.50, threshold is 5.0
+2025-12-12 22:59:13,421 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:59:43,071 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 62.50, threshold is 5.0
+2025-12-12 22:59:43,072 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 22:59:43,429 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 23:00:13,447 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 62.50, threshold is 5.0
+2025-12-12 23:00:13,448 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 23:00:43,078 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 62.50, threshold is 5.0
+2025-12-12 23:00:43,081 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 23:00:43,462 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 23:01:13,471 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 62.50, threshold is 5.0
+2025-12-12 23:01:13,475 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 23:01:43,088 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 62.50, threshold is 5.0
+2025-12-12 23:01:43,090 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 23:01:43,477 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 23:02:13,485 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 62.50, threshold is 5.0
+2025-12-12 23:02:13,486 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 23:02:43,110 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 62.50, threshold is 5.0
+2025-12-12 23:02:43,113 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 23:02:43,495 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 23:03:13,512 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 62.50, threshold is 5.0
+2025-12-12 23:03:13,513 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 23:03:43,121 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 62.50, threshold is 5.0
+2025-12-12 23:03:43,123 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 23:03:43,518 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 23:04:13,527 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 62.50, threshold is 5.0
+2025-12-12 23:04:13,528 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 23:04:43,138 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 62.50, threshold is 5.0
+2025-12-12 23:04:43,140 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 23:04:43,535 - studysync - ERROR - Error collecting metrics: name 'log_debug' is not defined
+2025-12-12 23:05:12,850 - studysync - INFO - Monitoring service started
+2025-12-12 23:05:12,851 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:05:32,361 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:05:34,807 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:05:42,862 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:06:12,857 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:06:12,873 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:06:30,437 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:06:30,720 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:06:42,884 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:06:59,851 - studysync - INFO - HTTP 0: GET /api/health
+2025-12-12 23:07:00,116 - studysync - INFO - HTTP 200: GET /api/health
+2025-12-12 23:07:12,861 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:07:12,892 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:07:17,265 - studysync - INFO - HTTP 0: GET /api/xp/leaderboard
+2025-12-12 23:07:17,971 - studysync - INFO - HTTP 200: GET /api/xp/leaderboard
+2025-12-12 23:07:38,409 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:07:38,641 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:07:42,898 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 60.00, threshold is 5.0
+2025-12-12 23:07:42,900 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:08:12,863 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 60.00, threshold is 5.0
+2025-12-12 23:08:12,865 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:08:12,910 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:08:42,926 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 60.00, threshold is 5.0
+2025-12-12 23:08:42,929 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:09:12,870 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 60.00, threshold is 5.0
+2025-12-12 23:09:12,873 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:09:12,933 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:09:36,313 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:09:36,917 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:09:42,939 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 66.67, threshold is 5.0
+2025-12-12 23:09:42,941 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:09:52,663 - studysync - INFO - HTTP 0: GET /api/xp/summary/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:09:52,890 - studysync - WARNING - HTTP 404: GET /api/xp/summary/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:09:59,334 - studysync - INFO - Monitoring loop cancelled
+2025-12-12 23:09:59,336 - studysync - INFO - Monitoring service stopped
+2025-12-12 23:10:17,429 - studysync - INFO - Monitoring service started
+2025-12-12 23:10:17,431 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:10:17,657 - studysync - INFO - Monitoring loop cancelled
+2025-12-12 23:10:17,658 - studysync - INFO - Monitoring service stopped
+2025-12-12 23:10:26,489 - studysync - INFO - Monitoring service started
+2025-12-12 23:10:26,491 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:10:33,626 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:10:35,306 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:10:56,502 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:10:59,007 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:10:59,421 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:11:23,893 - studysync - INFO - HTTP 0: GET /api/nonexistent/endpoint
+2025-12-12 23:11:23,902 - studysync - WARNING - HTTP 404: GET /api/nonexistent/endpoint
+2025-12-12 23:11:26,502 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:11:26,517 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:11:56,525 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:12:26,505 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:12:26,537 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:12:56,555 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 100.00, threshold is 5.0
+2025-12-12 23:12:56,561 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:13:26,511 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 100.00, threshold is 5.0
+2025-12-12 23:13:26,513 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:13:26,574 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:13:56,590 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 100.00, threshold is 5.0
+2025-12-12 23:13:56,593 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:14:26,519 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 100.00, threshold is 5.0
+2025-12-12 23:14:26,521 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:14:26,596 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:14:56,608 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 100.00, threshold is 5.0
+2025-12-12 23:14:56,608 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:15:26,534 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 100.00, threshold is 5.0
+2025-12-12 23:15:26,535 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:15:26,617 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:15:56,633 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 100.00, threshold is 5.0
+2025-12-12 23:15:56,634 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:16:26,040 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:16:26,044 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:16:26,045 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:16:27,773 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 100.00, threshold is 5.0
+2025-12-12 23:16:27,776 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:16:27,776 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:16:27,928 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:16:27,929 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:16:27,948 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:16:29,113 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:16:29,260 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:16:31,389 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:16:31,529 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:16:55,357 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:16:55,561 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:16:55,561 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:16:55,577 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:16:55,861 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:16:55,862 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:16:57,076 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:16:57,207 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:16:57,780 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 83.33, threshold is 5.0
+2025-12-12 23:16:57,782 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:16:59,341 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:16:59,473 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:17:25,355 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:17:25,555 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:17:25,556 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:17:25,585 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:17:25,931 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:17:25,938 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:17:27,067 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:17:27,193 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:17:27,789 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 82.35, threshold is 5.0
+2025-12-12 23:17:27,789 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:17:27,790 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:17:29,331 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:17:29,459 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:17:55,348 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:17:55,561 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:17:55,562 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:17:55,567 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:17:55,833 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:17:55,834 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:17:57,002 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:17:57,146 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:17:57,801 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 81.82, threshold is 5.0
+2025-12-12 23:17:57,801 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:17:59,285 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:17:59,432 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:18:25,349 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:18:25,879 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:18:25,880 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:18:25,883 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:18:26,151 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:18:26,154 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:18:27,298 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:18:27,438 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:18:27,794 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 81.48, threshold is 5.0
+2025-12-12 23:18:27,795 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:18:27,810 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:18:29,567 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:18:29,698 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:18:55,555 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:18:56,172 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:18:56,176 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:18:56,324 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:18:56,335 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:18:56,511 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:18:57,644 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:18:57,829 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 80.65, threshold is 5.0
+2025-12-12 23:18:57,829 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:18:57,830 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:19:00,043 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:19:00,184 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:19:25,353 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:19:25,520 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:19:25,520 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:19:25,524 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:19:25,666 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:19:25,801 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:19:26,931 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:19:27,065 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:19:27,804 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 81.08, threshold is 5.0
+2025-12-12 23:19:27,805 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:19:27,835 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:19:29,168 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:19:29,296 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:19:55,368 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:19:55,549 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:19:55,550 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:19:55,554 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:19:55,804 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:19:55,805 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:19:57,001 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:19:57,151 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:19:57,849 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 80.95, threshold is 5.0
+2025-12-12 23:19:57,850 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:19:59,283 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:19:59,420 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:20:25,368 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:20:25,915 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:20:25,916 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:20:25,924 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:20:26,198 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:20:26,214 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:20:27,344 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:20:27,484 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:20:27,811 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 80.85, threshold is 5.0
+2025-12-12 23:20:27,812 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:20:27,858 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:20:29,634 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:20:29,775 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:20:55,445 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:20:55,931 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:20:55,935 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:20:55,959 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:20:56,508 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:20:56,509 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:20:57,642 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:20:57,868 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 80.39, threshold is 5.0
+2025-12-12 23:20:57,869 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:20:57,872 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:20:59,987 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:21:00,122 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:21:25,387 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:21:25,593 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:21:25,594 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:21:25,606 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:21:25,897 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:21:25,899 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:21:27,094 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:21:27,280 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:21:27,818 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 80.70, threshold is 5.0
+2025-12-12 23:21:27,820 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:21:27,881 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:21:29,414 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:21:29,622 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:21:55,402 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:21:55,622 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:21:55,623 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:21:55,634 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:21:55,936 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:21:55,941 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:21:57,099 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:21:57,234 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:21:57,889 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 80.65, threshold is 5.0
+2025-12-12 23:21:57,890 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:21:59,453 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:21:59,610 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:22:25,397 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:22:26,052 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:22:26,053 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:22:26,064 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:22:26,384 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:22:26,385 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:22:27,494 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:22:27,626 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:22:27,834 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 80.60, threshold is 5.0
+2025-12-12 23:22:27,835 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:22:27,896 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:22:29,762 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:22:29,901 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:22:55,413 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:22:55,637 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:22:55,638 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:22:55,644 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:22:55,890 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:22:55,890 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:22:57,013 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:22:57,141 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:22:57,904 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 80.56, threshold is 5.0
+2025-12-12 23:22:57,905 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:22:59,265 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:22:59,396 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:23:25,405 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:23:25,606 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:23:25,607 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:23:25,815 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:23:26,093 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:23:26,094 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:23:27,220 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:23:27,421 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:23:27,849 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 80.52, threshold is 5.0
+2025-12-12 23:23:27,850 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:23:27,911 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:23:29,556 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:23:29,690 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:23:55,500 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:23:55,501 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:23:57,394 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:23:57,404 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:23:57,405 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:23:57,572 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:23:57,922 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 80.25, threshold is 5.0
+2025-12-12 23:23:57,923 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:23:58,686 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:23:58,850 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:24:00,969 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:24:01,103 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:24:25,922 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:24:27,302 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:24:27,303 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:24:30,516 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 80.72, threshold is 5.0
+2025-12-12 23:24:30,517 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:24:30,518 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:24:30,553 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:24:30,704 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:24:30,852 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:24:31,981 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:24:32,151 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:24:34,305 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:24:34,447 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:24:55,467 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:24:55,468 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:24:55,477 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:24:55,811 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:24:55,812 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:24:55,956 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:24:57,078 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:24:57,211 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:24:59,327 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:24:59,828 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:25:00,565 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 80.65, threshold is 5.0
+2025-12-12 23:25:00,566 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:25:25,433 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:25:25,618 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:25:25,620 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:25:25,628 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:25:25,761 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:25:25,884 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:25:27,022 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:25:27,155 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:25:29,304 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:25:29,440 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:25:30,528 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 80.61, threshold is 5.0
+2025-12-12 23:25:30,530 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:25:30,575 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:25:55,496 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:25:55,787 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:25:55,788 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:25:55,800 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:25:56,085 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:25:56,087 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:25:57,235 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:25:57,368 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:25:59,474 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:25:59,605 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:26:00,586 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 80.58, threshold is 5.0
+2025-12-12 23:26:00,587 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:26:25,454 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:26:26,015 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:26:26,017 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:26:26,024 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:26:26,303 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:26:26,304 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:26:27,451 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:26:27,583 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:26:29,712 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:26:29,840 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:26:30,542 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 80.56, threshold is 5.0
+2025-12-12 23:26:30,545 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:26:30,588 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:26:55,468 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:26:55,659 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:26:55,664 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:26:55,798 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:26:55,948 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:26:55,952 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:26:57,066 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:26:57,203 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:26:59,312 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:26:59,430 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:27:00,593 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 80.53, threshold is 5.0
+2025-12-12 23:27:00,594 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:27:25,513 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:27:25,744 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:27:25,745 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:27:25,757 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:27:26,025 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:27:26,031 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:27:27,165 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:27:27,313 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:27:29,440 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:27:29,568 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:27:30,554 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 80.51, threshold is 5.0
+2025-12-12 23:27:30,555 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:27:30,602 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:27:55,539 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:27:55,541 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:27:55,862 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:27:55,872 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:27:55,874 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:27:56,010 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:27:57,123 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:27:57,255 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:27:59,385 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:27:59,544 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:28:00,616 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 80.49, threshold is 5.0
+2025-12-12 23:28:00,618 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:28:25,480 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:28:26,651 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:28:26,660 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:28:26,678 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:28:26,945 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:28:26,961 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:28:28,082 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:28:28,205 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:28:30,332 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:28:30,452 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:28:30,561 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 80.47, threshold is 5.0
+2025-12-12 23:28:30,564 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:28:30,620 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:28:55,469 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:28:55,685 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:28:55,687 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:28:55,701 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:28:55,954 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:28:55,957 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:28:57,062 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:28:57,183 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:28:59,299 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:28:59,433 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:29:00,624 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 80.45, threshold is 5.0
+2025-12-12 23:29:00,626 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:29:25,466 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:29:25,646 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:29:25,647 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:29:25,660 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:29:25,784 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:29:25,912 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:29:27,030 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:29:27,163 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:29:29,290 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:29:29,413 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:29:30,579 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 80.43, threshold is 5.0
+2025-12-12 23:29:30,579 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:29:30,641 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:29:55,460 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:29:55,631 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:29:55,634 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:29:55,640 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:29:55,910 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:29:55,917 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:29:57,071 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:29:57,207 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:29:59,355 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:29:59,494 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:30:00,650 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 80.42, threshold is 5.0
+2025-12-12 23:30:00,651 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:30:25,506 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:30:25,521 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:30:25,531 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:30:26,309 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:30:26,314 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:30:26,316 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:30:27,486 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:30:27,620 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:30:29,764 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:30:29,889 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:30:30,589 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 80.41, threshold is 5.0
+2025-12-12 23:30:30,590 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:30:30,667 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:30:55,631 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:30:55,854 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:30:55,858 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:30:56,019 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:30:56,025 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:30:56,186 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:30:57,302 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:30:57,435 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:30:59,570 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:30:59,696 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:31:00,676 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 80.39, threshold is 5.0
+2025-12-12 23:31:00,679 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:31:25,505 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:31:25,735 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:31:25,739 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:31:25,765 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:31:26,045 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:31:26,050 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:31:27,182 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:31:27,322 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:31:29,445 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:31:29,595 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:31:30,598 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 80.38, threshold is 5.0
+2025-12-12 23:31:30,599 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:31:30,691 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:31:55,509 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:31:55,512 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:31:55,697 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:31:55,841 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:31:55,967 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:31:55,975 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:31:57,174 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:31:57,311 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:31:59,410 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:31:59,612 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:32:00,692 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 80.37, threshold is 5.0
+2025-12-12 23:32:00,693 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:32:25,492 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:32:26,657 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:32:26,658 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:32:26,671 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:32:26,812 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:32:26,941 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:32:28,056 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:32:28,198 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:32:30,338 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:32:30,486 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:32:30,609 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 80.36, threshold is 5.0
+2025-12-12 23:32:30,610 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:32:30,703 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:32:55,513 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:32:55,713 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:32:55,715 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:32:55,722 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:32:55,971 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:32:55,983 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:32:57,082 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:32:57,218 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:32:59,350 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:32:59,553 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:33:00,716 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 80.35, threshold is 5.0
+2025-12-12 23:33:00,775 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:33:30,616 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 80.35, threshold is 5.0
+2025-12-12 23:33:30,617 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:33:30,786 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:34:00,795 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 80.35, threshold is 5.0
+2025-12-12 23:34:00,806 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:34:29,956 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:34:29,961 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:34:29,966 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:34:30,634 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 80.35, threshold is 5.0
+2025-12-12 23:34:30,635 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:34:30,638 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:34:30,640 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:34:30,649 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:34:30,808 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:34:31,780 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:34:31,954 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:34:34,049 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:34:34,242 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:34:59,764 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:35:00,018 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:35:00,019 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:35:00,024 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:35:00,341 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:35:00,353 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:35:00,815 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 80.11, threshold is 5.0
+2025-12-12 23:35:00,816 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:35:01,501 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:35:01,684 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:35:03,815 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:35:03,985 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:35:29,762 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:35:29,980 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:35:29,981 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:35:29,987 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:35:30,295 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:35:30,296 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:35:30,652 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 80.11, threshold is 5.0
+2025-12-12 23:35:30,653 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:35:30,820 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:35:31,386 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:35:31,616 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:35:33,714 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:35:33,864 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:35:59,839 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:36:00,144 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:36:00,157 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:36:00,162 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:36:00,494 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:36:00,498 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:36:00,827 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 80.10, threshold is 5.0
+2025-12-12 23:36:00,829 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:36:01,620 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:36:02,784 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:36:05,002 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:36:05,143 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:36:29,857 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:36:30,260 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:36:30,261 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:36:30,274 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:36:30,541 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:36:30,550 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:36:30,658 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 80.10, threshold is 5.0
+2025-12-12 23:36:30,659 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:36:30,841 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:36:31,661 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:36:31,806 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:36:33,939 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:36:34,074 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:36:59,840 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:36:59,861 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:37:00,310 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:37:00,540 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:37:00,549 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:37:00,555 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:37:00,853 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 80.10, threshold is 5.0
+2025-12-12 23:37:00,853 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:37:01,649 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:37:01,783 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:37:03,899 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:37:04,037 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:37:29,784 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:37:30,024 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:37:30,027 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:37:30,044 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:37:30,180 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:37:30,320 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:37:30,674 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 80.10, threshold is 5.0
+2025-12-12 23:37:30,675 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:37:30,859 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:37:31,433 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:37:31,566 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:37:33,739 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:37:33,900 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:37:59,779 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:38:00,409 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:38:00,410 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:38:00,416 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:38:00,560 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:38:00,681 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:38:00,874 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 80.09, threshold is 5.0
+2025-12-12 23:38:00,875 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:38:01,791 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:38:02,040 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:38:04,280 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:38:04,415 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:38:29,809 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:38:29,821 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:38:29,824 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:38:30,269 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:38:30,278 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:38:30,287 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:38:30,685 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 80.09, threshold is 5.0
+2025-12-12 23:38:30,687 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:38:30,887 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:38:31,446 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:38:31,611 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:38:33,742 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:38:33,874 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:38:59,808 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:39:00,010 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:39:00,014 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:39:00,026 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:39:00,168 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:39:00,305 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:39:00,899 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 80.09, threshold is 5.0
+2025-12-12 23:39:00,900 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:39:01,405 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:39:01,540 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:39:03,655 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:39:03,796 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:39:29,794 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:39:29,797 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:39:29,985 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:39:29,997 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:39:30,240 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:39:30,243 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:39:30,691 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 80.09, threshold is 5.0
+2025-12-12 23:39:30,693 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:39:30,905 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:39:31,426 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:39:31,551 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:39:33,692 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:39:33,833 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:39:59,800 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:40:00,340 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:40:00,344 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:40:00,351 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:40:00,622 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:40:00,623 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:40:00,913 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 80.09, threshold is 5.0
+2025-12-12 23:40:00,913 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:40:01,743 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:40:01,866 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:40:03,961 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:40:04,083 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:40:29,812 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:40:29,996 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:40:29,997 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:40:30,007 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:40:30,255 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:40:30,256 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:40:30,697 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 80.08, threshold is 5.0
+2025-12-12 23:40:30,698 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:40:30,916 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:40:31,441 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:40:31,574 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:40:33,712 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:40:33,843 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:40:59,824 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:41:00,040 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:41:00,041 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:41:00,052 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:41:00,192 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:41:00,329 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:41:00,919 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 80.08, threshold is 5.0
+2025-12-12 23:41:00,920 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:41:01,451 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:41:01,587 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:41:03,725 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:41:03,872 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:41:29,836 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:41:30,008 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:41:30,010 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:41:30,018 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:41:30,150 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:41:30,272 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:41:30,712 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 80.08, threshold is 5.0
+2025-12-12 23:41:30,713 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:41:30,930 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:41:31,393 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:41:31,546 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:41:33,691 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:41:33,836 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:41:59,836 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:41:59,837 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:42:00,559 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:42:00,566 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:42:00,937 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 80.32, threshold is 5.0
+2025-12-12 23:42:00,941 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:42:00,949 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:42:00,950 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:42:02,055 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:42:02,281 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:42:04,497 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:42:04,629 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:42:29,815 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:42:30,027 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:42:30,028 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:42:30,032 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:42:30,165 - studysync - WARNING - HTTP 404: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:42:30,287 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:42:30,723 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 80.08, threshold is 5.0
+2025-12-12 23:42:30,724 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:42:30,957 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:42:31,405 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:42:31,543 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:42:33,686 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:42:33,816 - studysync - ERROR - HTTP 500: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:43:24,280 - studysync - INFO - Monitoring service started
+2025-12-12 23:43:24,284 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:43:30,016 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:43:30,017 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:43:30,025 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:43:31,420 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:43:31,421 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:43:31,889 - studysync - INFO - HTTP 200: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:43:32,532 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:43:32,675 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:43:34,806 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:43:34,940 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:43:54,287 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:43:59,820 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:44:00,980 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:44:00,981 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:44:00,986 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:44:01,479 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:44:01,484 - studysync - INFO - HTTP 200: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:44:02,608 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:44:02,747 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:44:04,879 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:44:05,007 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:44:24,287 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:44:24,288 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:44:29,880 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:44:30,066 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:44:30,072 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:44:30,082 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:44:30,584 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:44:30,594 - studysync - INFO - HTTP 200: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:44:31,713 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:44:31,843 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:44:33,962 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:44:34,090 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:44:54,301 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:44:59,858 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:45:00,047 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:45:00,050 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:45:00,057 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:45:00,558 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:45:00,562 - studysync - INFO - HTTP 200: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:45:01,688 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:45:01,818 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:45:03,945 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:45:04,078 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:45:24,303 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:45:24,303 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:45:29,871 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:45:29,873 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:45:30,057 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:45:30,437 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:45:30,572 - studysync - INFO - HTTP 200: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:45:30,575 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:45:31,783 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:45:31,904 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:45:34,041 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:45:34,169 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:45:54,307 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 60.00, threshold is 5.0
+2025-12-12 23:45:54,317 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:45:59,856 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:46:01,251 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:46:01,252 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:46:01,261 - studysync - INFO - HTTP 200: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:46:01,564 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:46:01,565 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:46:02,747 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:46:02,884 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:46:04,999 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:46:05,133 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:46:24,313 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 60.00, threshold is 5.0
+2025-12-12 23:46:24,314 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:46:24,328 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:46:29,896 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:46:29,902 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:46:29,909 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:46:30,629 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:46:30,632 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:46:30,634 - studysync - INFO - HTTP 200: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:46:31,761 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:46:31,883 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:46:33,996 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:46:34,118 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:46:54,336 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 60.00, threshold is 5.0
+2025-12-12 23:46:54,338 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:46:59,897 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:47:00,112 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:47:00,112 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:47:00,126 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:47:00,273 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:47:00,660 - studysync - INFO - HTTP 200: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:47:01,390 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:47:01,521 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:47:03,628 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:47:03,757 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:47:24,324 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 60.00, threshold is 5.0
+2025-12-12 23:47:24,325 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:47:24,344 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:47:29,905 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:47:30,325 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:47:30,326 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:47:30,337 - studysync - INFO - HTTP 200: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:47:30,614 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:47:30,616 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:47:31,791 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:47:31,922 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:47:34,049 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:47:34,179 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:47:54,358 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 60.00, threshold is 5.0
+2025-12-12 23:47:54,361 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:47:59,879 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:48:01,287 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:48:01,290 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:48:01,301 - studysync - INFO - HTTP 200: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:48:01,585 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:48:01,586 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:48:02,700 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:48:02,834 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:48:04,985 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:48:05,110 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:48:09,746 - studysync - INFO - Monitoring loop cancelled
+2025-12-12 23:48:09,746 - studysync - INFO - Monitoring service stopped
+2025-12-12 23:48:19,633 - studysync - INFO - Monitoring service started
+2025-12-12 23:48:19,634 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:48:29,887 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:48:30,947 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:48:30,948 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:48:30,951 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:48:31,462 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:48:31,466 - studysync - INFO - HTTP 200: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:48:32,593 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:48:32,730 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:48:34,858 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:48:34,985 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:48:49,642 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:48:59,898 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:49:00,079 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:49:00,079 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:49:00,083 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:49:00,228 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:49:00,633 - studysync - INFO - HTTP 200: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:49:01,743 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:49:01,877 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:49:04,010 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:49:04,145 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:49:19,641 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:49:19,656 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:49:29,892 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:49:30,064 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:49:30,066 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:49:30,073 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:49:30,205 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:49:30,586 - studysync - INFO - HTTP 200: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:49:31,324 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:49:31,444 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:49:33,576 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:49:33,704 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:49:49,662 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:49:59,883 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:50:01,255 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:50:01,256 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:50:01,264 - studysync - INFO - HTTP 200: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:50:01,535 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:50:01,536 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:50:02,639 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:50:02,757 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:50:04,880 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:50:05,000 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:50:19,645 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:50:19,675 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:50:29,897 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:50:30,070 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:50:30,071 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:50:30,078 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:50:30,212 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:50:30,579 - studysync - INFO - HTTP 200: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:50:31,315 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:50:31,446 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:50:33,565 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:50:33,684 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:50:49,683 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 60.00, threshold is 5.0
+2025-12-12 23:50:49,684 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:50:59,914 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:51:00,092 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:51:00,093 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:51:00,097 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:51:00,229 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:51:00,599 - studysync - INFO - HTTP 200: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:51:01,338 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:51:01,465 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:51:03,581 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:51:03,709 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:51:19,650 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 60.00, threshold is 5.0
+2025-12-12 23:51:19,651 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:51:19,695 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:51:29,925 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:51:30,347 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:51:30,348 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:51:30,358 - studysync - INFO - HTTP 200: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:51:30,634 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:51:30,637 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:51:31,819 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:51:31,944 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:51:34,075 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:51:34,211 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:51:49,709 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 60.00, threshold is 5.0
+2025-12-12 23:51:49,709 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:51:59,932 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:52:01,116 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:52:01,117 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:52:01,123 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:52:01,274 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:52:01,632 - studysync - INFO - HTTP 200: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:52:02,383 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:52:02,506 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:52:04,624 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:52:04,750 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:52:19,662 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 60.00, threshold is 5.0
+2025-12-12 23:52:19,663 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:52:19,724 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:52:30,042 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:52:30,299 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:52:30,307 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:52:30,465 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:52:30,478 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:52:30,859 - studysync - INFO - HTTP 200: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:52:32,150 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:52:32,286 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:52:34,454 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:52:34,604 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:52:49,741 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 60.00, threshold is 5.0
+2025-12-12 23:52:49,745 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:52:59,934 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:53:00,108 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:53:00,109 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:53:00,116 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:53:00,245 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:53:00,625 - studysync - INFO - HTTP 200: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:53:01,732 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:53:01,860 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:53:03,991 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:53:04,129 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:53:19,665 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 60.00, threshold is 5.0
+2025-12-12 23:53:19,666 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:53:19,758 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:53:29,973 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:53:30,562 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:53:30,568 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:53:30,781 - studysync - INFO - HTTP 200: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:53:31,046 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:53:31,051 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:53:32,145 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:53:32,328 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:53:34,447 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:53:34,626 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:53:49,760 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 60.00, threshold is 5.0
+2025-12-12 23:53:49,762 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:53:59,940 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:54:00,523 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:54:00,524 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:54:00,527 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:54:00,692 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:54:01,094 - studysync - INFO - HTTP 200: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:54:01,801 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:54:01,954 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:54:04,065 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:54:04,237 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:54:19,670 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 60.00, threshold is 5.0
+2025-12-12 23:54:19,671 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:54:19,778 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:54:29,951 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:54:30,469 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:54:30,470 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:54:30,478 - studysync - INFO - HTTP 200: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:54:30,807 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:54:30,809 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:54:31,934 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:54:32,067 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:54:34,198 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:54:34,334 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:54:49,782 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 60.00, threshold is 5.0
+2025-12-12 23:54:49,783 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:54:59,949 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:55:00,833 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:55:00,833 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:55:00,844 - studysync - INFO - HTTP 200: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:55:01,122 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:55:01,124 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:55:02,227 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:55:02,360 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:55:04,489 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:55:04,629 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:55:19,679 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 60.00, threshold is 5.0
+2025-12-12 23:55:19,679 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:55:19,787 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:55:30,029 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:55:30,465 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:55:30,469 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:55:30,478 - studysync - INFO - HTTP 200: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:55:30,770 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:55:30,773 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:55:31,962 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:55:32,095 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:55:34,221 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:55:34,346 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:55:49,796 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 60.00, threshold is 5.0
+2025-12-12 23:55:49,799 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:55:59,975 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:55:59,982 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:55:59,987 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:56:01,315 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:56:01,322 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:56:01,328 - studysync - INFO - HTTP 200: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:56:02,452 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:56:02,609 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:56:04,754 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:56:04,877 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:56:19,689 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 60.00, threshold is 5.0
+2025-12-12 23:56:19,691 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:56:19,813 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:56:29,976 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:56:30,449 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:56:30,450 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:56:32,171 - studysync - INFO - HTTP 200: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:56:32,521 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:56:32,523 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:56:33,657 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:56:33,788 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:56:35,956 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:56:36,091 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:56:49,816 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 60.00, threshold is 5.0
+2025-12-12 23:56:49,817 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:56:59,970 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:57:00,176 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:57:00,178 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:57:00,184 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:57:01,146 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:57:01,525 - studysync - INFO - HTTP 200: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:57:02,680 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:57:02,832 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:57:04,946 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:57:05,086 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:57:19,707 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 60.00, threshold is 5.0
+2025-12-12 23:57:19,709 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:57:19,832 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:57:29,965 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:57:30,389 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:57:30,390 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:57:30,397 - studysync - INFO - HTTP 200: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:57:30,648 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:57:30,649 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:57:31,860 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:57:31,983 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:57:34,108 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:57:34,250 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:57:49,837 - studysync - WARNING - Alert triggered: Error Rate Alert - error_rate is 60.00, threshold is 5.0
+2025-12-12 23:57:49,838 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:57:59,994 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:58:01,610 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:58:01,610 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:58:01,927 - studysync - INFO - HTTP 200: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:58:01,938 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:58:01,939 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:58:03,093 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:58:03,222 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:58:05,375 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:58:05,503 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:58:11,692 - studysync - INFO - Monitoring loop cancelled
+2025-12-12 23:58:11,693 - studysync - INFO - Monitoring service stopped
+2025-12-12 23:58:23,415 - studysync - INFO - Monitoring service started
+2025-12-12 23:58:23,416 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:58:30,181 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:58:30,185 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:58:30,187 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:58:32,201 - studysync - INFO - HTTP 200: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:58:32,202 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:58:32,588 - studysync - INFO - HTTP 200: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:58:53,431 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:59:00,016 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:59:00,483 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:59:00,484 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:59:00,490 - studysync - INFO - HTTP 200: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:59:00,985 - studysync - INFO - HTTP 200: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:59:00,986 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:59:23,420 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:59:23,436 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:59:29,980 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-12 23:59:30,174 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:59:30,175 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:59:30,184 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-12 23:59:30,573 - studysync - INFO - HTTP 200: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:59:30,936 - studysync - INFO - HTTP 200: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-12 23:59:53,441 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-12 23:59:59,996 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-13 00:00:01,190 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-13 00:00:01,190 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-13 00:00:01,206 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-13 00:00:02,005 - studysync - INFO - HTTP 200: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-13 00:00:02,013 - studysync - INFO - HTTP 200: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-13 00:00:23,430 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-13 00:00:23,445 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-13 00:00:30,174 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-13 00:00:30,694 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-13 00:00:30,702 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-13 00:00:31,090 - studysync - INFO - HTTP 200: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-13 00:00:31,223 - studysync - INFO - HTTP 200: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-13 00:00:31,226 - studysync - INFO - HTTP 200: GET /api/metrics/today

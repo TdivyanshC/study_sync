@@ -7,7 +7,7 @@ import uuid
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Union, Tuple
 from email_validator import validate_email, EmailNotValidError
-from pydantic import BaseModel, Field, validator, root_validator
+from pydantic import BaseModel, Field, validator, model_validator
 from .error_classes import ValidationError
 
 # Common validation patterns
@@ -455,10 +455,10 @@ class DateRangeSchema(BaseValidationModel):
     start_date: Optional[datetime] = Field(None, description="Start date")
     end_date: Optional[datetime] = Field(None, description="End date")
     
-    @root_validator
-    def validate_date_range(cls, values):
-        start_date = values.get('start_date')
-        end_date = values.get('end_date')
+    @model_validator(mode='after')
+    def validate_date_range(self):
+        start_date = self.start_date
+        end_date = self.end_date
         
         if start_date and end_date and start_date > end_date:
             raise ValidationError(
@@ -477,7 +477,7 @@ class DateRangeSchema(BaseValidationModel):
                     details={"max_days": 365}
                 )
         
-        return values
+        return self
 
 
 # Utility functions for common validations

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { useAuth } from '../hooks/useAuth';
@@ -8,9 +8,17 @@ import { Colors } from '../constants/Colors';
 export default function IndexScreen() {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const [sessionChecked, setSessionChecked] = useState(false);
 
   useEffect(() => {
+    // Don't make any navigation decisions while loading
     if (loading) return;
+
+    // Only make navigation decisions after we've checked the session
+    if (!sessionChecked) {
+      setSessionChecked(true);
+      return;
+    }
 
     // Check if we're on the auth callback route
     if (typeof window !== 'undefined') {
@@ -23,7 +31,8 @@ export default function IndexScreen() {
         currentPath,
         hasAuthCode,
         user: user?.email,
-        loading
+        loading,
+        sessionChecked
       });
 
       // If this is an OAuth callback, let the auth/callback route handle it
@@ -33,15 +42,15 @@ export default function IndexScreen() {
       }
     }
 
-    // Normal authentication flow
+    // Normal authentication flow - wait for session to be fully restored
     if (user) {
-      console.log('✅ User authenticated, redirecting to home');
-      router.replace('/home');
+      console.log('✅ User authenticated, redirecting to tabs');
+      router.replace('/(tabs)');
     } else {
       console.log('⚠️ No user found, redirecting to login');
       router.replace('/login');
     }
-  }, [user, loading, router]);
+  }, [user, loading, sessionChecked, router]);
 
   // Show loading while checking authentication
   return (

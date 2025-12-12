@@ -9,6 +9,8 @@ import { supabase } from '../../lib/supabase';
  * This component handles the OAuth callback with the authorization code.
  * Supabase SDK automatically exchanges the code for tokens, so we just
  * need to check if the session was established and navigate accordingly.
+ * 
+ * Enhanced to work better with AuthProvider session persistence.
  */
 export default function AuthCallback() {
   const [status, setStatus] = useState('Processing authentication...');
@@ -51,10 +53,8 @@ export default function AuthCallback() {
           setStatus('Authentication successful!');
           setStep(4);
           
-          // Navigate to home after successful authentication
-          setTimeout(() => {
-            router.replace('/(tabs)');
-          }, 1000);
+          // Let AuthProvider handle navigation - don't force navigation here
+          console.log('📱 Session established, AuthProvider will handle navigation');
         } else {
           throw new Error('Code exchange succeeded but no session was returned');
         }

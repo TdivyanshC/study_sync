@@ -44,6 +44,7 @@ from services.gamification.badge_service import BadgeService
 from routes.gamification_routes import create_gamification_routes
 from routes.ranking_routes import create_ranking_routes
 from routes.badge_routes import create_badge_routes
+from routes.streak_routes import create_streak_routes
 from routes.session_routes import session_router
 from routes.tunnel import tunnel_router
 
@@ -1444,6 +1445,11 @@ if supabase:
         # Initialize Gamification Service
         xp_service = XPService(supabase)
         gamification_router = create_gamification_routes(xp_service)
+        
+        # Initialize Streak Service
+        streak_router = create_streak_routes(xp_service)
+        api_router.include_router(streak_router)  # Mount on /api/streak
+        print("Streak system initialized successfully")
         api_router.include_router(gamification_router)  # Mount on /api/xp
         print("Gamification system initialized successfully")
         
@@ -1482,6 +1488,22 @@ app.include_router(api_router)
 # Setup monitoring middleware (Phase 6.2)
 try:
     setup_monitoring_middleware(app, collect_system_metrics=True)
+    print("Monitoring and analytics system initialized successfully")
+    
+    # Start the monitoring service
+    @app.on_event("startup")
+    async def startup_monitoring():
+        await monitoring_service.start_monitoring()
+        print("Monitoring service started")
+    
+    @app.on_event("shutdown")
+    async def shutdown_monitoring():
+        await monitoring_service.stop_monitoring()
+        print("Monitoring service stopped")
+        
+except Exception as e:
+    print(f"Failed to initialize monitoring system: {e}")
+    print("Monitoring features will not be available")
     print("✅ Monitoring and analytics system initialized successfully")
     
     # Start the monitoring service

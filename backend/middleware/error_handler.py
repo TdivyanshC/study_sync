@@ -13,7 +13,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 import uuid
 
-from utils.error_classes import BaseStudySyncException, ErrorHandlerRegistry
+from utils.error_classes import BaseStudySyncException, ValidationError, ErrorHandlerRegistry
 from utils.security_validation import global_rate_limiter
 
 logger = logging.getLogger(__name__)
@@ -395,21 +395,12 @@ def setup_error_handlers(app: FastAPI):
             content=error_dict
         )
     
-    @app.exception_handler(404)
-    async def not_found_handler(request: Request, exc):
-        """Handle 404 errors"""
-        return JSONResponse(
-            status_code=404,
-            content={
-                "error": True,
-                "error_code": "NOT_FOUND",
-                "message": f"Endpoint not found: {request.url.path}",
-                "request_id": getattr(request.state, "request_id", None),
-                "path": str(request.url.path),
-                "method": request.method,
-                "timestamp": time.time()
-            }
-        )
+    # @app.exception_handler(404)
+    # async def not_found_handler(request: Request, exc):
+    #     """Handle 404 errors - letting FastAPI handle actual missing endpoints"""
+    #     # Don't intercept 404 responses from endpoints - let them pass through
+    #     # This allows endpoints to return proper "resource not found" errors
+    #     raise exc
     
     @app.exception_handler(500)
     async def internal_error_handler(request: Request, exc):

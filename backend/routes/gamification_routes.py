@@ -3,6 +3,7 @@ Gamification Routes - FastAPI route definitions
 """
 
 import logging
+from datetime import datetime, timedelta
 from fastapi import APIRouter, HTTPException, Query
 from typing import Dict, Any
 
@@ -154,16 +155,39 @@ def create_gamification_routes(xp_service: XPService) -> APIRouter:
             if not user_id:
                 raise HTTPException(status_code=400, detail="Missing user_id")
             
-            # Get user profile
+            # Try to get user profile first
             user_result = xp_service.supabase.table('users').select('username, xp, level, streak_count').eq('id', user_id).execute()
             
+            # If user doesn't exist, create a basic profile for OAuth users
             if not user_result.data:
-                raise HTTPException(status_code=404, detail="User not found")
-            
-            user = user_result.data[0]
+                logger.info(f"User {user_id} not found in users table - creating profile for OAuth user")
+                
+                # Create basic user profile
+                user_data = {
+                    'id': user_id,
+                    'username': f'oauth_user_{user_id[:8]}',
+                    'email': f'{user_id}@oauth.user',
+                    'password_hash': '',  # OAuth users don't need password hash
+                    'xp': 0,
+                    'level': 1,
+                    'streak_count': 0,
+                    'created_at': datetime.now().isoformat()
+                }
+                
+                try:
+                    create_result = xp_service.supabase.table('users').insert(user_data).execute()
+                    if create_result.data:
+                        user = user_data  # Use the data we tried to insert
+                        logger.info(f"Successfully created user profile for {user_id}")
+                    else:
+                        raise HTTPException(status_code=404, detail="User not found and could not be created")
+                except Exception as create_error:
+                    logger.error(f"Failed to create user profile for {user_id}: {str(create_error)}")
+                    raise HTTPException(status_code=404, detail="User not found")
+            else:
+                user = user_result.data[0]
             
             # Get recent XP history (last 30 days)
-            from datetime import datetime, timedelta
             thirty_days_ago = (datetime.now() - timedelta(days=30)).isoformat()
             
             xp_history_result = xp_service.supabase.table('xp_history').select('amount, source, created_at').eq(
@@ -287,8 +311,6 @@ def create_gamification_routes(xp_service: XPService) -> APIRouter:
         try:
             if not user_id:
                 raise HTTPException(status_code=400, detail="Missing user_id")
-            
-            from datetime import datetime, timedelta
             
             # Calculate date range
             end_date = datetime.now()

@@ -43,15 +43,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Enhanced session initialization with proper timing
   useEffect(() => {
     let isMounted = true;
-    let sessionCheckTimeout: NodeJS.Timeout;
+    let initializationComplete = false;
 
     // Get initial session with better error handling
     async function initializeAuth() {
       try {
         console.log('🚀 Initializing authentication...');
         
-        // Wait a bit for AsyncStorage to be ready (important for session persistence)
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Wait for AsyncStorage and Supabase to be ready
+        await new Promise(resolve => setTimeout(resolve, 200));
         
         const { data: { session }, error } = await supabase.auth.getSession();
         
@@ -92,6 +92,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           }
           
           setLoading(false);
+          initializationComplete = true;
           setSessionRestored(true);
         }
       } catch (error) {
@@ -100,6 +101,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           setSession(null);
           setUser(null);
           setLoading(false);
+          initializationComplete = true;
           setSessionRestored(true);
         }
       }
@@ -119,8 +121,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setUser(session?.user ?? null);
         setLoading(false);
 
-        // Only navigate after session restoration is complete
-        if (sessionRestored) {
+        // Navigate based on event type, but only after initial restoration
+        if (initializationComplete) {
           if (event === 'SIGNED_IN' && session?.user) {
             console.log('✅ User signed in, navigating to home');
             router.replace('/(tabs)');
@@ -137,15 +139,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       isMounted = false;
       subscription.unsubscribe();
     };
-    // Cleanup
-    return () => {
-      isMounted = false;
-      if (typeof sessionCheckTimeout !== 'undefined') {
-        clearTimeout(sessionCheckTimeout);
-      }
-      subscription.unsubscribe();
-    };
-  }, [sessionRestored]);
+  }, []);
 
   // Handle deep linking for OAuth callbacks
   useEffect(() => {

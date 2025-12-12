@@ -327,4 +327,58 @@ class ErrorHandlerRegistry:
 ErrorHandlerRegistry.register_handler(BaseStudySyncException, lambda e: e.to_dict())
 ErrorHandlerRegistry.register_handler(ValueError, lambda e: ValidationError(str(e)).to_dict())
 ErrorHandlerRegistry.register_handler(KeyError, lambda e: NotFoundError("Resource", str(e)).to_dict())
+class SecurityError(BaseStudySyncException):
+    """Raised when security violations are detected"""
+    
+    def __init__(
+        self, 
+        message: str = "Security violation detected",
+        threat_type: str = None,
+        severity: str = "medium"
+    ):
+        details = {}
+        if threat_type:
+            details["threat_type"] = threat_type
+        if severity:
+            details["severity"] = severity
+        
+        super().__init__(
+            message=message,
+            error_code="SECURITY_ERROR",
+            details=details,
+            status_code=403
+        )
+
+
+class InputValidationError(BaseStudySyncException):
+    """Raised when input validation fails"""
+    
+    def __init__(
+        self, 
+        message: str,
+        field: str = None, 
+        value: Any = None,
+        validation_rules: List[str] = None
+    ):
+        details = {}
+        if field:
+            details["field"] = field
+        if value is not None:
+            details["value"] = str(value)
+        if validation_rules:
+            details["validation_rules"] = validation_rules
+        
+        super().__init__(
+            message=message,
+            error_code="INPUT_VALIDATION_ERROR",
+            details=details,
+            status_code=400
+        )
+
+
+# Register default handlers
+ErrorHandlerRegistry.register_handler(BaseStudySyncException, lambda e: e.to_dict())
+ErrorHandlerRegistry.register_handler(ValueError, lambda e: ValidationError(str(e)).to_dict())
+ErrorHandlerRegistry.register_handler(KeyError, lambda e: NotFoundError("Resource", str(e)).to_dict())
+ErrorHandlerRegistry.register_handler(ConnectionError, lambda e: ServiceUnavailableError("Database").to_dict())
 ErrorHandlerRegistry.register_handler(ConnectionError, lambda e: ServiceUnavailableError("Database").to_dict())

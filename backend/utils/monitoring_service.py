@@ -26,7 +26,7 @@ except ImportError:
     print("Warning: psutil not available. System metrics will be limited.")
 
 from .performance_monitor import performance_monitor, cache_manager, connection_pool
-from .enhanced_logging import app_logger, audit_logger, error_tracker, log_info, log_error, log_warning
+from .enhanced_logging import app_logger, audit_logger, error_tracker, log_info, log_error, log_warning, log_debug
 
 
 class AlertLevel(Enum):
