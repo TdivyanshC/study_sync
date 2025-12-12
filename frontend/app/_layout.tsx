@@ -6,6 +6,7 @@ import { AuthProvider } from '../providers/AuthProvider';
 import * as Linking from 'expo-linking';
 import { useEffect } from 'react';
 import { router } from 'expo-router';
+import { NotificationBanner } from '../src/components/NotificationBanner';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -72,21 +73,21 @@ export default function RootLayout() {
               <Stack.Screen name="index" options={{ headerShown: false }} />
               
               {/* OAuth callback route */}
-              <Stack.Screen 
-                name="auth/callback" 
-                options={{ 
+              <Stack.Screen
+                name="auth/callback"
+                options={{
                   headerShown: false,
                   presentation: 'modal'
-                }} 
+                }}
               />
               
               {/* Login screen */}
-              <Stack.Screen 
-                name="login" 
-                options={{ 
+              <Stack.Screen
+                name="login"
+                options={{
                   headerShown: false,
                   presentation: 'modal'
-                }} 
+                }}
               />
               
               {/* Home screen - protected */}
@@ -96,6 +97,9 @@ export default function RootLayout() {
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
               <Stack.Screen name="timer" options={{ headerShown: false }} />
             </Stack>
+            
+            {/* Global notification banner for error handling and user feedback */}
+            <NotificationBanner position="top" maxNotifications={3} />
           </UserProvider>
         </PopupProvider>
       </QueryClientProvider>

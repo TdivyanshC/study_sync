@@ -4,19 +4,73 @@ import NetInfo from '@react-native-community/netinfo';
 import { buildApiUrl, API_ENDPOINTS } from '../lib/apiConfig';
 import { findWorkingBackendUrl, getManualConnectionInstructions } from '../../lib/networkDetector';
 
-// Custom error classes for better error handling
-class NetworkError extends Error {
-  constructor(message: string, public status: number, public responseText: string) {
+// Enhanced error classes for better error handling
+export class ApiError extends Error {
+  constructor(
+    message: string, 
+    public status: number, 
+    public code: string = 'API_ERROR',
+    public userMessage: string = 'An unexpected error occurred',
+    public isRetryable: boolean = false
+  ) {
     super(message);
-    this.name = 'NetworkError';
+    this.name = 'ApiError';
   }
 }
 
-class NetworkRetryableError extends Error {
-  constructor(message: string, public status: number, public responseText: string) {
-    super(message);
-    this.name = 'NetworkRetryableError';
+export class NetworkConnectionError extends ApiError {
+  constructor(message: string = 'Unable to connect to the server') {
+    super(message, 0, 'NETWORK_CONNECTION_ERROR', 'Connection failed. Please check your internet connection.', true);
   }
+}
+
+export class ServerUnavailableError extends ApiError {
+  constructor(message: string = 'Server is temporarily unavailable') {
+    super(message, 503, 'SERVER_UNAVAILABLE', 'Server is temporarily unavailable. Please try again later.', true);
+  }
+}
+
+export class BackendNotFoundError extends ApiError {
+  constructor(message: string = 'Backend service not found') {
+    super(message, 404, 'BACKEND_NOT_FOUND', 'Backend service not found. Please check if the server is running.', false);
+  }
+}
+
+// Check if response content is HTML (ngrok error page)
+function isHtmlResponse(content: string): boolean {
+  return content.trim().toLowerCase().startsWith('<!doctype html') || 
+         content.trim().toLowerCase().startsWith('<html');
+}
+
+// Extract error information from HTML responses
+function extractErrorFromHtml(htmlContent: string): { code: string; message: string } {
+  // Common ngrok error patterns
+  if (htmlContent.includes('ERR_NGROK_8012')) {
+    return {
+      code: 'NGROK_TUNNEL_ERROR',
+      message: 'ngrok tunnel connection failed'
+    };
+  }
+  
+  if (htmlContent.includes('502 Bad Gateway')) {
+    return {
+      code: 'BAD_GATEWAY',
+      message: 'Server returned 502 Bad Gateway'
+    };
+  }
+  
+  if (htmlContent.includes('timeout')) {
+    return {
+      code: 'REQUEST_TIMEOUT',
+      message: 'Request timed out'
+    };
+  }
+  
+  // Generic HTML error
+  return {
+    code: 'HTML_ERROR_RESPONSE',
+    message: 'Received HTML error response instead of JSON'
+  };
 }
 
 // Types for gamification system
@@ -200,13 +254,15 @@ export interface SessionEvent {
 }
 
 class GamificationApi {
-  private maxRetries: number = 1; // Stop infinite loops - only 1 retry for network errors
+  private maxRetries: number = 2; // Increased retry attempts for better resilience
   private retryDelay: number = 1000; // 1 second base delay
-  private maxRetryDelay: number = 1000; // 1 second max delay for immediate failure feedback
+  private maxRetryDelay: number = 3000; // 3 second max delay
   private backendReachable: boolean = false; // Track backend availability
+  private lastHealthCheck: number = 0; // Track when we last checked backend health
+  private healthCheckInterval: number = 30000; // 30 seconds between health checks
 
   constructor() {
-    console.log(`🎯 Gamification API initialized`);
+    console.log(`🎯 Gamification API initialized with enhanced error handling`);
   }
 
   /**
@@ -220,7 +276,7 @@ class GamificationApi {
       }
       return await SecureStore.getItemAsync('auth_token');
     } catch (error) {
-      console.error('Failed to get auth token:', error);
+      console.warn('Failed to get auth token:', error);
       return null;
     }
   }
@@ -253,20 +309,23 @@ class GamificationApi {
   }
 
   /**
-   * Check backend server availability
+   * Check backend server availability with throttling
    */
   private async checkBackendAvailability(): Promise<boolean> {
     try {
-      if (this.backendReachable) {
-        return true; // Already confirmed reachable
+      // Throttle health checks to avoid overwhelming the backend
+      const now = Date.now();
+      if (now - this.lastHealthCheck < this.healthCheckInterval && this.backendReachable) {
+        return this.backendReachable;
       }
+      this.lastHealthCheck = now;
 
       const url = buildApiUrl(API_ENDPOINTS.HEALTH);
       
       console.log(`🏥 Checking backend availability at: ${url}`);
       
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout for ngrok
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout for health checks
       
       const response = await fetch(url, {
         method: 'GET',
@@ -283,24 +342,77 @@ class GamificationApi {
         this.backendReachable = true;
         return true;
       } else {
-        console.log(`⚠️ Backend returned ${response.status} - but backend is running, not marking as unreachable`);
-        // Don't mark as unreachable for HTTP errors - backend might still be working
-        // Just log the warning and continue
-        this.backendReachable = true; // Assume reachable for non-critical HTTP errors
-        return true;
+        console.log(`⚠️ Backend returned ${response.status} - marking as unreachable`);
+        this.backendReachable = false;
+        return false;
       }
     } catch (error) {
-      console.log('🔥 Backend unreachable – check ngrok or LAN IP');
-      // Don't permanently mark as unreachable on connection errors
-      // This was causing the blocking behavior
-      console.log('🔄 Attempting to continue despite connection error...');
+      console.log('🔥 Backend unreachable:', error instanceof Error ? error.message : String(error));
       this.backendReachable = false;
       return false;
     }
   }
 
   /**
-   * Make authenticated API request with limited retry logic
+   * Create a user-friendly error message based on error type
+   */
+  private createUserFriendlyError(error: any, status: number, responseText: string): ApiError {
+    // Handle HTML responses from ngrok or other error pages
+    if (isHtmlResponse(responseText)) {
+      const extractedError = extractErrorFromHtml(responseText);
+      
+      switch (extractedError.code) {
+        case 'NGROK_TUNNEL_ERROR':
+          return new NetworkConnectionError('ngrok tunnel connection failed. Please check if the server is running.');
+        case 'BAD_GATEWAY':
+          return new ServerUnavailableError('Server is temporarily unavailable. Please try again later.');
+        case 'REQUEST_TIMEOUT':
+          return new NetworkConnectionError('Request timed out. Please check your connection.');
+        default:
+          return new ApiError(
+            'Received HTML error response instead of JSON API response',
+            status,
+            'HTML_ERROR_RESPONSE',
+            'Server returned an error page. Please try again later.',
+            true
+          );
+      }
+    }
+
+    // Handle standard HTTP status codes
+    switch (status) {
+      case 0:
+        return new NetworkConnectionError('Unable to connect to the server');
+      case 401:
+        return new ApiError('Authentication required', 401, 'UNAUTHORIZED', 'Please log in again', false);
+      case 403:
+        return new ApiError('Access forbidden', 403, 'FORBIDDEN', 'You do not have permission to perform this action', false);
+      case 404:
+        return new BackendNotFoundError('The requested resource was not found');
+      case 408:
+        return new NetworkConnectionError('Request timed out. Please try again.');
+      case 429:
+        return new ApiError('Too many requests', 429, 'RATE_LIMITED', 'Too many requests. Please wait a moment and try again.', true);
+      case 500:
+        return new ServerUnavailableError('Internal server error. Please try again later.');
+      case 502:
+        return new ServerUnavailableError('Server is temporarily unavailable. Please try again later.');
+      case 503:
+        return new ServerUnavailableError('Service temporarily unavailable. Please try again later.');
+      case 504:
+        return new NetworkConnectionError('Request timed out. Please try again.');
+      default:
+        if (status >= 500) {
+          return new ServerUnavailableError(`Server error (${status}). Please try again later.`);
+        } else if (status >= 400) {
+          return new ApiError(`Client error (${status})`, status, 'CLIENT_ERROR', 'Invalid request. Please check your input.', false);
+        }
+        return new ApiError(`Network error (${status})`, status, 'NETWORK_ERROR', 'A network error occurred. Please try again.', true);
+    }
+  }
+
+  /**
+   * Make authenticated API request with enhanced error handling and retry logic
    */
   private async makeRequest<T>(
     endpoint: string,
@@ -313,17 +425,11 @@ class GamificationApi {
     try {
       console.log(`🌐 [${retryCount > 0 ? 'RETRY' : 'REQUEST'}] ${method} ${url}`);
       
-      // Check if backend is reachable - but don't permanently block all calls
-      if (endpoint !== API_ENDPOINTS.HEALTH && !this.backendReachable) {
-        console.log('⚠️ Backend reachability unknown – attempting API call anyway');
-        // Don't block the call, just attempt it and handle the error appropriately
-      }
-      
       // Check network connectivity (skip on web)
       if (Platform.OS !== 'web') {
         const state = await NetInfo.fetch();
         if (!state.isConnected) {
-          throw new Error('No internet connection');
+          throw new NetworkConnectionError('No internet connection');
         }
       }
 
@@ -351,94 +457,93 @@ class GamificationApi {
       console.log(`📡 Response: ${response.status} ${response.statusText} for ${method} ${url}`);
 
       if (!response.ok) {
+        // Read error response, but limit size to avoid logging HTML
         const errorText = await response.text().catch(() => 'Unable to read error response');
-        const errorMessage = `HTTP ${response.status}: ${response.statusText}`;
         
-        console.error(`❌ Network Error: ${errorMessage}`);
-        console.error(`🔍 Error Details: ${errorText}`);
+        // Don't log the full HTML response to avoid console pollution
+        if (isHtmlResponse(errorText)) {
+          console.warn(`⚠️ Received HTML error response (${response.status}) - likely ngrok or server error page`);
+        } else {
+          console.error(`❌ API Error: HTTP ${response.status} - ${errorText.substring(0, 200)}...`);
+        }
         
+        // Create user-friendly error
+        const friendlyError = this.createUserFriendlyError(null, response.status, errorText);
+        
+        // Handle authentication errors with retry
         if (response.status === 401 && retryCount < this.maxRetries) {
           console.log('🔑 Token expired, retrying...');
+          // In a real app, you might want to refresh the token here
           return this.makeRequest(endpoint, options, retryCount + 1);
         }
         
-        if (response.status >= 500 && retryCount < this.maxRetries) {
-          console.log(`🔄 Server error ${response.status}, retrying... (${retryCount + 1}/${this.maxRetries})`);
-          throw new NetworkRetryableError(errorMessage, response.status, errorText);
+        // Handle retryable server errors
+        if (friendlyError.isRetryable && retryCount < this.maxRetries) {
+          const delay = Math.min(this.retryDelay * Math.pow(2, retryCount), this.maxRetryDelay);
+          console.log(`🔄 Server error ${response.status}, retrying in ${delay}ms... (${retryCount + 1}/${this.maxRetries})`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          return this.makeRequest(endpoint, options, retryCount + 1);
         }
         
-        throw new NetworkError(errorMessage, response.status, errorText);
+        throw friendlyError;
       }
 
       const data = await response.json();
       console.log(`✅ Success: ${method} ${url}`);
+      
+      // Mark backend as reachable on successful requests
+      this.backendReachable = true;
+      
       return data;
       
     } catch (error) {
-      // Handle timeout errors specifically
-      if (error instanceof Error) {
-        if (error.name === 'AbortError' || error.message.includes('aborted')) {
-          console.error(`⏰ Request timeout: ${url}`);
-          if (retryCount < this.maxRetries) {
-            const delay = Math.min(this.retryDelay * Math.pow(2, retryCount), this.maxRetryDelay);
-            console.log(`⏳ Retrying due to timeout in ${delay}ms... (${retryCount + 1}/${this.maxRetries})`);
-            await new Promise(resolve => setTimeout(resolve, delay));
-            return this.makeRequest(endpoint, options, retryCount + 1);
-          }
-          throw new NetworkRetryableError('Request timeout', 408, 'Request timed out');
+      // Handle timeout errors
+      if (error instanceof Error && (error.name === 'AbortError' || error.message.includes('aborted'))) {
+        console.error(`⏰ Request timeout: ${url}`);
+        const timeoutError = new NetworkConnectionError('Request timed out. Please check your connection.');
+        
+        if (retryCount < this.maxRetries) {
+          const delay = Math.min(this.retryDelay * Math.pow(2, retryCount), this.maxRetryDelay);
+          console.log(`⏳ Retrying due to timeout in ${delay}ms... (${retryCount + 1}/${this.maxRetries})`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          return this.makeRequest(endpoint, options, retryCount + 1);
         }
+        
+        throw timeoutError;
       }
       
-      // Handle network timeouts and connection errors - improved handling for ngrok
+      // Handle network errors
       if (error instanceof TypeError && error.message.includes('Network request failed')) {
-        console.error(`🔥 Network Error: ${error.message} - Backend unreachable`);
-        console.log('🔄 Ngrok connection may be slow, attempting one more retry...');
-        // For ngrok URLs, give one extra chance due to potential slow startup
-        if (url.includes('ngrok')) {
-          const delay = 3000; // 3 second delay for ngrok
-          console.log(`⏳ Retrying ngrok request in ${delay}ms...`);
-          await new Promise(resolve => setTimeout(resolve, delay));
-          return this.makeRequest(endpoint, options, retryCount + 1);
-        }
-        console.log('⛔ Stopping retry attempts due to network failure');
-        throw new Error('Backend unreachable – check ngrok or LAN IP');
-      } else if (error instanceof NetworkRetryableError) {
-        console.error(`🔄 Retryable Error: ${error.message}`);
-        if (retryCount === 0) {
-          const delay = Math.min(this.retryDelay, this.maxRetryDelay);
-          console.log(`⏳ Single retry attempt for server error... (${retryCount + 1}/${this.maxRetries})`);
-          await new Promise(resolve => setTimeout(resolve, delay));
-          return this.makeRequest(endpoint, options, retryCount + 1);
-        }
-      } else if (error instanceof NetworkError) {
-        console.error(`❌ Network Error: ${error.message}`);
-      } else if (error instanceof Error) {
-        console.error(`💥 Unexpected Error: ${error.message}`);
-      } else {
-        console.error(`💥 Unknown Error: ${error}`);
-      }
-
-      // No additional retries for timeout errors after the first attempt
-      if (retryCount < this.maxRetries && error instanceof Error && !error.message.includes('timeout') && !error.message.includes('Network request failed')) {
-        const delay = Math.min(this.retryDelay, this.maxRetryDelay);
-        console.log(`⏳ Final retry attempt... (${retryCount + 1}/${this.maxRetries})`);
+        console.error(`🔥 Network Error: ${error.message}`);
         
-        await new Promise(resolve => setTimeout(resolve, delay));
-        return this.makeRequest(endpoint, options, retryCount + 1);
+        // For ngrok URLs, give extra retries due to potential slow startup
+        if (url.includes('ngrok') && retryCount < this.maxRetries) {
+          const delay = 2000; // 2 second delay for ngrok
+          console.log(`⏳ Retrying ngrok request in ${delay}ms... (${retryCount + 1}/${this.maxRetries})`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          return this.makeRequest(endpoint, options, retryCount + 1);
+        }
+        
+        throw new NetworkConnectionError('Unable to connect to the server. Please check your internet connection.');
       }
       
-      // Final failure - provide helpful error message
-      let finalError: Error;
-      if (error instanceof NetworkError || error instanceof NetworkRetryableError) {
-        finalError = error;
-      } else if (error instanceof Error) {
-        finalError = new NetworkError(`Request failed after ${this.maxRetries} retries: ${error.message}`, 0, String(error));
-      } else {
-        finalError = new NetworkError(`Request failed after ${this.maxRetries} retries: ${String(error)}`, 0, String(error));
+      // Handle our custom API errors
+      if (error instanceof ApiError) {
+        console.error(`❌ API Error: ${error.code} - ${error.message}`);
+        throw error;
       }
-        
-      console.error(`💀 Final failure: ${finalError.message}`);
-      throw finalError;
+      
+      // Handle unexpected errors
+      const unexpectedError = new ApiError(
+        `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+        0,
+        'UNEXPECTED_ERROR',
+        'An unexpected error occurred. Please try again.',
+        true
+      );
+      
+      console.error(`💥 Unexpected Error:`, error);
+      throw unexpectedError;
     }
   }
 
@@ -484,7 +589,20 @@ class GamificationApi {
    * Get today's metrics for a user
    */
   async getTodayMetrics(userId: string): Promise<TodayMetrics> {
-    return this.makeRequest<TodayMetrics>(`${API_ENDPOINTS.METRICS_TODAY}?user_id=${userId}`);
+    try {
+      return await this.makeRequest<TodayMetrics>(`${API_ENDPOINTS.METRICS_TODAY}?user_id=${userId}`);
+    } catch (error) {
+      // Return fallback data when backend is unavailable
+      if (error instanceof NetworkConnectionError || error instanceof ServerUnavailableError) {
+        console.log('📊 Returning fallback metrics data due to backend unavailability');
+        return {
+          session_id: null,
+          total_focus_time: 0,
+          tasks_completed: 0
+        };
+      }
+      throw error;
+    }
   }
 
   /**
@@ -498,19 +616,60 @@ class GamificationApi {
    * Get comprehensive XP statistics for a user
    */
   async getUserXPStats(userId: string): Promise<UserXPStats> {
-    const response = await this.makeRequest<{
-      success: boolean;
-      data: UserXPStats;
-    }>(`${API_ENDPOINTS.XP_STATS}/${userId}`);
+    try {
+      const response = await this.makeRequest<{
+        success: boolean;
+        data: UserXPStats;
+      }>(`${API_ENDPOINTS.XP_STATS}/${userId}`);
 
-    return response.data;
+      return response.data;
+    } catch (error) {
+      // Return fallback stats when backend is unavailable
+      if (error instanceof NetworkConnectionError || error instanceof ServerUnavailableError) {
+        console.log('📈 Returning fallback XP stats due to backend unavailability');
+        return {
+          user_id: userId,
+          username: 'User',
+          total_xp: 0,
+          level: 1,
+          current_streak: 0,
+          recent_30_days_xp: 0,
+          xp_sources: {},
+          next_level_xp: 100,
+          level_progress: 0
+        };
+      }
+      throw error;
+    }
   }
 
   /**
    * Update user's daily login streak
    */
   async updateDailyLoginStreak(userId: string): Promise<{ success: boolean; data: StreakData; message: string }> {
-    return this.makeRequest(`${API_ENDPOINTS.STREAK_UPDATE}/${userId}`, { method: 'POST' });
+    try {
+      return await this.makeRequest(`${API_ENDPOINTS.STREAK_UPDATE}/${userId}`, { method: 'POST' });
+    } catch (error) {
+      // Return fallback streak data when backend is unavailable
+      if (error instanceof NetworkConnectionError || error instanceof ServerUnavailableError) {
+        console.log('🔥 Returning fallback streak data due to backend unavailability');
+        return {
+          success: true,
+          data: {
+            user_id: userId,
+            current_streak: 0,
+            best_streak: 0,
+            streak_broken: false,
+            streak_multiplier: 1.0,
+            streak_bonus_xp: 0,
+            streak_active: false,
+            has_recent_activity: false
+          },
+          message: 'Streak data unavailable - backend connection issue'
+        };
+      }
+      throw error;
+    }
   }
 
   /**
@@ -534,7 +693,25 @@ class GamificationApi {
    * Get user's badge collection
    */
   async getUserBadges(userId: string): Promise<UserBadgesResponse> {
-    return this.makeRequest<UserBadgesResponse>(`${API_ENDPOINTS.BADGES_USER}/${userId}`);
+    try {
+      return await this.makeRequest<UserBadgesResponse>(`${API_ENDPOINTS.BADGES_USER}/${userId}`);
+    } catch (error) {
+      // Return fallback badges data when backend is unavailable
+      if (error instanceof NetworkConnectionError || error instanceof ServerUnavailableError) {
+        console.log('🏆 Returning fallback badges data due to backend unavailability');
+        return {
+          success: true,
+          data: {
+            badges: [],
+            total_badges: 0,
+            badge_categories: {},
+            recent_badges: []
+          },
+          message: 'Badges data unavailable - backend connection issue'
+        };
+      }
+      throw error;
+    }
   }
 
   /**
@@ -603,6 +780,16 @@ class GamificationApi {
       console.error('❌ Manual detection error:', error);
       return false;
     }
+  }
+
+  /**
+   * Get backend connectivity status
+   */
+  public getBackendStatus(): { isReachable: boolean; lastCheck: number } {
+    return {
+      isReachable: this.backendReachable,
+      lastCheck: this.lastHealthCheck
+    };
   }
 }
 

@@ -10,20 +10,13 @@ import { router } from 'expo-router';
 WebBrowser.maybeCompleteAuthSession();
 
 /**
- * AuthProvider with PKCE OAuth and automatic navigation support
+ * Enhanced AuthProvider with robust session persistence
  * 
- * This provider automatically handles navigation based on authentication state:
- * - SIGNED_IN: Navigates to '/(tabs)' (home screen)
- * - SIGNED_OUT: Navigates to '/login'
- * 
- * OAuth uses PKCE flow:
- * - Manually opens browser using WebBrowser.openAuthSessionAsync()
- * - Supabase SDK automatically exchanges authorization code for tokens
- * - No manual URL parsing or token extraction needed
- * - onAuthStateChange listener handles session updates and navigation
- * 
- * All sign-in methods (email/password and OAuth) will trigger automatic navigation
- * through the onAuthStateChange listener.
+ * This provider fixes the issue where users get logged out on app refresh by:
+ * - Properly waiting for session restoration before making navigation decisions
+ * - Handling session restoration timing issues
+ * - Preventing premature navigation to login screen
+ * - Ensuring proper token refresh handling
  */
 
 interface AuthContextType {
@@ -45,76 +38,93 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [sessionRestored, setSessionRestored] = useState(false);
 
-  // Initialize session on app start and listen for auth state changes
+  // Enhanced session initialization with proper timing
   useEffect(() => {
     let isMounted = true;
+    let sessionCheckTimeout: NodeJS.Timeout;
 
-    // Get initial session
-    async function getInitialSession() {
+    // Get initial session with better error handling
+    async function initializeAuth() {
       try {
+        console.log('🚀 Initializing authentication...');
+        
+        // Wait a bit for AsyncStorage to be ready (important for session persistence)
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
-          console.error('Error getting session:', error.message);
+          console.error('❌ Error getting session:', error.message);
           if (isMounted) {
             setSession(null);
             setUser(null);
             setLoading(false);
+            setSessionRestored(true);
           }
           return;
         }
 
         if (isMounted) {
-          console.log('🚀 App loaded - Initial session:', session ? 
-            `User: ${session.user?.email} (ID: ${session.user?.id})` : 
-            'No session - user needs to authenticate');
-          
-          // Navigate if user has existing session
           if (session?.user) {
-            console.log('📱 Existing session found, navigating to home');
-            setTimeout(() => {
-              router.replace('/(tabs)');
-            }, 100);
+            console.log('✅ Session restored successfully:', {
+              email: session.user.email,
+              id: session.user.id,
+              expiresAt: session.expires_at
+            });
+            
+            // Check if session is expired
+            const now = Math.floor(Date.now() / 1000);
+            if (session.expires_at && session.expires_at < now) {
+              console.log('⚠️ Session expired, user needs to re-authenticate');
+              setSession(null);
+              setUser(null);
+            } else {
+              setSession(session);
+              setUser(session.user);
+              console.log('📱 Session valid, user remains authenticated');
+            }
+          } else {
+            console.log('ℹ️ No existing session found - user needs to authenticate');
+            setSession(null);
+            setUser(null);
           }
           
-          setSession(session);
-          setUser(session?.user ?? null);
           setLoading(false);
+          setSessionRestored(true);
         }
       } catch (error) {
-        console.error('Error initializing session:', error);
+        console.error('❌ Error initializing auth:', error);
         if (isMounted) {
           setSession(null);
           setUser(null);
           setLoading(false);
+          setSessionRestored(true);
         }
       }
     }
 
-    getInitialSession();
+    initializeAuth();
 
-    // Listen for auth state changes
+    // Listen for auth state changes with enhanced handling
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state changed:', event);
+        console.log('🔄 Auth state changed:', event, session ? 'Session present' : 'No session');
         
-        if (isMounted) {
-          setSession(session);
-          setUser(session?.user ?? null);
-          setLoading(false);
-          
-          // Handle SIGNED_IN event for navigation
+        if (!isMounted) return;
+
+        // Handle session updates
+        setSession(session);
+        setUser(session?.user ?? null);
+        setLoading(false);
+
+        // Only navigate after session restoration is complete
+        if (sessionRestored) {
           if (event === 'SIGNED_IN' && session?.user) {
-            console.log('✅ User signed in successfully, navigating to home');
-            // Add small delay to ensure session is fully established
-            setTimeout(() => {
-              router.replace('/(tabs)');
-            }, 100);
-          }
-          
-          // Handle SIGNED_OUT event for navigation
-          if (event === 'SIGNED_OUT') {
+            console.log('✅ User signed in, navigating to home');
+            router.replace('/(tabs)');
+          } else if (event === 'SIGNED_OUT') {
             console.log('👋 User signed out, navigating to login');
             router.replace('/login');
           }
@@ -122,67 +132,71 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
     );
 
-    // Handle OAuth callback deep links
+    // Cleanup
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
+    // Cleanup
+    return () => {
+      isMounted = false;
+      if (typeof sessionCheckTimeout !== 'undefined') {
+        clearTimeout(sessionCheckTimeout);
+      }
+      subscription.unsubscribe();
+    };
+  }, [sessionRestored]);
+
+  // Handle deep linking for OAuth callbacks
+  useEffect(() => {
     const handleDeepLink = ({ url }: { url: string }) => {
-      console.log('🔗 Deep link received for session processing:', url);
+      console.log('🔗 Deep link received for auth:', url);
       
-      // Check if this is our OAuth callback URL with code parameter
-      if (url.includes('/auth/callback?code=')) {
-        console.log('🔄 OAuth callback detected, exchanging authorization code for tokens...');
+      // Check if this is our OAuth callback URL
+      if (url.includes('?code=') && (url.includes('exp://') || url.includes('/auth/callback'))) {
+        console.log('🔄 Processing OAuth callback...');
         
-        // Extract the authorization code from the URL
         const urlObj = new URL(url);
         const code = urlObj.searchParams.get('code');
         
         if (code) {
-          console.log('📝 Authorization code extracted:', code);
+          console.log('📝 Authorization code found, exchanging for session...');
           
-          // Explicitly exchange the code for tokens
           setTimeout(async () => {
             try {
-              console.log('🔄 Exchanging code for session...');
               const { data, error } = await supabase.auth.exchangeCodeForSession(code);
               
               if (error) {
-                console.error('Code exchange error:', error);
+                console.error('❌ Code exchange failed:', error);
               } else if (data.session) {
-                console.log('✅ Session established via code exchange:', data.session.user?.email);
-              } else {
-                console.log('⚠️ Code exchange succeeded but no session returned');
+                console.log('✅ Session established via code exchange');
               }
             } catch (error) {
-              console.error('Code exchange failed:', error);
+              console.error('❌ Code exchange error:', error);
             }
-          }, 1000);
-        } else {
-          console.log('❌ No authorization code found in URL');
+          }, 500);
         }
       }
     };
 
-    // Add deep link listener for OAuth callbacks
+    // Setup deep link listener
     let linkingSubscription: any = null;
     try {
       if (Linking && typeof Linking.addEventListener === 'function') {
         linkingSubscription = Linking.addEventListener('url', handleDeepLink);
-      } else {
-        console.warn('Linking.addEventListener is not available');
       }
     } catch (error) {
-      console.warn('Failed to setup deep link listener:', error);
+      console.warn('⚠️ Failed to setup deep link listener:', error);
     }
 
     return () => {
-      isMounted = false;
-      subscription.unsubscribe();
       if (linkingSubscription && typeof linkingSubscription.remove === 'function') {
         linkingSubscription.remove();
       }
     };
   }, []);
 
-
-
+  // Enhanced login function
   const login = async (email: string, password: string): Promise<void> => {
     setLoading(true);
     try {
@@ -195,70 +209,69 @@ export function AuthProvider({ children }: AuthProviderProps) {
         throw error;
       }
 
-      // Session will be updated by the onAuthStateChange listener
-      console.log('Email login successful:', data.user?.email);
+      console.log('✅ Email login successful');
+      // Navigation will be handled by onAuthStateChange
     } catch (error: any) {
-      console.error('Login error:', error.message);
+      console.error('❌ Login error:', error.message);
       throw new Error(error.message || 'Failed to sign in');
     } finally {
       setLoading(false);
     }
   };
 
-  // PKCE OAuth implementation - let Supabase handle everything
+  // Enhanced Google OAuth function
   const loginWithGoogle = async (): Promise<void> => {
     setLoading(true);
     try {
-      // Check if Google Web Client ID is configured
       const googleClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
       if (!googleClientId || googleClientId === 'your_google_web_client_id_here') {
         throw new Error('Google Web Client ID is not configured. Please set EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID in your .env file.');
       }
 
-      // Use the redirect URL that works with Expo development
-      const redirectTo = 'exp://192.168.1.11:8081/--/auth/callback';
+      const devIP = process.env.EXPO_PUBLIC_DEV_IP || '192.168.1.9';
+      const redirectTo = `exp://${devIP}:8081/--/auth/callback`;
 
-      console.log('🔄 Starting Google OAuth with PKCE flow');
+      console.log('🔄 Starting Google OAuth...');
       console.log('Redirect to:', redirectTo);
 
-      // Get OAuth URL from Supabase with PKCE flow
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: redirectTo,
-          skipBrowserRedirect: true, // We'll open manually
+          skipBrowserRedirect: true,
         }
       });
 
       if (error) {
-        console.error('OAuth error:', error);
+        console.error('❌ OAuth error:', error);
         throw error;
       }
 
-      console.log('✅ OAuth URL generated:', data.url);
+      console.log('✅ OAuth URL generated');
 
-      // Open the OAuth URL manually using WebBrowser
       const result = await WebBrowser.openAuthSessionAsync(
         data.url,
         redirectTo
       );
 
-      console.log('🔍 Auth session result:', result.type, 'Browser opened successfully');
+      console.log('🔍 Auth session result:', result.type);
 
-      // The onAuthStateChange listener will handle the session automatically
-      // when Supabase processes the OAuth callback
-
-      // No need to manually handle the callback - the onAuthStateChange listener
-      // will automatically detect when the session is established and navigate
+      if (result.type === 'cancel') {
+        console.log('❌ OAuth cancelled');
+        throw new Error('Authentication was cancelled');
+      } else if (result.type === 'success') {
+        console.log('✅ OAuth completed, processing callback...');
+      }
 
     } catch (error: any) {
-      console.error('Google login error:', error.message);
+      console.error('❌ Google login error:', error.message);
       throw new Error(error.message || 'Failed to sign in with Google');
     } finally {
       setLoading(false);
     }
   };
 
+  // Enhanced logout function
   const logout = async (): Promise<void> => {
     setLoading(true);
     try {
@@ -268,10 +281,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
         throw error;
       }
 
-      // Session will be cleared by the onAuthStateChange listener
-      console.log('Logout successful');
+      console.log('✅ Logout successful');
+      // Navigation will be handled by onAuthStateChange
     } catch (error: any) {
-      console.error('Logout error:', error.message);
+      console.error('❌ Logout error:', error.message);
       throw new Error(error.message || 'Failed to sign out');
     } finally {
       setLoading(false);

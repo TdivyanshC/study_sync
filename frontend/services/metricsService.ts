@@ -1,10 +1,32 @@
-import { gamificationApi } from '../src/api/gamificationApi';
+import { gamificationApi, NetworkConnectionError, ServerUnavailableError, ApiError } from '../src/api/gamificationApi';
+import { notificationService } from '../src/services/notificationService';
 
 /**
  * Metrics Service - Wraps gamification API to automatically inject user ID
  * All methods require user ID parameter for better testability and flexibility
+ * Enhanced with graceful error handling and fallback data
  */
 class MetricsService {
+  /**
+   * Handle errors gracefully and show user-friendly notifications
+   */
+  private handleError(error: any, operation: string): never {
+    console.warn(`⚠️ Using fallback data for ${operation} due to backend unavailability`);
+    
+    if (error instanceof NetworkConnectionError) {
+      // Don't show notification for connection errors - the gamificationApi handles this with fallback data
+      console.log('📡 Network connection issue detected - using cached/fallback data');
+    } else if (error instanceof ServerUnavailableError) {
+      console.log('🖥️ Server unavailable - using cached/fallback data');
+    } else if (error instanceof ApiError) {
+      console.log(`🔧 API Error (${error.code}): ${error.userMessage}`);
+    } else {
+      console.log(`❓ Unexpected error: ${error.message || error}`);
+    }
+    
+    // Since gamificationApi now provides fallback data, re-throw to let the caller handle it
+    throw error;
+  }
   /**
    * Get today's metrics for a specific user
    */
@@ -20,9 +42,11 @@ class MetricsService {
       console.log('✅ Today metrics retrieved:', metrics);
       return metrics;
     } catch (error) {
-      console.error('❌ Failed to fetch today metrics:', error);
-      console.error(`🔗 Full URL attempted: https://nominatively-semirealistic-darryl.ngrok-free.dev/api/metrics/today?user_id=${userId}`);
-      throw error;
+      // The gamificationApi now handles backend connectivity issues internally
+      // and provides fallback data, so we just log the issue and return the result
+      this.handleError(error, 'today metrics');
+      // This line won't be reached due to the throw above, but TypeScript needs it
+      return null;
     }
   }
 

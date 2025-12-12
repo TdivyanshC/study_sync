@@ -35,17 +35,29 @@ export default function AuthCallback() {
         setStatus('Authorization code received');
         setStep(2);
 
-        // The AuthProvider will handle the code exchange automatically
-        // Just wait for the session to be established
+        // Explicitly exchange the code for tokens to ensure session is established
         setStatus('Exchanging authorization code for tokens...');
         setStep(3);
         
-        console.log('⏳ Waiting for AuthProvider to process the authorization code...');
-        setStatus('Processing authentication...');
-        setStep(4);
+        console.log('🔄 Explicitly exchanging authorization code for session...');
+        const { data, error } = await supabase.auth.exchangeCodeForSession(code);
         
-        // The onAuthStateChange listener in AuthProvider will handle
-        // the navigation when the session is finally established
+        if (error) {
+          throw new Error(`Code exchange failed: ${error.message}`);
+        }
+        
+        if (data.session) {
+          console.log('✅ Session established via explicit code exchange:', data.session.user?.email);
+          setStatus('Authentication successful!');
+          setStep(4);
+          
+          // Navigate to home after successful authentication
+          setTimeout(() => {
+            router.replace('/(tabs)');
+          }, 1000);
+        } else {
+          throw new Error('Code exchange succeeded but no session was returned');
+        }
 
       } catch (error: any) {
         console.error('OAuth callback error:', error.message);
