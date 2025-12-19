@@ -45,18 +45,12 @@ export default function IndexScreen() {
       }
     }
 
-    // Normal authentication flow - wait for initialization to be complete
+    // Normal authentication flow - navigation handled by AuthProvider
+    // Don't handle navigation here to avoid conflicts
     if (user) {
-      console.log('✅ User authenticated, redirecting to tabs');
-      // Add a small delay to ensure any pending navigation is completed
-      setTimeout(() => {
-        router.replace('/(tabs)');
-      }, 100);
+      console.log('✅ User authenticated, letting AuthProvider handle navigation');
     } else {
-      console.log('⚠️ No user found, redirecting to login');
-      setTimeout(() => {
-        router.replace('/login');
-      }, 100);
+      console.log('⚠️ No user found, letting AuthProvider handle navigation');
     }
   }, [user, loading, isInitialized, router]);
 

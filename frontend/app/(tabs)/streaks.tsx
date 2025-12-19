@@ -13,109 +13,165 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
 import { GlobalStyles } from '../../constants/Theme';
 import { useStudyStore } from '../../hooks/useStudySession';
-import { format, formatDistanceToNow } from 'date-fns';
 
-// Mock data for previous streaks and sessions
-const mockStreakHistory = [
+// Mock data for friends with satirical styling
+const mockFriends = [
   {
     id: '1',
-    name: 'Math Study Group',
-    participants: ['You', 'Alice', 'Bob'],
-    duration: '2h 45m',
-    date: new Date(2024, 0, 15),
-    subject: 'Calculus',
-    status: 'completed',
+    name: 'Alex "The Crusher" Thompson',
+    rank: 3,
+    currentStreak: 15,
+    longestStreak: 23,
+    activity: 'gym',
+    activityText: 'Gym Session',
+    status: 'active',
+    motivation: '🔥 Crushing it at the gym like it owes him money',
+    xp: 2847,
   },
   {
     id: '2',
-    name: 'Solo Focus Session',
-    participants: ['You'],
-    duration: '1h 30m',
-    date: new Date(2024, 0, 14),
-    subject: 'Programming',
-    status: 'completed',
+    name: 'Sarah "Code Ninja" Chen',
+    rank: 1,
+    currentStreak: 28,
+    longestStreak: 31,
+    activity: 'coding',
+    activityText: 'Coding Session',
+    status: 'active',
+    motivation: '💻 Debugging life one commit at a time',
+    xp: 3421,
   },
   {
     id: '3',
-    name: 'Physics Study Team',
-    participants: ['You', 'Charlie', 'Diana'],
-    duration: '3h 15m',
-    date: new Date(2024, 0, 13),
-    subject: 'Quantum Physics',
-    status: 'completed',
+    name: 'Marcus "Procrastination King" Williams',
+    rank: 5,
+    currentStreak: 2,
+    longestStreak: 7,
+    activity: 'procrastinating',
+    activityText: 'Procrastinating Mode',
+    status: 'inactive',
+    motivation: '😴 Currently contemplating the meaning of procrastination',
+    xp: 1245,
+  },
+  {
+    id: '4',
+    name: 'Emma "Bookworm Supreme" Rodriguez',
+    rank: 2,
+    currentStreak: 12,
+    longestStreak: 19,
+    activity: 'study',
+    activityText: 'Study Session',
+    status: 'active',
+    motivation: '📚 Reading faster than her future problems can catch up',
+    xp: 3102,
+  },
+  {
+    id: '5',
+    name: 'Jake "Gym Rat" Morrison',
+    rank: 4,
+    currentStreak: 8,
+    longestStreak: 14,
+    activity: 'gym',
+    activityText: 'Gym Session',
+    status: 'active',
+    motivation: '💪 Lifting weights and lifting spirits',
+    xp: 2134,
+  },
+  {
+    id: '6',
+    name: 'Lily "Zen Master" Park',
+    rank: 6,
+    currentStreak: 1,
+    longestStreak: 5,
+    activity: 'procrastinating',
+    activityText: 'Procrastinating Mode',
+    status: 'inactive',
+    motivation: '🧘 Meditating on why she started this whole study thing',
+    xp: 876,
   },
 ];
 
-interface StreakCardProps {
-  streak: typeof mockStreakHistory[0];
-  onResume: () => void;
-  onInvite: () => void;
+interface FriendCardProps {
+  friend: typeof mockFriends[0];
+  onChallenge: () => void;
+  onMotivate: () => void;
 }
 
-const StreakCard: React.FC<StreakCardProps> = ({ streak, onResume, onInvite }) => {
+const FriendCard: React.FC<FriendCardProps> = ({ friend, onChallenge, onMotivate }) => {
+  const getActivityIcon = (activity: string) => {
+    switch (activity) {
+      case 'gym':
+        return 'fitness';
+      case 'study':
+        return 'book';
+      case 'coding':
+        return 'code-slash';
+      case 'procrastinating':
+        return 'bed';
+      default:
+        return 'person';
+    }
+  };
+
+  const getActivityColor = (activity: string, status: string) => {
+    if (status === 'inactive') return Colors.textMuted;
+    switch (activity) {
+      case 'gym':
+        return '#FF6B6B';
+      case 'study':
+        return '#4ECDC4';
+      case 'coding':
+        return '#45B7D1';
+      case 'procrastinating':
+        return '#FFA726';
+      default:
+        return Colors.primary;
+    }
+  };
+
   return (
-    <View style={[GlobalStyles.glassCard, styles.streakCard]}>
-      {/* Header */}
-      <View style={styles.streakHeader}>
-        <View style={styles.streakInfo}>
-          <Text style={styles.streakTitle}>{streak.name}</Text>
-          <Text style={GlobalStyles.textSecondary}>
-            {formatDistanceToNow(streak.date, { addSuffix: true })}
-          </Text>
-        </View>
-        <View style={styles.statusBadge}>
-          <Ionicons name="checkmark-circle" size={16} color={Colors.success} />
-          <Text style={[GlobalStyles.textMuted, { marginLeft: 4 }]}>
-            {streak.status}
-          </Text>
-        </View>
-      </View>
-
-      {/* Content */}
-      <View style={styles.streakContent}>
-        <View style={styles.streakDetail}>
-          <Ionicons name="time" size={16} color={Colors.textSecondary} />
-          <Text style={[GlobalStyles.textSecondary, { marginLeft: 8 }]}>
-            {streak.duration}
-          </Text>
-        </View>
-
-        <View style={styles.streakDetail}>
-          <Ionicons name="book" size={16} color={Colors.textSecondary} />
-          <Text style={[GlobalStyles.textSecondary, { marginLeft: 8 }]}>
-            {streak.subject}
-          </Text>
-        </View>
-
-        <View style={styles.streakDetail}>
-          <Ionicons name="people" size={16} color={Colors.textSecondary} />
-          <Text style={[GlobalStyles.textSecondary, { marginLeft: 8 }]}>
-            {streak.participants.length} participant{streak.participants.length > 1 ? 's' : ''}
+    <View style={[styles.friendCard, {
+      borderLeftWidth: 3,
+      borderLeftColor: getActivityColor(friend.activity, friend.status)
+    }]}>
+      {/* Name and Activity */}
+      <View style={styles.nameRow}>
+        <Text style={styles.friendName}>{friend.name}</Text>
+        <View style={styles.activityBadge}>
+          <Ionicons 
+            name={getActivityIcon(friend.activity)} 
+            size={16} 
+            color={getActivityColor(friend.activity, friend.status)} 
+          />
+          <Text style={[styles.activityText, {
+            color: getActivityColor(friend.activity, friend.status)
+          }]}>
+            {friend.activityText}
           </Text>
         </View>
       </View>
 
-      {/* Participants */}
-      <View style={styles.participantsContainer}>
-        {streak.participants.map((participant, index) => (
-          <View key={index} style={styles.participantChip}>
-            <Text style={styles.participantText}>{participant}</Text>
-          </View>
-        ))}
+      {/* Stats Row */}
+      <View style={styles.friendStatsRow}>
+        <Text style={styles.statText}>#{friend.rank}</Text>
+        <Text style={styles.statDivider}>•</Text>
+        <Text style={styles.statText}>{friend.currentStreak}🔥</Text>
+        <Text style={styles.statDivider}>•</Text>
+        <Text style={styles.statText}>{friend.xp} XP</Text>
       </View>
+
+      {/* Motivation */}
+      <Text style={styles.motivationText}>{friend.motivation}</Text>
 
       {/* Actions */}
-      <View style={styles.actionsContainer}>
-        <TouchableOpacity style={styles.actionButton} onPress={onResume}>
-          <Ionicons name="refresh" size={18} color={Colors.primary} />
-          <Text style={styles.actionButtonText}>Resume</Text>
+      <View style={styles.actionsRow}>
+        <TouchableOpacity style={styles.actionButton} onPress={onChallenge}>
+          <Ionicons name="trophy-outline" size={16} color={Colors.accent} />
+          <Text style={styles.actionText}>Challenge</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.actionButton} onPress={onInvite}>
-          <Ionicons name="person-add" size={18} color={Colors.accent} />
-          <Text style={[styles.actionButtonText, { color: Colors.accent }]}>
-            Invite Same Team
-          </Text>
+        <TouchableOpacity style={styles.actionButton} onPress={onMotivate}>
+          <Ionicons name="heart-outline" size={16} color={Colors.success} />
+          <Text style={[styles.actionText, { color: Colors.success }]}>Motivate</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -125,21 +181,21 @@ const StreakCard: React.FC<StreakCardProps> = ({ streak, onResume, onInvite }) =
 export default function StreaksScreen() {
   const { stats } = useStudyStore();
 
-  const handleResumeStreak = (streakId: string) => {
-    // TODO: Implement resume streak functionality
-    console.log('Resuming streak:', streakId);
+  const handleChallengeFriend = (friendId: string) => {
+    // TODO: Implement challenge friend functionality
+    console.log('Challenging friend:', friendId);
   };
 
-  const handleInviteTeam = (streakId: string) => {
-    // TODO: Implement invite team functionality
-    console.log('Inviting team for streak:', streakId);
+  const handleMotivateFriend = (friendId: string) => {
+    // TODO: Implement motivate friend functionality
+    console.log('Motivating friend:', friendId);
   };
 
-  const renderStreakCard = ({ item }: { item: typeof mockStreakHistory[0] }) => (
-    <StreakCard
-      streak={item}
-      onResume={() => handleResumeStreak(item.id)}
-      onInvite={() => handleInviteTeam(item.id)}
+  const renderFriendCard = ({ item }: { item: typeof mockFriends[0] }) => (
+    <FriendCard
+      friend={item}
+      onChallenge={() => handleChallengeFriend(item.id)}
+      onMotivate={() => handleMotivateFriend(item.id)}
     />
   );
 
@@ -147,13 +203,7 @@ export default function StreaksScreen() {
     <SafeAreaView style={GlobalStyles.safeArea}>
       <StatusBar style="light" backgroundColor={Colors.background} />
 
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={GlobalStyles.title}>Study Streaks</Text>
-        <Text style={GlobalStyles.textSecondary}>
-          Your study history and achievements
-        </Text>
-      </View>
+
 
       {/* Current Streak Stats */}
       <View style={[GlobalStyles.glassCard, styles.statsCard]}>
@@ -179,15 +229,18 @@ export default function StreaksScreen() {
         </View>
       </View>
 
-      {/* Streak History */}
-      <View style={styles.historySection}>
+      {/* Friend Activity */}
+      <View style={styles.friendsSection}>
         <Text style={[GlobalStyles.subtitle, { marginHorizontal: 16 }]}>
-          Recent Sessions
+          Study Crew Activity
+        </Text>
+        <Text style={[GlobalStyles.textMuted, { marginHorizontal: 16, marginBottom: 12, fontSize: 12 }]}>
+          Watch your friends grind (or procrastinate) in real-time
         </Text>
 
         <FlatList
-          data={mockStreakHistory}
-          renderItem={renderStreakCard}
+          data={mockFriends}
+          renderItem={renderFriendCard}
           keyExtractor={(item) => item.id}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 100 }}
@@ -198,12 +251,7 @@ export default function StreaksScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 16,
-    alignItems: 'center',
-  },
+
   statsCard: {
     marginHorizontal: 16,
     marginBottom: 20,
@@ -222,79 +270,82 @@ const styles = StyleSheet.create({
     color: Colors.text,
     marginVertical: 8,
   },
-  historySection: {
+  friendsSection: {
     flex: 1,
   },
-  streakCard: {
-    marginBottom: 16,
+  friendCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    marginHorizontal: 16,
   },
-  streakHeader: {
+  nameRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 16,
+    alignItems: 'center',
+    marginBottom: 12,
   },
-  streakInfo: {
-    flex: 1,
-  },
-  streakTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+  friendName: {
+    fontSize: 16,
+    fontWeight: '600',
     color: Colors.text,
-    marginBottom: 4,
+    flex: 1,
+    marginRight: 12,
   },
-  statusBadge: {
+  activityBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     borderRadius: 12,
   },
-  streakContent: {
-    marginBottom: 16,
+  activityText: {
+    fontSize: 12,
+    fontWeight: '500',
+    marginLeft: 6,
   },
-  streakDetail: {
+  friendStatsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 10,
   },
-  participantsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginBottom: 16,
+  statText: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    fontWeight: '500',
   },
-  participantChip: {
-    backgroundColor: 'rgba(99, 102, 241, 0.1)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    marginRight: 8,
-    marginBottom: 8,
+  statDivider: {
+    fontSize: 14,
+    color: Colors.textMuted,
+    marginHorizontal: 8,
   },
-  participantText: {
-    color: Colors.primary,
-    fontSize: 12,
-    fontWeight: '600',
+  motivationText: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    fontStyle: 'italic',
+    marginBottom: 14,
+    lineHeight: 18,
   },
-  actionsContainer: {
+  actionsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 10,
     borderRadius: 12,
     flex: 0.48,
     justifyContent: 'center',
   },
-  actionButtonText: {
-    color: Colors.primary,
-    fontSize: 14,
-    fontWeight: '600',
-    marginLeft: 6,
+  actionText: {
+    fontSize: 13,
+    fontWeight: '500',
+    marginLeft: 8,
+    color: Colors.accent,
   },
 });

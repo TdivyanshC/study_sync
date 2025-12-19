@@ -115,6 +115,31 @@ export default function RootLayout() {
               {/* Home screen - protected */}
               <Stack.Screen name="home" options={{ headerShown: false }} />
               
+              {/* Onboarding screens */}
+              <Stack.Screen 
+                name="onboarding-step1" 
+                options={{ 
+                  headerShown: false,
+                  presentation: 'modal'
+                }} 
+              />
+              <Stack.Screen 
+                name="onboarding-step2" 
+                options={{ 
+                  headerShown: false,
+                  presentation: 'modal'
+                }} 
+              />
+              
+              {/* Test screen for debugging */}
+              <Stack.Screen 
+                name="test-onboarding" 
+                options={{ 
+                  headerShown: false,
+                  presentation: 'modal'
+                }} 
+              />
+              
               {/* Existing routes */}
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
               <Stack.Screen name="timer" options={{ headerShown: false }} />

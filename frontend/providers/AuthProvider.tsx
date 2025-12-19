@@ -14,10 +14,12 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   isInitialized: boolean;
+  hasCompletedOnboarding: boolean;
   login: (email: string, password: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   refreshSession: () => Promise<void>;
+  markOnboardingCompleted: () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -31,6 +33,37 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [hasNavigated, setHasNavigated] = useState(false);
+  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
+
+  // Check if user has completed onboarding
+  const checkOnboardingStatus = async (userId: string) => {
+    try {
+      // First check if the table exists and user has a profile
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('onboarding_completed')
+        .eq('user_id', userId)
+        .single();
+
+      // If no profile exists yet (new user), return false
+      if (error && error.code === 'PGRST116') {
+        console.log('ℹ️ No user profile found, treating as new user');
+        return false;
+      }
+
+      // If other error, log but don't fail the auth process
+      if (error) {
+        console.warn('⚠️ Error checking onboarding status:', error.message);
+        return false; // Default to false for safety
+      }
+
+      return data?.onboarding_completed || false;
+    } catch (error) {
+      console.warn('⚠️ Exception checking onboarding status:', error);
+      return false; // Default to false for safety, don't block auth
+    }
+  };
 
   // Enhanced session initialization with better timing
   useEffect(() => {
@@ -75,6 +108,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           if (isMounted) {
             setSession(null);
             setUser(null);
+            setHasCompletedOnboarding(false);
             setLoading(false);
             setIsInitialized(true);
           }
@@ -96,15 +130,37 @@ export function AuthProvider({ children }: AuthProviderProps) {
               console.log('⚠️ Session expired, user needs to re-authenticate');
               setSession(null);
               setUser(null);
+              setHasCompletedOnboarding(false);
             } else {
               setSession(session);
               setUser(session.user);
-              console.log('📱 Session valid, user remains authenticated');
+              
+              // Check onboarding status for existing users with timeout
+              let completedOnboarding = false;
+              try {
+                const timeoutPromise = new Promise((_, reject) => 
+                  setTimeout(() => reject(new Error('Timeout')), 3000)
+                );
+                const checkPromise = checkOnboardingStatus(session.user.id);
+                
+                completedOnboarding = await Promise.race([checkPromise, timeoutPromise]);
+                console.log('✅ Onboarding status checked successfully');
+              } catch (statusError) {
+                console.warn('⚠️ Onboarding status check failed, defaulting to false:', statusError);
+                completedOnboarding = false; // Default to false for safety
+              }
+              
+              setHasCompletedOnboarding(completedOnboarding);
+              
+              console.log('📱 Session valid, user remains authenticated', {
+                onboardingCompleted: completedOnboarding
+              });
             }
           } else {
             console.log('ℹ️ No existing session found - user needs to authenticate');
             setSession(null);
             setUser(null);
+            setHasCompletedOnboarding(false);
           }
           
           setLoading(false);
@@ -115,6 +171,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (isMounted) {
           setSession(null);
           setUser(null);
+          setHasCompletedOnboarding(false);
           setLoading(false);
           setIsInitialized(true);
         }
@@ -148,13 +205,39 @@ export function AuthProvider({ children }: AuthProviderProps) {
                 email: session.user.email,
                 provider: session.user.app_metadata?.provider
               });
-              // Auto-navigate to home for signed in users
-              // Small delay to ensure navigation happens after state updates
-              setTimeout(() => {
-                if (isMounted && session?.user) {
-                  router.replace('/(tabs)');
-                }
-              }, 100);
+              
+              // Check onboarding status and navigate accordingly with timeout
+              let completedOnboarding = false;
+              try {
+                const timeoutPromise = new Promise((_, reject) => 
+                  setTimeout(() => reject(new Error('Timeout')), 3000)
+                );
+                const checkPromise = checkOnboardingStatus(session.user.id);
+                
+                completedOnboarding = await Promise.race([checkPromise, timeoutPromise]);
+                console.log('✅ Onboarding status checked during sign in');
+              } catch (statusError) {
+                console.warn('⚠️ Onboarding status check failed during sign in, defaulting to false:', statusError);
+                completedOnboarding = false; // Default to false for safety
+              }
+              
+              setHasCompletedOnboarding(completedOnboarding);
+              
+              // Auto-navigate with better timing control
+              if (!hasNavigated) {
+                setHasNavigated(true);
+                setTimeout(() => {
+                  if (isMounted && session?.user) {
+                    if (!completedOnboarding) {
+                      console.log('🔄 New user - navigating to onboarding step 1');
+                      router.replace('/onboarding-step1');
+                    } else {
+                      console.log('🔄 Returning user - navigating to home');
+                      router.replace('/(tabs)');
+                    }
+                  }
+                }, 200); // Increased delay for better stability
+              }
             }
             break;
             
@@ -162,6 +245,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
             console.log('👋 User signed out');
             setSession(null);
             setUser(null);
+            setHasCompletedOnboarding(false);
+            setHasNavigated(false); // Reset navigation flag for next login
             break;
             
           case 'TOKEN_REFRESHED':
@@ -297,6 +382,36 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
+  // Mark onboarding as completed
+  const markOnboardingCompleted = async (): Promise<void> => {
+    if (!user?.id) {
+      throw new Error('User not authenticated');
+    }
+
+    try {
+      const { error } = await supabase
+        .from('user_profiles')
+        .upsert({
+          user_id: user.id,
+          onboarding_completed: true,
+          updated_at: new Date().toISOString()
+        });
+
+      if (error) {
+        console.warn('⚠️ Error saving onboarding completion to database:', error.message);
+        // Don't throw error, just log it - the app should still work
+      }
+
+      setHasCompletedOnboarding(true);
+      console.log('✅ Onboarding marked as completed (status updated locally)');
+    } catch (error: any) {
+      console.warn('⚠️ Exception marking onboarding as completed:', error.message);
+      // Still update local state even if database save fails
+      setHasCompletedOnboarding(true);
+      console.log('✅ Onboarding marked as completed (local only)');
+    }
+  };
+
   // Enhanced logout function
   const logout = async (): Promise<void> => {
     setLoading(true);
@@ -322,10 +437,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
     session,
     loading,
     isInitialized,
+    hasCompletedOnboarding,
     login,
     loginWithGoogle,
     logout,
     refreshSession,
+    markOnboardingCompleted,
   };
 
   return (

@@ -204,13 +204,7 @@ export default function Index() {
     <View style={{ flex: 1 }}>
       <SafeAreaView style={GlobalStyles.safeArea}>
       <ScrollView style={GlobalStyles.container} showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={GlobalStyles.title}>Study Together</Text>
-          <Text style={GlobalStyles.textSecondary}>
-            Your journey to academic excellence
-          </Text>
-        </View>
+
 
         {/* Personalized Greeting */}
         <View style={styles.greetingCard}>
@@ -352,12 +346,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     flex: 1,
   },
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 16,
-    alignItems: 'center',
-  },
+
   welcomeCard: {
     alignItems: 'center',
     paddingVertical: 32,

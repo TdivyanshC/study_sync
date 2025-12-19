@@ -173,13 +173,7 @@ export default function SpacesScreen() {
     <SafeAreaView style={GlobalStyles.safeArea}>
       <StatusBar style="light" backgroundColor={Colors.background} />
 
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={GlobalStyles.title}>Study Spaces</Text>
-        <Text style={GlobalStyles.textSecondary}>
-          Join groups and study together
-        </Text>
-      </View>
+
 
       {/* Create Space Button */}
       <TouchableOpacity
@@ -263,12 +257,7 @@ export default function SpacesScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 16,
-    alignItems: 'center',
-  },
+
   createButton: {
     alignItems: 'center',
     paddingVertical: 24,
