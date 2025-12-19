@@ -6,6 +6,7 @@ import {
   StyleSheet,
   ScrollView,
   Image,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -13,8 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
 import { GlobalStyles } from '../../constants/Theme';
 import { useUser } from '../../providers/UserProvider';
-import StreakWidget from '../../src/components/StreakWidget';
-import { DEMO_USER } from '../../lib/constants';
+import { useAuth } from '../../hooks/useAuth';
 
 // Character levels mapping
 const getCharacterInfo = (level: number) => {
@@ -122,6 +122,7 @@ const AchievementCard: React.FC<AchievementCardProps> = ({ achievement }) => {
 export default function ProfileScreen() {
   // Use UserProvider for consistent user data across the app
   const user = useUser();
+  const { logout, loading } = useAuth();
 
   // Provide safe fallbacks for all user data
   const safeUser = {
@@ -142,24 +143,38 @@ export default function ProfileScreen() {
 
   const unlockedAchievements = mockAchievements.filter(a => a.unlocked);
 
+  const handleLogout = async () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await logout();
+            } catch (error: any) {
+              Alert.alert('Logout Error', error.message || 'Failed to logout');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <SafeAreaView style={GlobalStyles.safeArea}>
       <StatusBar style="light" backgroundColor={Colors.background} />
       <ScrollView style={GlobalStyles.container} showsVerticalScrollIndicator={false}>
 
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={GlobalStyles.title}>Profile</Text>
-          <Text style={GlobalStyles.textSecondary}>Your study journey</Text>
-        </View>
 
-        {/* Streak Widget */}
-        <StreakWidget
-          userId={DEMO_USER}
-          onStreakUpdate={(streakData) => {
-            console.log('[Profile] Streak updated:', streakData);
-          }}
-        />
+
+
 
         {/* Character Card */}
         <View style={[GlobalStyles.glassCard, styles.characterCard]}>
@@ -235,7 +250,7 @@ export default function ProfileScreen() {
         </View>
 
         {/* Achievements */}
-        <View style={[GlobalStyles.glassCard, { marginBottom: 100 }]}>
+        <View style={[GlobalStyles.glassCard, { marginBottom: 20 }]}>
           <Text style={GlobalStyles.subtitle}>Achievements & Badges</Text>
           <Text style={[GlobalStyles.textMuted, { marginBottom: 20 }]}>
             {unlockedAchievements.length} of {mockAchievements.length} unlocked
@@ -245,18 +260,23 @@ export default function ProfileScreen() {
             <AchievementCard key={achievement.id} achievement={achievement} />
           ))}
         </View>
+
+        {/* Logout Button */}
+        <TouchableOpacity
+          style={[styles.logoutButton, loading && styles.buttonDisabled]}
+          onPress={handleLogout}
+          disabled={loading}
+        >
+          <Text style={styles.logoutButtonText}>
+            {loading ? 'Logging out...' : 'Logout'}
+          </Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 16,
-    alignItems: 'center',
-  },
   characterCard: {
     alignItems: 'center',
     paddingVertical: 32,
@@ -373,5 +393,22 @@ const styles = StyleSheet.create({
     color: Colors.accent,
     fontWeight: '600',
     marginTop: 4,
+  },
+  logoutButton: {
+    backgroundColor: Colors.error,
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginHorizontal: 20,
+    marginBottom: 20,
+    marginTop: 20,
+  },
+  logoutButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  buttonDisabled: {
+    opacity: 0.6,
   },
 });

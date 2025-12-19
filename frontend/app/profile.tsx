@@ -86,7 +86,7 @@ const AchievementCard: React.FC<AchievementCardProps> = ({ achievement }) => {
 };
 
 export default function ProfileScreen() {
-  const { user } = useAuth();
+  const { user, logout, loading } = useAuth();
   
   // State for profile data
   const [profileData, setProfileData] = useState<{
@@ -226,22 +226,36 @@ export default function ProfileScreen() {
 
   const unlockedAchievements = profileData.badges.filter(a => a.unlocked);
 
+  const handleLogout = async () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await logout();
+            } catch (error: any) {
+              Alert.alert('Logout Error', error.message || 'Failed to logout');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <SafeAreaView style={GlobalStyles.safeArea}>
       <StatusBar style="light" backgroundColor={Colors.background} />
       <ScrollView style={GlobalStyles.container} showsVerticalScrollIndicator={false}>
         
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={GlobalStyles.title}>Profile</Text>
-          <Text style={GlobalStyles.textSecondary}>Your study journey</Text>
-          {/* Show user email for debugging */}
-          {__DEV__ && (
-            <Text style={styles.userDebugText}>
-              Logged in as: {user.email}
-            </Text>
-          )}
-        </View>
+
 
         {/* Error Banner */}
         {profileData.error && (
@@ -374,6 +388,17 @@ export default function ProfileScreen() {
             </View>
           )}
         </View>
+
+        {/* Logout Button */}
+        <TouchableOpacity
+          style={[styles.logoutButton, loading && styles.buttonDisabled]}
+          onPress={handleLogout}
+          disabled={loading}
+        >
+          <Text style={styles.logoutButtonText}>
+            {loading ? 'Logging out...' : 'Logout'}
+          </Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -409,12 +434,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginLeft: 8,
     flex: 1,
-  },
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 16,
-    alignItems: 'center',
   },
   characterCard: {
     alignItems: 'center',
@@ -536,5 +555,22 @@ const styles = StyleSheet.create({
   noDataContainer: {
     alignItems: 'center',
     paddingVertical: 32,
+  },
+  logoutButton: {
+    backgroundColor: Colors.error,
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginHorizontal: 20,
+    marginBottom: 20,
+    marginTop: 20,
+  },
+  logoutButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  buttonDisabled: {
+    opacity: 0.6,
   },
 });

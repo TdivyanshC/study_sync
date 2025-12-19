@@ -215,7 +215,7 @@ export default function Index() {
         {/* Personalized Greeting */}
         <View style={styles.greetingCard}>
           <Text style={styles.greetingText}>
-            What's up, {getUserDisplayName(user)}! 👋
+            What's up, {getUserDisplayName(user).split(' ')[0]}! 👋
           </Text>
           <Text style={styles.greetingSubtext}>
             Ready to crush your study goals today?
