@@ -1125,3 +1125,9 @@
 {"timestamp": "2025-12-13T00:00:31.090376", "level": "INFO", "logger": "studysync", "message": "HTTP 200: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a", "module": "enhanced_logging", "function": "info", "line": 119}
 {"timestamp": "2025-12-13T00:00:31.223774", "level": "INFO", "logger": "studysync", "message": "HTTP 200: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a", "module": "enhanced_logging", "function": "info", "line": 119}
 {"timestamp": "2025-12-13T00:00:31.226680", "level": "INFO", "logger": "studysync", "message": "HTTP 200: GET /api/metrics/today", "module": "enhanced_logging", "function": "info", "line": 119}
+{"timestamp": "2025-12-13T00:01:10.169115", "level": "INFO", "logger": "studysync", "message": "HTTP 0: GET /api/metrics/today", "module": "enhanced_logging", "function": "info", "line": 119}
+{"timestamp": "2025-12-13T00:01:10.169753", "level": "INFO", "logger": "studysync", "message": "HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a", "module": "enhanced_logging", "function": "info", "line": 119}
+{"timestamp": "2025-12-13T00:01:10.171231", "level": "INFO", "logger": "studysync", "message": "HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a", "module": "enhanced_logging", "function": "info", "line": 119}
+{"timestamp": "2025-12-13T00:01:10.748758", "level": "INFO", "logger": "studysync", "message": "HTTP 200: GET /api/metrics/today", "module": "enhanced_logging", "function": "info", "line": 119}
+{"timestamp": "2025-12-13T00:01:11.151087", "level": "INFO", "logger": "studysync", "message": "HTTP 200: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a", "module": "enhanced_logging", "function": "info", "line": 119}
+{"timestamp": "2025-12-13T00:01:11.160150", "level": "INFO", "logger": "studysync", "message": "HTTP 200: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a", "module": "enhanced_logging", "function": "info", "line": 119}

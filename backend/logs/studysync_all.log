@@ -1287,3 +1287,12 @@
 2025-12-13 00:00:31,090 - studysync - INFO - HTTP 200: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
 2025-12-13 00:00:31,223 - studysync - INFO - HTTP 200: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
 2025-12-13 00:00:31,226 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-13 00:00:53,455 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-13 00:01:10,169 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-13 00:01:10,169 - studysync - INFO - HTTP 0: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-13 00:01:10,171 - studysync - INFO - HTTP 0: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-13 00:01:10,748 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-13 00:01:11,151 - studysync - INFO - HTTP 200: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-13 00:01:11,160 - studysync - INFO - HTTP 200: POST /api/streak/update/888db9f5-684a-4271-9c21-51d7e8d99b3a
+2025-12-13 00:01:23,443 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-13 00:01:23,459 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
