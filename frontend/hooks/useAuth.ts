@@ -14,10 +14,11 @@ export function useUser() {
     user: context.user,
     session: context.session,
     loading: context.loading,
+    isInitialized: context.isInitialized,
   };
 }
 
-// Custom hook for logout functionality  
+// Custom hook for logout functionality
 export function useLogout() {
   const context = useContext(AuthContext);
   if (context === undefined) {
@@ -26,5 +27,6 @@ export function useLogout() {
   return {
     logout: context.logout,
     loading: context.loading,
+    refreshSession: context.refreshSession,
   };
 }

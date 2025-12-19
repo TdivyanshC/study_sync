@@ -1,22 +1,25 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'expo-router';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, ActivityIndicator, Text, StyleSheet } from 'react-native';
 import { useAuth } from '../hooks/useAuth';
 import { Colors } from '../constants/Colors';
 
 // Index route that handles authentication and redirects
 export default function IndexScreen() {
-  const { user, loading } = useAuth();
+  const { user, loading, isInitialized } = useAuth();
   const router = useRouter();
-  const [sessionChecked, setSessionChecked] = useState(false);
 
   useEffect(() => {
-    // Don't make any navigation decisions while loading
-    if (loading) return;
+    console.log('📍 Index route state:', {
+      user: user?.email,
+      loading,
+      isInitialized,
+      hasUser: !!user
+    });
 
-    // Only make navigation decisions after we've checked the session
-    if (!sessionChecked) {
-      setSessionChecked(true);
+    // Don't make any navigation decisions until initialization is complete
+    if (!isInitialized) {
+      console.log('⏳ Waiting for auth initialization...');
       return;
     }
 
@@ -32,7 +35,7 @@ export default function IndexScreen() {
         hasAuthCode,
         user: user?.email,
         loading,
-        sessionChecked
+        isInitialized
       });
 
       // If this is an OAuth callback, let the auth/callback route handle it
@@ -42,20 +45,28 @@ export default function IndexScreen() {
       }
     }
 
-    // Normal authentication flow - wait for session to be fully restored
+    // Normal authentication flow - wait for initialization to be complete
     if (user) {
       console.log('✅ User authenticated, redirecting to tabs');
-      router.replace('/(tabs)');
+      // Add a small delay to ensure any pending navigation is completed
+      setTimeout(() => {
+        router.replace('/(tabs)');
+      }, 100);
     } else {
       console.log('⚠️ No user found, redirecting to login');
-      router.replace('/login');
+      setTimeout(() => {
+        router.replace('/login');
+      }, 100);
     }
-  }, [user, loading, sessionChecked, router]);
+  }, [user, loading, isInitialized, router]);
 
-  // Show loading while checking authentication
+  // Show loading while checking authentication or during initialization
   return (
     <View style={styles.loadingContainer}>
       <ActivityIndicator size="large" color={Colors.primary} />
+      <Text style={styles.loadingText}>
+        {isInitialized ? 'Checking authentication...' : 'Initializing...'}
+      </Text>
     </View>
   );
 }
@@ -66,5 +77,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: Colors.background,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: Colors.text,
+    textAlign: 'center',
   },
 });

@@ -42,7 +42,27 @@ function DeepLinkHandler() {
   }, []);
 
   const handleUrl = (url: string) => {
-    // If this is our OAuth callback URL, navigate to the auth callback screen
+    console.log('🔗 Deep link handler processing URL:', url);
+    
+    // Handle Expo OAuth callback URLs (exp://...)
+    if (url.includes('exp://') && url.includes('?code=')) {
+      console.log('🔄 OAuth callback detected, navigating to auth callback');
+      
+      // Extract parameters from URL
+      const urlObj = new URL(url);
+      const params = Object.fromEntries(urlObj.searchParams.entries());
+      
+      console.log('📋 Extracted OAuth parameters:', params);
+      
+      // Navigate to auth callback with parameters
+      router.push({
+        pathname: '/auth/callback',
+        params: params
+      });
+      return;
+    }
+    
+    // Handle custom scheme OAuth callbacks (studysync://...)
     if (url.startsWith('studysync://') || url.startsWith('studysync://auth/callback')) {
       // Parse URL to check for auth parameters
       const fragment = url.split('#')[1];
@@ -52,7 +72,9 @@ function DeepLinkHandler() {
         
         if (hasTokens) {
           // Navigate to auth callback screen to handle the OAuth response
+          console.log('🔄 OAuth tokens found, navigating to auth callback');
           router.push('/auth/callback');
+          return;
         }
       }
     }

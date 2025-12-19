@@ -1,0 +1,98 @@
+<svg width="400" height="300" viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366f1;stop-opacity:0.1" />
+      <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:0.1" />
+    </linearGradient>
+    <linearGradient id="bookGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366f1;stop-opacity:0.9" />
+      <stop offset="100%" style="stop-color:#4f46e5;stop-opacity:0.9" />
+    </linearGradient>
+    <linearGradient id="achievementGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#fbbf24;stop-opacity:0.9" />
+      <stop offset="100%" style="stop-color:#f59e0b;stop-opacity:0.9" />
+    </linearGradient>
+    <linearGradient id="streakGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ff6b35;stop-opacity:0.8" />
+      <stop offset="100%" style="stop-color:#ff4500;stop-opacity:0.8" />
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+      <feMerge> 
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="400" height="300" fill="url(#bgGradient)"/>
+  
+  <!-- Main Study Book (Center) -->
+  <g transform="translate(150, 80)">
+    <rect x="0" y="0" width="100" height="80" rx="12" fill="url(#bookGradient)" filter="url(#glow)"/>
+    <rect x="5" y="5" width="90" height="70" rx="8" fill="white"/>
+    
+    <!-- Book lines representing content -->
+    <line x1="10" y1="20" x2="85" y2="20" stroke="#6366f1" strokeWidth="2" opacity="0.7"/>
+    <line x1="10" y1="30" x2="80" y2="30" stroke="#6366f1" strokeWidth="2" opacity="0.7"/>
+    <line x1="10" y1="40" x2="75" y2="40" stroke="#6366f1" strokeWidth="2" opacity="0.7"/>
+    <line x1="10" y1="50" x2="70" y2="50" stroke="#6366f1" strokeWidth="2" opacity="0.7"/>
+    <line x1="10" y1="60" x2="65" y2="60" stroke="#6366f1" strokeWidth="2" opacity="0.7"/>
+    
+    <!-- Bookmark -->
+    <rect x="70" y="5" width="10" height="25" fill="#fbbf24" rx="2"/>
+  </g>
+  
+  <!-- Timer Clock (Top Right) -->
+  <g transform="translate(280, 50)">
+    <circle cx="40" cy="40" r="35" fill="url(#achievementGradient)" filter="url(#glow)"/>
+    <circle cx="40" cy="40" r="30" fill="white"/>
+    
+    <!-- Clock hands -->
+    <line x1="40" y1="40" x2="40" y2="25" stroke="#6366f1" strokeWidth="3" stroke-linecap="round"/>
+    <line x1="40" y1="40" x2="52" y2="40" stroke="#6366f1" strokeWidth="3" stroke-linecap="round"/>
+    <circle cx="40" cy="40" r="3" fill="#6366f1"/>
+  </g>
+  
+  <!-- XP Stars (Top Left) -->
+  <g transform="translate(50, 60)">
+    <path d="M20 0 L22 8 L30 8 L24 12 L26 20 L20 16 L14 20 L16 12 L10 8 L18 8 Z" fill="#fbbf24" filter="url(#glow)"/>
+    <path d="M50 5 L52 13 L60 13 L54 17 L56 25 L50 21 L44 25 L46 17 L40 13 L48 13 Z" fill="#06d6a0" filter="url(#glow)"/>
+    <path d="M15 35 L17 43 L25 43 L19 47 L21 55 L15 51 L9 55 L11 47 L5 43 L13 43 Z" fill="#8b5cf6" filter="url(#glow)"/>
+  </g>
+  
+  <!-- Achievement Badge (Right) -->
+  <g transform="translate(320, 180)">
+    <circle cx="30" cy="30" r="25" fill="url(#achievementGradient)" filter="url(#glow)"/>
+    <circle cx="30" cy="30" r="20" fill="white"/>
+    <text x="30" y="38" text-anchor="middle" font-size="24">🏆</text>
+  </g>
+  
+  <!-- Study Streak Flames (Bottom Left) -->
+  <g transform="translate(80, 200)">
+    <path d="M15 30 Q20 20 15 10 Q10 20 15 30 Z" fill="url(#streakGradient)" filter="url(#glow)"/>
+    <path d="M25 35 Q30 25 25 15 Q20 25 25 35 Z" fill="url(#streakGradient)" filter="url(#glow)" opacity="0.7"/>
+    <path d="M35 40 Q40 30 35 20 Q30 30 35 40 Z" fill="url(#streakGradient)" filter="url(#glow)" opacity="0.5"/>
+  </g>
+  
+  <!-- Progress Bar (Bottom) -->
+  <g transform="translate(100, 250)">
+    <rect x="0" y="0" width="200" height="8" rx="4" fill="#e5e7eb"/>
+    <rect x="0" y="0" width="140" height="8" rx="4" fill="url(#bookGradient)"/>
+    <circle cx="140" cy="4" r="6" fill="url(#bookGradient)" filter="url(#glow)"/>
+  </g>
+  
+  <!-- Study Goals (Center Bottom) -->
+  <g transform="translate(50, 180)">
+    <rect x="0" y="0" width="80" height="40" rx="8" fill="rgba(255,255,255,0.9)" stroke="#6366f1" strokeWidth="2"/>
+    <text x="40" y="20" text-anchor="middle" font-size="12" fill="#6366f1" font-weight="bold">Daily Goal</text>
+    <text x="40" y="32" text-anchor="middle" font-size="10" fill="#6b7280">2/3 Complete</text>
+  </g>
+  
+  <!-- Gamification Elements -->
+  <g transform="translate(270, 150)">
+    <rect x="0" y="0" width="60" height="30" rx="15" fill="#10b981" filter="url(#glow)"/>
+    <text x="30" y="20" text-anchor="middle" font-size="14" fill="white" font-weight="bold">+50 XP</text>
+  </g>
+</svg>

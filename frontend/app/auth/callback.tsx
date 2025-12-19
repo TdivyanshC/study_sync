@@ -25,12 +25,15 @@ export default function AuthCallback() {
 
         console.log('🔔 OAuth callback received');
         console.log('URL params:', params);
+        console.log('All params object:', JSON.stringify(params, null, 2));
 
         // Check if we have a code parameter (PKCE flow)
         const code = params.code as string;
         
         if (!code) {
-          throw new Error('No authorization code found in callback');
+          console.error('❌ No code found in params. Available params:', Object.keys(params));
+          console.error('❌ Full params object:', params);
+          throw new Error(`No authorization code found in callback. Available params: ${Object.keys(params).join(', ')}`);
         }
 
         console.log('✅ Authorization code received');
@@ -53,8 +56,11 @@ export default function AuthCallback() {
           setStatus('Authentication successful!');
           setStep(4);
           
-          // Let AuthProvider handle navigation - don't force navigation here
-          console.log('📱 Session established, AuthProvider will handle navigation');
+          // Navigate to home after successful authentication
+          console.log('📱 Session established, navigating to home');
+          setTimeout(() => {
+            router.replace('/(tabs)');
+          }, 500);
         } else {
           throw new Error('Code exchange succeeded but no session was returned');
         }

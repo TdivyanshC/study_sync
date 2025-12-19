@@ -165,8 +165,13 @@ def setup_monitoring_middleware(app, collect_system_metrics: bool = True):
     connection_monitoring_middleware = ConnectionMonitoringMiddleware(app)
     app.add_middleware(ConnectionMonitoringMiddleware)
     
-    # Setup periodic metrics collection
-    asyncio.create_task(periodic_metrics_collection())
+    # Setup periodic metrics collection only if we have a running event loop
+    try:
+        asyncio.get_running_loop()
+        asyncio.create_task(periodic_metrics_collection())
+    except RuntimeError:
+        # No event loop running, skip background tasks
+        pass
     
     return monitoring_middleware, connection_monitoring_middleware
 

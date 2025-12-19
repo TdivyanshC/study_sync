@@ -9,23 +9,15 @@ import { router } from 'expo-router';
 // Initialize WebBrowser for OAuth
 WebBrowser.maybeCompleteAuthSession();
 
-/**
- * Enhanced AuthProvider with robust session persistence
- * 
- * This provider fixes the issue where users get logged out on app refresh by:
- * - Properly waiting for session restoration before making navigation decisions
- * - Handling session restoration timing issues
- * - Preventing premature navigation to login screen
- * - Ensuring proper token refresh handling
- */
-
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  isInitialized: boolean;
   login: (email: string, password: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
+  refreshSession: () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -38,22 +30,45 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [sessionRestored, setSessionRestored] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
-  // Enhanced session initialization with proper timing
+  // Enhanced session initialization with better timing
   useEffect(() => {
     let isMounted = true;
-    let initializationComplete = false;
+    let initializationAttempts = 0;
+    const maxAttempts = 3;
 
-    // Get initial session with better error handling
-    async function initializeAuth() {
+    const initializeAuth = async () => {
       try {
-        console.log('🚀 Initializing authentication...');
+        initializationAttempts++;
+        console.log(`🚀 Initializing authentication... (Attempt ${initializationAttempts})`);
         
-        // Wait for AsyncStorage and Supabase to be ready
-        await new Promise(resolve => setTimeout(resolve, 200));
+        // Wait for Supabase to be ready with exponential backoff
+        const delay = Math.min(1000 * Math.pow(2, initializationAttempts - 1), 5000);
+        if (initializationAttempts > 1) {
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
         
-        const { data: { session }, error } = await supabase.auth.getSession();
+        // Get session with retry logic
+        const getSessionWithRetry = async (): Promise<{ data: { session: Session | null }, error: any }> => {
+          for (let i = 0; i < 3; i++) {
+            try {
+              const result = await supabase.auth.getSession();
+              if (result.error && i < 2) {
+                console.log(`⚠️ Session fetch attempt ${i + 1} failed, retrying...`);
+                await new Promise(resolve => setTimeout(resolve, 500 * (i + 1)));
+                continue;
+              }
+              return result;
+            } catch (error) {
+              if (i === 2) throw error;
+              await new Promise(resolve => setTimeout(resolve, 500 * (i + 1)));
+            }
+          }
+          throw new Error('Failed to get session after 3 attempts');
+        };
+
+        const { data: { session }, error } = await getSessionWithRetry();
         
         if (error) {
           console.error('❌ Error getting session:', error.message);
@@ -61,7 +76,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
             setSession(null);
             setUser(null);
             setLoading(false);
-            setSessionRestored(true);
+            setIsInitialized(true);
           }
           return;
         }
@@ -71,7 +86,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
             console.log('✅ Session restored successfully:', {
               email: session.user.email,
               id: session.user.id,
-              expiresAt: session.expires_at
+              expiresAt: session.expires_at,
+              provider: session.user.app_metadata?.provider
             });
             
             // Check if session is expired
@@ -92,8 +108,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           }
           
           setLoading(false);
-          initializationComplete = true;
-          setSessionRestored(true);
+          setIsInitialized(true);
         }
       } catch (error) {
         console.error('❌ Error initializing auth:', error);
@@ -101,12 +116,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
           setSession(null);
           setUser(null);
           setLoading(false);
-          initializationComplete = true;
-          setSessionRestored(true);
+          setIsInitialized(true);
         }
       }
-    }
+    };
 
+    // Start initialization
     initializeAuth();
 
     // Listen for auth state changes with enhanced handling
@@ -116,21 +131,58 @@ export function AuthProvider({ children }: AuthProviderProps) {
         
         if (!isMounted) return;
 
-        // Handle session updates
+        // Handle session updates immediately
         setSession(session);
         setUser(session?.user ?? null);
-        setLoading(false);
-
-        // Navigate based on event type, but only after initial restoration
-        if (initializationComplete) {
-          if (event === 'SIGNED_IN' && session?.user) {
-            console.log('✅ User signed in, navigating to home');
-            router.replace('/(tabs)');
-          } else if (event === 'SIGNED_OUT') {
-            console.log('👋 User signed out, navigating to login');
-            router.replace('/login');
-          }
+        
+        // Only stop loading after initial initialization
+        if (isInitialized) {
+          setLoading(false);
         }
+
+        // Handle different auth events
+        switch (event) {
+          case 'SIGNED_IN':
+            if (session?.user) {
+              console.log('✅ User signed in:', {
+                email: session.user.email,
+                provider: session.user.app_metadata?.provider
+              });
+              // Auto-navigate to home for signed in users
+              // Small delay to ensure navigation happens after state updates
+              setTimeout(() => {
+                if (isMounted && session?.user) {
+                  router.replace('/(tabs)');
+                }
+              }, 100);
+            }
+            break;
+            
+          case 'SIGNED_OUT':
+            console.log('👋 User signed out');
+            setSession(null);
+            setUser(null);
+            break;
+            
+          case 'TOKEN_REFRESHED':
+            console.log('🔄 Token refreshed successfully');
+            if (session) {
+              setSession(session);
+              setUser(session.user);
+            }
+            break;
+            
+          case 'USER_UPDATED':
+            if (session?.user) {
+              console.log('👤 User data updated');
+              setSession(session);
+              setUser(session.user);
+            }
+            break;
+        }
+
+        // Set loading to false after any auth state change
+        setLoading(false);
       }
     );
 
@@ -141,56 +193,36 @@ export function AuthProvider({ children }: AuthProviderProps) {
     };
   }, []);
 
-  // Handle deep linking for OAuth callbacks
-  useEffect(() => {
-    const handleDeepLink = ({ url }: { url: string }) => {
-      console.log('🔗 Deep link received for auth:', url);
-      
-      // Check if this is our OAuth callback URL
-      if (url.includes('?code=') && (url.includes('exp://') || url.includes('/auth/callback'))) {
-        console.log('🔄 Processing OAuth callback...');
-        
-        const urlObj = new URL(url);
-        const code = urlObj.searchParams.get('code');
-        
-        if (code) {
-          console.log('📝 Authorization code found, exchanging for session...');
-          
-          setTimeout(async () => {
-            try {
-              const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-              
-              if (error) {
-                console.error('❌ Code exchange failed:', error);
-              } else if (data.session) {
-                console.log('✅ Session established via code exchange');
-              }
-            } catch (error) {
-              console.error('❌ Code exchange error:', error);
-            }
-          }, 500);
-        }
-      }
-    };
-
-    // Setup deep link listener
-    let linkingSubscription: any = null;
+  // Enhanced refresh session function
+  const refreshSession = async (): Promise<void> => {
     try {
-      if (Linking && typeof Linking.addEventListener === 'function') {
-        linkingSubscription = Linking.addEventListener('url', handleDeepLink);
+      console.log('🔄 Refreshing session...');
+      setLoading(true);
+      
+      const { data, error } = await supabase.auth.refreshSession();
+      
+      if (error) {
+        console.error('❌ Session refresh failed:', error.message);
+        throw error;
+      }
+      
+      if (data.session) {
+        console.log('✅ Session refreshed successfully');
+        setSession(data.session);
+        setUser(data.session.user);
       }
     } catch (error) {
-      console.warn('⚠️ Failed to setup deep link listener:', error);
+      console.error('❌ Session refresh error:', error);
+      throw error;
+    } finally {
+      setLoading(false);
     }
+  };
 
-    return () => {
-      if (linkingSubscription && typeof linkingSubscription.remove === 'function') {
-        linkingSubscription.remove();
-      }
-    };
-  }, []);
+  // Deep link handling moved to _layout.tsx to avoid conflicts
+  // OAuth callback handling is now done in the auth callback component
 
-  // Enhanced login function
+  // Enhanced login function with better error handling
   const login = async (email: string, password: string): Promise<void> => {
     setLoading(true);
     try {
@@ -213,7 +245,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
-  // Enhanced Google OAuth function
+  // Enhanced Google OAuth function with better error handling
   const loginWithGoogle = async (): Promise<void> => {
     setLoading(true);
     try {
@@ -289,9 +321,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     user,
     session,
     loading,
+    isInitialized,
     login,
     loginWithGoogle,
     logout,
+    refreshSession,
   };
 
   return (

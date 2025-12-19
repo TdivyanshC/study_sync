@@ -1504,22 +1504,6 @@ try:
 except Exception as e:
     print(f"Failed to initialize monitoring system: {e}")
     print("Monitoring features will not be available")
-    print("✅ Monitoring and analytics system initialized successfully")
-    
-    # Start the monitoring service
-    @app.on_event("startup")
-    async def startup_monitoring():
-        await monitoring_service.start_monitoring()
-        print("✅ Monitoring service started")
-    
-    @app.on_event("shutdown")
-    async def shutdown_monitoring():
-        await monitoring_service.stop_monitoring()
-        print("✅ Monitoring service stopped")
-        
-except Exception as e:
-    print(f"⚠️  Failed to initialize monitoring system: {e}")
-    print("Monitoring features will not be available")
 
 # Enhanced CORS configuration with security considerations
 cors_origins = ["*"]  # Configure this based on your frontend domain in production

@@ -14,6 +14,7 @@ import {
 import { router } from 'expo-router';
 import { useAuth } from '../hooks/useAuth';
 import { Colors } from '../constants/Colors';
+import HeroImage from '../components/HeroImage';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -59,18 +60,19 @@ export default function LoginScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
-        <View style={styles.content}>
-          <Text style={styles.title}>Welcome Back</Text>
-          <Text style={styles.subtitle}>Sign in to continue your journey</Text>
+        {/* Hero Image */}
+        <HeroImage />
 
+        {/* Login Form Container */}
+        <View style={styles.formContainer}>
           {/* Email Input */}
           <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Email</Text>
             <TextInput
               style={styles.input}
               value={email}
               onChangeText={setEmail}
-              placeholder="Enter your email"
+              placeholder="Email address"
+              placeholderTextColor={Colors.textMuted}
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
@@ -80,13 +82,13 @@ export default function LoginScreen() {
 
           {/* Password Input */}
           <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Password</Text>
             <View style={styles.passwordContainer}>
               <TextInput
                 style={styles.passwordInput}
                 value={password}
                 onChangeText={setPassword}
-                placeholder="Enter your password"
+                placeholder="Password"
+                placeholderTextColor={Colors.textMuted}
                 secureTextEntry={!showPassword}
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -104,7 +106,7 @@ export default function LoginScreen() {
             </View>
           </View>
 
-          {/* Login Button */}
+          {/* Email Login Button */}
           <TouchableOpacity
             style={[styles.loginButton, loading && styles.buttonDisabled]}
             onPress={handleEmailLogin}
@@ -130,7 +132,12 @@ export default function LoginScreen() {
             onPress={handleGoogleLogin}
             disabled={loading}
           >
-            <Text style={styles.googleButtonText}>Continue with Google</Text>
+            <View style={styles.googleButtonContent}>
+              <View style={styles.googleIcon}>
+                <Text style={styles.googleIconText}>G</Text>
+              </View>
+              <Text style={styles.googleButtonText}>Continue with Google</Text>
+            </View>
           </TouchableOpacity>
 
           {/* Sign Up Link */}
@@ -165,38 +172,21 @@ const styles = StyleSheet.create({
   keyboardView: {
     flex: 1,
   },
-  content: {
+  // Form Section
+  formContainer: {
     flex: 1,
     paddingHorizontal: 24,
-    justifyContent: 'center',
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: Colors.text,
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-    marginBottom: 32,
+    paddingTop: 20,
+    paddingBottom: 24,
   },
   inputContainer: {
     marginBottom: 20,
-  },
-  inputLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.text,
-    marginBottom: 8,
   },
   input: {
     backgroundColor: Colors.surface,
     borderRadius: 12,
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 16,
     fontSize: 16,
     color: Colors.text,
     borderWidth: 1,
@@ -213,17 +203,18 @@ const styles = StyleSheet.create({
   passwordInput: {
     flex: 1,
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 16,
     fontSize: 16,
     color: Colors.text,
   },
   eyeButton: {
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 16,
   },
   eyeText: {
     fontSize: 18,
   },
+  // Buttons
   loginButton: {
     backgroundColor: Colors.primary,
     borderRadius: 12,
@@ -244,16 +235,36 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: Colors.cardBorder,
+    borderColor: '#e5e7eb',
+  },
+  googleButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  googleIcon: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#4285f4',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  googleIconText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: 'bold',
   },
   googleButtonText: {
-    color: Colors.text,
+    color: '#1f2937',
     fontSize: 16,
     fontWeight: '600',
   },
   buttonDisabled: {
     opacity: 0.6,
   },
+  // Divider
   divider: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -269,6 +280,7 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     fontSize: 14,
   },
+  // Sign Up
   signUpContainer: {
     flexDirection: 'row',
     justifyContent: 'center',

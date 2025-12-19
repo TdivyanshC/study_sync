@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Environment detection for production vs development
 const isProduction = process.env.NODE_ENV === 'production' ||
@@ -23,6 +24,7 @@ console.log(`Initializing Supabase client for ${isProduction ? 'PRODUCTION' : 'D
 // Enhanced Flow A configuration with PKCE for better mobile compatibility
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
+    storage: AsyncStorage,   // Use AsyncStorage for persistent session storage
     autoRefreshToken: true,  // Automatically refresh access tokens
     persistSession: true,    // Persist session to AsyncStorage automatically
     detectSessionInUrl: true, // Detect OAuth callback URLs
