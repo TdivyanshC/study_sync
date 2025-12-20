@@ -9733,3 +9733,17 @@
 2025-12-20 00:09:14,195 - studysync - INFO - HTTP 200: GET /api/metrics/today
 2025-12-20 00:09:14,252 - studysync - INFO - HTTP 200: POST /api/streak/update/667ae1e7-1edd-4ad8-993c-e3cbdb7698c1
 2025-12-20 00:09:31,470 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-20 00:09:41,439 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-20 00:09:41,625 - studysync - INFO - HTTP 0: GET /api/xp/stats/f9c64310-11eb-41d6-b44a-01000b3bfd86
+2025-12-20 00:09:41,646 - studysync - INFO - HTTP 0: POST /api/streak/update/f9c64310-11eb-41d6-b44a-01000b3bfd86
+2025-12-20 00:09:42,187 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-20 00:09:42,203 - studysync - INFO - HTTP 200: GET /api/xp/stats/f9c64310-11eb-41d6-b44a-01000b3bfd86
+2025-12-20 00:09:42,586 - studysync - INFO - HTTP 200: POST /api/streak/update/f9c64310-11eb-41d6-b44a-01000b3bfd86
+2025-12-20 00:10:01,480 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
+2025-12-20 00:10:11,406 - studysync - INFO - HTTP 0: GET /api/xp/stats/f9c64310-11eb-41d6-b44a-01000b3bfd86
+2025-12-20 00:10:11,911 - studysync - INFO - HTTP 0: GET /api/metrics/today
+2025-12-20 00:10:11,934 - studysync - INFO - HTTP 0: POST /api/streak/update/f9c64310-11eb-41d6-b44a-01000b3bfd86
+2025-12-20 00:10:12,119 - studysync - INFO - HTTP 200: GET /api/xp/stats/f9c64310-11eb-41d6-b44a-01000b3bfd86
+2025-12-20 00:10:12,820 - studysync - INFO - HTTP 200: GET /api/metrics/today
+2025-12-20 00:10:12,835 - studysync - INFO - HTTP 200: POST /api/streak/update/f9c64310-11eb-41d6-b44a-01000b3bfd86
+2025-12-20 00:10:13,659 - studysync - DEBUG - Metrics collected: CPU 0.0%, Memory 0.0%
