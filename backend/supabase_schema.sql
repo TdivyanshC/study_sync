@@ -12,7 +12,26 @@ CREATE TABLE users (
     xp INTEGER DEFAULT 0,
     level INTEGER DEFAULT 1,
     streak_count INTEGER DEFAULT 0,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    
+    -- Onboarding completion tracking
+    onboarding_completed BOOLEAN DEFAULT false NOT NULL,
+    onboarding_completed_at TIMESTAMP WITH TIME ZONE,
+    
+    -- Personal information from onboarding step 1
+    gender VARCHAR(50),
+    age INTEGER,
+    relationship_status VARCHAR(100),
+    
+    -- Session preferences from onboarding step 2
+    preferred_sessions TEXT[], -- Array of session types user selected
+    
+    -- Additional profile data
+    display_name VARCHAR(255),
+    avatar_url VARCHAR(500),
+    
+    -- Profile update tracking
+    profile_updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Study sessions table
@@ -101,6 +120,11 @@ CREATE INDEX idx_space_chat_created_at ON space_chat(created_at);
 CREATE INDEX idx_user_badges_user_id ON user_badges(user_id);
 CREATE INDEX idx_spaces_created_by ON spaces(created_by);
 
+-- Onboarding and profile indexes
+CREATE INDEX IF NOT EXISTS idx_users_onboarding_completed ON users(onboarding_completed);
+CREATE INDEX IF NOT EXISTS idx_users_preferred_sessions ON users USING GIN(preferred_sessions);
+CREATE INDEX IF NOT EXISTS idx_users_profile_updated_at ON users(profile_updated_at);
+
 -- Insert default badges
 INSERT INTO badges (title, description, requirement_type, requirement_value) VALUES
 ('First Steps', 'Complete your first study session', 'sessions_count', 1),
@@ -127,6 +151,8 @@ CREATE POLICY "Allow all operations on space_memberships" ON space_memberships F
 CREATE POLICY "Allow all operations on user_badges" ON user_badges FOR ALL USING (true);
 CREATE POLICY "Allow all operations on space_activity" ON space_activity FOR ALL USING (true);
 CREATE POLICY "Allow all operations on space_chat" ON space_chat FOR ALL USING (true);
+
+
 
 -- ================ GAMIFIED STUDY SYSTEM TABLES ================
 

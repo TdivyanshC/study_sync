@@ -1,118 +1,158 @@
-import { useEffect, useState } from 'react';
-import { View, Text, ActivityIndicator, StyleSheet, Alert } from 'react-native';
+import { useEffect } from 'react';
+import { View, ActivityIndicator, StyleSheet, Alert } from 'react-native';
 import { router } from 'expo-router';
 import * as Linking from 'expo-linking';
 import { supabase } from '../../lib/supabase';
 
-// Enhanced OAuth callback with aggressive session detection
+// Seamless OAuth callback with aggressive session detection
 export default function AuthCallbackEnhanced() {
-  const [status, setStatus] = useState('Initializing...');
-  const [step, setStep] = useState(1);
-  const [debugInfo, setDebugInfo] = useState<string[]>([]);
+  // Check if user has completed onboarding
+  const checkOnboardingStatus = async (userId: string) => {
+    try {
+      console.log('🔍 Checking onboarding status for user:', userId);
+      
+      // First check if the table exists and user has a profile
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('onboarding_completed')
+        .eq('user_id', userId)
+        .single();
 
-  const addDebugInfo = (info: string) => {
-    console.log('🔍 DEBUG:', info);
-    setDebugInfo(prev => [...prev, info]);
+      // If no profile exists yet (new user), create one and return false
+      if (error && error.code === 'PGRST116') {
+        console.log('ℹ️ No user profile found, creating profile for new user');
+        await createUserProfile(userId);
+        return false;
+      }
+
+      // If other error, log but don't fail the auth process
+      if (error) {
+        console.warn('⚠️ Error checking onboarding status:', error.message);
+        return false; // Default to false for safety
+      }
+
+      const completed = data?.onboarding_completed || false;
+      console.log('✅ Onboarding status:', completed);
+      return completed;
+    } catch (error) {
+      console.warn('⚠️ Exception checking onboarding status:', error);
+      return false; // Default to false for safety, don't block auth
+    }
+  };
+
+  // Create user profile if it doesn't exist
+  const createUserProfile = async (userId: string) => {
+    try {
+      console.log('📝 Creating user profile for:', userId);
+      
+      // Get user info for the profile
+      const { data: userData } = await supabase.auth.getUser();
+      const user = userData.user;
+      
+      const { error } = await supabase
+        .from('user_profiles')
+        .upsert({
+          user_id: userId,
+          email: user?.email || '',
+          onboarding_completed: false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+
+      if (error) {
+        console.warn('⚠️ Error creating user profile:', error.message);
+      } else {
+        console.log('✅ User profile created successfully');
+      }
+    } catch (error) {
+      console.warn('⚠️ Exception creating user profile:', error);
+    }
+  };
+
+  // Helper function to navigate based on onboarding status
+  const navigateBasedOnOnboarding = async (session: any) => {
+    if (!session?.user) return;
+    
+    const completedOnboarding = await checkOnboardingStatus(session.user.id);
+    
+    setTimeout(() => {
+      if (!completedOnboarding) {
+        console.log('🔄 New user - navigating to onboarding step 1');
+        router.replace('/onboarding-step1');
+      } else {
+        console.log('🔄 Returning user - navigating to home');
+        router.replace('/home');
+      }
+    }, 100);
   };
 
   useEffect(() => {
-    let checkInterval: NodeJS.Timeout;
+    let checkInterval: any = null;
     let authSubscription: any;
-    let timeoutId: NodeJS.Timeout;
 
     const checkSessionAndRedirect = async () => {
       try {
-        addDebugInfo('🔄 Starting session detection');
-        setStatus('Initializing authentication...');
-        setStep(1);
+        console.log('🔄 Starting seamless session detection');
 
         // Method 1: Direct session check
-        addDebugInfo('📋 Method 1: Direct session check');
         const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
         
         if (sessionError) {
-          addDebugInfo(`❌ Session check error: ${sessionError.message}`);
+          console.log('❌ Session check error:', sessionError.message);
         } else if (sessionData.session) {
-          addDebugInfo(`✅ Method 1 SUCCESS: Session found - ${sessionData.session.user?.email}`);
-          setStatus('Session detected! Redirecting...');
-          setStep(8);
-          router.replace('/home');
+          console.log('✅ Session found:', sessionData.session.user?.email);
+          await navigateBasedOnOnboarding(sessionData.session);
           return;
-        } else {
-          addDebugInfo('⏳ Method 1: No session found yet');
         }
 
         // Method 2: Get current user
-        addDebugInfo('📋 Method 2: Get current user');
         const { data: userData, error: userError } = await supabase.auth.getUser();
         
         if (userError) {
-          addDebugInfo(`❌ User check error: ${userError.message}`);
+          console.log('❌ User check error:', userError.message);
         } else if (userData.user) {
-          addDebugInfo(`✅ Method 2 SUCCESS: User found - ${userData.user.email}`);
-          setStatus('User detected! Creating session...');
-          setStep(7);
+          console.log('✅ User found:', userData.user.email);
           
           // Try to get session again after user is found
           setTimeout(async () => {
             const { data } = await supabase.auth.getSession();
             if (data.session) {
-              addDebugInfo('✅ Session created after user detection');
-              router.replace('/home');
+              console.log('✅ Session created after user detection');
+              await navigateBasedOnOnboarding(data.session);
             }
-          }, 1000);
+          }, 500);
           return;
-        } else {
-          addDebugInfo('⏳ Method 2: No user found yet');
         }
 
         // Method 3: Set up auth state listener
-        addDebugInfo('📋 Method 3: Setting up auth state listener');
-        setStatus('Waiting for authentication...');
-        setStep(6);
-
-        authSubscription = supabase.auth.onAuthStateChange((event, session) => {
-          addDebugInfo(`🔔 Auth event: ${event}`);
+        authSubscription = supabase.auth.onAuthStateChange(async (event, session) => {
+          console.log('🔔 Auth event:', event);
           if (session?.user) {
-            addDebugInfo(`✅ Method 3 SUCCESS: Auth state change - ${session.user.email}`);
-            setStatus('Authentication successful! Redirecting...');
-            setStep(7);
-            router.replace('/home');
+            console.log('✅ Auth state change:', session.user.email);
+            await navigateBasedOnOnboarding(session);
           }
         });
 
-        // Method 4: Periodic checking (every 1 second for 15 seconds)
-        addDebugInfo('📋 Method 4: Periodic session checking');
-        setStatus('Checking for session...');
-        setStep(5);
-
+        // Method 4: Periodic checking (every 1 second for 10 seconds)
         let checkCount = 0;
         checkInterval = setInterval(async () => {
           checkCount++;
-          addDebugInfo(`🔄 Periodic check ${checkCount}/15`);
           
           const { data } = await supabase.auth.getSession();
           if (data.session) {
-            addDebugInfo(`✅ Method 4 SUCCESS: Periodic check found session - ${data.session.user?.email}`);
+            console.log('✅ Periodic check found session:', data.session.user?.email);
             clearInterval(checkInterval);
-            setStatus('Session found! Redirecting...');
-            setStep(8);
-            router.replace('/home');
-          } else if (checkCount >= 15) {
-            addDebugInfo('⏰ All methods exhausted, showing timeout');
+            await navigateBasedOnOnboarding(data.session);
+          } else if (checkCount >= 10) {
+            console.log('⏰ All methods exhausted, showing timeout');
             clearInterval(checkInterval);
-            setStatus('Authentication timeout');
             Alert.alert(
               'Authentication Issue',
-              'We couldn\'t detect your session. This might be a timing issue. Please try again.',
+              'We couldn\'t detect your session. Please try again.',
               [
                 {
                   text: 'Try Again',
-                  onPress: () => {
-                    setDebugInfo([]);
-                    setStep(1);
-                    checkSessionAndRedirect();
-                  }
+                  onPress: () => checkSessionAndRedirect()
                 },
                 {
                   text: 'Go to Login',
@@ -123,24 +163,23 @@ export default function AuthCallbackEnhanced() {
           }
         }, 1000);
 
-        // Ultimate fallback: Wait 10 seconds and try one more time
+        // Ultimate fallback: Wait 8 seconds and try one more time
         setTimeout(async () => {
-          if (checkCount < 15) {
-            addDebugInfo('🆘 Fallback: Final session check');
+          if (checkCount < 10) {
+            console.log('🆘 Fallback: Final session check');
             const { data } = await supabase.auth.getSession();
             if (data.session) {
-              addDebugInfo(`✅ Fallback SUCCESS: Final check found session - ${data.session.user?.email}`);
+              console.log('✅ Fallback found session:', data.session.user?.email);
               clearInterval(checkInterval);
-              router.replace('/home');
+              await navigateBasedOnOnboarding(data.session);
             } else {
-              addDebugInfo('❌ Fallback: No session found');
+              console.log('❌ Fallback: No session found');
             }
           }
-        }, 10000);
+        }, 8000);
 
       } catch (error: any) {
-        addDebugInfo(`❌ Fatal error: ${error.message}`);
-        setStatus(`Error: ${error.message}`);
+        console.error('❌ Fatal error:', error.message);
         Alert.alert(
           'Authentication Error',
           error.message || 'An error occurred during authentication.',
@@ -156,7 +195,7 @@ export default function AuthCallbackEnhanced() {
 
     // Get initial URL for debugging
     Linking.getInitialURL().then(url => {
-      addDebugInfo(`📱 Initial URL: ${url || 'No URL'}`);
+      console.log('📱 Initial URL:', url || 'No URL');
       checkSessionAndRedirect();
     });
 
@@ -166,40 +205,13 @@ export default function AuthCallbackEnhanced() {
       if (authSubscription?.data?.subscription) {
         authSubscription.data.subscription.unsubscribe();
       }
-      if (timeoutId) clearTimeout(timeoutId);
     };
   }, []);
 
+  // Minimal loading screen - just a spinner, no text or debug info
   return (
     <View style={styles.container}>
-      <View style={styles.content}>
-        <ActivityIndicator size="large" color="#3498db" />
-        <Text style={styles.title}>Completing sign in...</Text>
-        <Text style={styles.status}>{status}</Text>
-        <Text style={styles.step}>Step {step}/8</Text>
-        
-        {/* Debug Info Display */}
-        <View style={styles.debugContainer}>
-          <Text style={styles.debugTitle}>Debug Information:</Text>
-          {debugInfo.map((info, index) => (
-            <Text key={index} style={styles.debugText}>
-              {info}
-            </Text>
-          ))}
-        </View>
-
-        <View style={styles.stepsContainer}>
-          <Text style={styles.stepsTitle}>OAuth Process:</Text>
-          <Text style={step >= 1 ? styles.stepActive : styles.stepInactive}>✓ Initialize</Text>
-          <Text style={step >= 2 ? styles.stepActive : styles.stepInactive}>✓ Session check</Text>
-          <Text style={step >= 3 ? styles.stepActive : styles.stepInactive}>✓ User detection</Text>
-          <Text style={step >= 4 ? styles.stepActive : styles.stepInactive}>✓ Auth listener</Text>
-          <Text style={step >= 5 ? styles.stepActive : styles.stepInactive}>✓ Periodic check</Text>
-          <Text style={step >= 6 ? styles.stepActive : styles.stepInactive}>✓ Wait for auth</Text>
-          <Text style={step >= 7 ? styles.stepActive : styles.stepInactive}>✓ Auth success</Text>
-          <Text style={step >= 8 ? styles.stepActive : styles.stepInactive}>✓ Redirect home</Text>
-        </View>
-      </View>
+      <ActivityIndicator size="large" color="#3498db" />
     </View>
   );
 }
@@ -210,76 +222,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#f8f9fa',
-    padding: 20,
-  },
-  content: {
-    width: '100%',
-    maxWidth: 400,
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#2c3e50',
-    marginTop: 20,
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  status: {
-    fontSize: 16,
-    color: '#7f8c8d',
-    textAlign: 'center',
-    marginBottom: 10,
-  },
-  step: {
-    fontSize: 14,
-    color: '#95a5a6',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  debugContainer: {
-    width: '100%',
-    backgroundColor: '#f1f3f4',
-    borderRadius: 8,
-    padding: 15,
-    marginBottom: 20,
-    maxHeight: 150,
-  },
-  debugTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#2c3e50',
-    marginBottom: 10,
-  },
-  debugText: {
-    fontSize: 12,
-    color: '#5a6c7d',
-    marginBottom: 2,
-    fontFamily: 'monospace',
-  },
-  stepsContainer: {
-    width: '100%',
-    backgroundColor: '#ffffff',
-    borderRadius: 10,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: '#e9ecef',
-  },
-  stepsTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#2c3e50',
-    marginBottom: 15,
-    textAlign: 'center',
-  },
-  stepActive: {
-    fontSize: 14,
-    color: '#27ae60',
-    marginBottom: 5,
-  },
-  stepInactive: {
-    fontSize: 14,
-    color: '#bdc3c7',
-    marginBottom: 5,
   },
 });

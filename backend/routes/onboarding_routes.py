@@ -1,0 +1,232 @@
+"""
+Onboarding Routes
+Handles onboarding flow and user profile setup
+"""
+
+from fastapi import APIRouter, HTTPException, Depends, Request
+from pydantic import BaseModel
+from typing import List, Optional
+import logging
+from datetime import datetime
+
+from utils.supabase_auth import require_auth, get_current_user_id
+
+logger = logging.getLogger(__name__)
+router = APIRouter(prefix="/api/onboarding", tags=["onboarding"])
+
+# Pydantic models for onboarding data
+class OnboardingStep1Data(BaseModel):
+    gender: Optional[str] = None
+    age: Optional[int] = None
+    relationship_status: Optional[str] = None
+
+class OnboardingStep2Data(BaseModel):
+    preferred_sessions: List[str]
+
+class OnboardingCompleteRequest(BaseModel):
+    step1_data: Optional[OnboardingStep1Data] = None
+    step2_data: Optional[OnboardingStep2Data] = None
+    display_name: Optional[str] = None
+
+@router.post("/complete")
+async def complete_onboarding(
+    request: OnboardingCompleteRequest,
+    user_info: dict = Depends(require_auth)
+):
+    """
+    Complete the onboarding process and update user profile data
+    """
+    try:
+        user_id = user_info.get('user_id')
+        if not user_id:
+            raise HTTPException(status_code=401, detail="User not authenticated")
+        
+        # Import here to avoid circular imports
+        from services.optimized_supabase_db import get_supabase_db
+        supabase_db = get_supabase_db()
+        
+        # Prepare update data
+        update_data = {
+            'onboarding_completed': True,
+            'onboarding_completed_at': datetime.utcnow().isoformat(),
+            'profile_updated_at': datetime.utcnow().isoformat()
+        }
+        
+        # Add step 1 data if provided
+        if request.step1_data:
+            step1 = request.step1_data
+            if step1.gender:
+                update_data['gender'] = step1.gender
+            if step1.age:
+                update_data['age'] = step1.age
+            if step1.relationship_status:
+                update_data['relationship_status'] = step1.relationship_status
+        
+        # Add step 2 data if provided
+        if request.step2_data:
+            update_data['preferred_sessions'] = request.step2_data.preferred_sessions
+        
+        # Add display name if provided
+        if request.display_name:
+            update_data['display_name'] = request.display_name
+        
+        # Update user record
+        result = await supabase_db.update_user(
+            user_id=user_id,
+            updates=update_data
+        )
+        
+        if result['success']:
+            logger.info(f"✅ Onboarding completed for user {user_id}")
+            return {
+                'success': True,
+                'message': 'Onboarding completed successfully',
+                'user_id': user_id
+            }
+        else:
+            logger.error(f"❌ Failed to complete onboarding for user {user_id}: {result.get('error')}")
+            raise HTTPException(status_code=500, detail="Failed to update user profile")
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Error completing onboarding: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@router.post("/step1")
+async def save_onboarding_step1(
+    request: OnboardingStep1Data,
+    user_info: dict = Depends(require_auth)
+):
+    """
+    Save onboarding step 1 data (personal information)
+    """
+    try:
+        user_id = user_info.get('user_id')
+        if not user_id:
+            raise HTTPException(status_code=401, detail="User not authenticated")
+        
+        from services.optimized_supabase_db import get_supabase_db
+        supabase_db = get_supabase_db()
+        
+        # Prepare update data
+        update_data = {
+            'gender': request.gender,
+            'age': request.age,
+            'relationship_status': request.relationship_status,
+            'profile_updated_at': datetime.utcnow().isoformat()
+        }
+        
+        # Remove None values
+        update_data = {k: v for k, v in update_data.items() if v is not None}
+        
+        if not update_data:
+            return {'success': True, 'message': 'No data to update'}
+        
+        # Update user record
+        result = await supabase_db.update_user(
+            user_id=user_id,
+            updates=update_data
+        )
+        
+        if result['success']:
+            logger.info(f"✅ Onboarding step 1 saved for user {user_id}")
+            return {
+                'success': True,
+                'message': 'Step 1 data saved successfully'
+            }
+        else:
+            logger.error(f"❌ Failed to save step 1 for user {user_id}: {result.get('error')}")
+            raise HTTPException(status_code=500, detail="Failed to save step 1 data")
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Error saving onboarding step 1: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@router.post("/step2")
+async def save_onboarding_step2(
+    request: OnboardingStep2Data,
+    user_info: dict = Depends(require_auth)
+):
+    """
+    Save onboarding step 2 data (session preferences)
+    """
+    try:
+        user_id = user_info.get('user_id')
+        if not user_id:
+            raise HTTPException(status_code=401, detail="User not authenticated")
+        
+        from services.optimized_supabase_db import get_supabase_db
+        supabase_db = get_supabase_db()
+        
+        # Prepare update data
+        update_data = {
+            'preferred_sessions': request.preferred_sessions,
+            'profile_updated_at': datetime.utcnow().isoformat()
+        }
+        
+        # Update user record
+        result = await supabase_db.update_user(
+            user_id=user_id,
+            updates=update_data
+        )
+        
+        if result['success']:
+            logger.info(f"✅ Onboarding step 2 saved for user {user_id}")
+            return {
+                'success': True,
+                'message': 'Step 2 data saved successfully'
+            }
+        else:
+            logger.error(f"❌ Failed to save step 2 for user {user_id}: {result.get('error')}")
+            raise HTTPException(status_code=500, detail="Failed to save step 2 data")
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Error saving onboarding step 2: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@router.get("/status")
+async def get_onboarding_status(
+    user_info: dict = Depends(require_auth)
+):
+    """
+    Get current user's onboarding status
+    """
+    try:
+        user_id = user_info.get('user_id')
+        if not user_id:
+            raise HTTPException(status_code=401, detail="User not authenticated")
+        
+        from services.optimized_supabase_db import get_supabase_db
+        supabase_db = get_supabase_db()
+        
+        # Get user data
+        result = await supabase_db.get_user(user_id)
+        
+        if result['success']:
+            user_data = result['data']
+            return {
+                'success': True,
+                'onboarding_completed': user_data.get('onboarding_completed', False),
+                'onboarding_completed_at': user_data.get('onboarding_completed_at'),
+                'profile_data': {
+                    'gender': user_data.get('gender'),
+                    'age': user_data.get('age'),
+                    'relationship_status': user_data.get('relationship_status'),
+                    'preferred_sessions': user_data.get('preferred_sessions', []),
+                    'display_name': user_data.get('display_name')
+                }
+            }
+        else:
+            logger.error(f"❌ Failed to get onboarding status for user {user_id}: {result.get('error')}")
+            raise HTTPException(status_code=500, detail="Failed to get onboarding status")
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Error getting onboarding status: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")

@@ -47,6 +47,7 @@ from routes.badge_routes import create_badge_routes
 from routes.streak_routes import create_streak_routes
 from routes.session_routes import session_router
 from routes.tunnel import tunnel_router
+from routes.onboarding_routes import router as onboarding_router
 
 # Import monitoring components (Phase 6.2)
 from utils.monitoring_service import monitoring_service
@@ -1477,6 +1478,9 @@ else:
 
 # Include the tunnel router in the API router with /api prefix
 api_router.include_router(tunnel_router)
+
+# Include onboarding routes
+api_router.include_router(onboarding_router)
 
 # Include monitoring routes (Phase 6.2)
 monitoring_router = create_monitoring_routes()

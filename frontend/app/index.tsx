@@ -45,13 +45,9 @@ export default function IndexScreen() {
       }
     }
 
-    // Normal authentication flow - navigation handled by AuthProvider
-    // Don't handle navigation here to avoid conflicts
-    if (user) {
-      console.log('✅ User authenticated, letting AuthProvider handle navigation');
-    } else {
-      console.log('⚠️ No user found, letting AuthProvider handle navigation');
-    }
+    // Normal authentication flow - navigation handled by AuthProvider ONLY
+    // Do NOT handle navigation here to avoid conflicts with AuthProvider
+    console.log('ℹ️ Index: User state changed, AuthProvider will handle navigation');
   }, [user, loading, isInitialized, router]);
 
   // Show loading while checking authentication or during initialization
@@ -59,8 +55,18 @@ export default function IndexScreen() {
     <View style={styles.loadingContainer}>
       <ActivityIndicator size="large" color={Colors.primary} />
       <Text style={styles.loadingText}>
-        {isInitialized ? 'Checking authentication...' : 'Initializing...'}
+        {!isInitialized ? 'Initializing...' : 'Checking authentication...'}
       </Text>
+      {!isInitialized && (
+        <Text style={styles.subText}>
+          Setting up your session
+        </Text>
+      )}
+      {isInitialized && !user && (
+        <Text style={styles.subText}>
+          Redirecting to login...
+        </Text>
+      )}
     </View>
   );
 }
@@ -76,6 +82,12 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 16,
     color: Colors.text,
+    textAlign: 'center',
+  },
+  subText: {
+    marginTop: 8,
+    fontSize: 14,
+    color: Colors.text + '80', // Semi-transparent
     textAlign: 'center',
   },
 });

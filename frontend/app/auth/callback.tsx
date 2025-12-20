@@ -1,113 +1,117 @@
-import { useEffect, useState } from 'react';
-import { View, Text, ActivityIndicator, StyleSheet, Alert } from 'react-native';
+import { useEffect } from 'react';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 
 /**
- * OAuth callback handler for PKCE flow
+ * Seamless OAuth callback handler for PKCE flow
  * 
- * This component handles the OAuth callback with the authorization code.
- * Supabase SDK automatically exchanges the code for tokens, so we just
- * need to check if the session was established and navigate accordingly.
- * 
- * Enhanced to work better with AuthProvider session persistence.
+ * This component handles the OAuth callback with minimal user interface.
+ * It processes the authentication and navigates directly without showing
+ * detailed progress steps.
  */
 export default function AuthCallback() {
-  const [status, setStatus] = useState('Processing authentication...');
-  const [step, setStep] = useState(1);
   const params = useLocalSearchParams();
+
+  // Check if user has completed onboarding
+  const checkOnboardingStatus = async (userId: string) => {
+    try {
+      console.log('🔍 Checking onboarding status for user:', userId);
+      
+      // Check if user has completed onboarding in the users table
+      const { data, error } = await supabase
+        .from('users')
+        .select('onboarding_completed')
+        .eq('id', userId)
+        .single();
+
+      // If no user found, return false (new user)
+      if (error && error.code === 'PGRST116') {
+        console.log('ℹ️ No user found, treating as new user');
+        return false;
+      }
+
+      // If other error, log but don't fail the auth process
+      if (error) {
+        console.warn('⚠️ Error checking onboarding status:', error.message);
+        return false; // Default to false for safety
+      }
+
+      const completed = data?.onboarding_completed || false;
+      console.log('✅ Onboarding status:', completed);
+      return completed;
+    } catch (error) {
+      console.warn('⚠️ Exception checking onboarding status:', error);
+      return false; // Default to false for safety, don't block auth
+    }
+  };
 
   useEffect(() => {
     const handleCallback = async () => {
       try {
-        setStatus('Processing authentication...');
-        setStep(1);
-
         console.log('🔔 OAuth callback received');
         console.log('URL params:', params);
-        console.log('All params object:', JSON.stringify(params, null, 2));
 
         // Check if we have a code parameter (PKCE flow)
         const code = params.code as string;
         
         if (!code) {
-          console.error('❌ No code found in params. Available params:', Object.keys(params));
-          console.error('❌ Full params object:', params);
-          throw new Error(`No authorization code found in callback. Available params: ${Object.keys(params).join(', ')}`);
+          console.error('❌ No code found in params');
+          router.replace('/login');
+          return;
         }
 
         console.log('✅ Authorization code received');
-        setStatus('Authorization code received');
-        setStep(2);
 
         // Explicitly exchange the code for tokens to ensure session is established
-        setStatus('Exchanging authorization code for tokens...');
-        setStep(3);
-        
-        console.log('🔄 Explicitly exchanging authorization code for session...');
         const { data, error } = await supabase.auth.exchangeCodeForSession(code);
         
         if (error) {
-          throw new Error(`Code exchange failed: ${error.message}`);
+          console.error('❌ Code exchange failed:', error.message);
+          router.replace('/login');
+          return;
         }
         
-        if (data.session) {
-          console.log('✅ Session established via explicit code exchange:', data.session.user?.email);
-          setStatus('Authentication successful!');
-          setStep(4);
+        if (data.session && data.session.user) {
+          console.log('✅ Session established:', data.session.user.email);
           
-          // Navigate to home after successful authentication
-          console.log('📱 Session established, navigating to home');
+          // Check onboarding status
+          const completedOnboarding = await checkOnboardingStatus(data.session.user.id);
+          
+          // Navigate based on onboarding status
+          console.log('🧭 Navigation decision:', {
+            email: data.session.user.email,
+            onboardingCompleted: completedOnboarding
+          });
+          
+          // Small delay to ensure smooth transition
           setTimeout(() => {
-            router.replace('/(tabs)');
-          }, 500);
+            if (!completedOnboarding) {
+              console.log('🔄 New user - navigating to onboarding step 1');
+              router.replace('/onboarding-step1');
+            } else {
+              console.log('🔄 Returning user - navigating to home');
+              router.replace('/(tabs)');
+            }
+          }, 100);
         } else {
-          throw new Error('Code exchange succeeded but no session was returned');
+          console.error('❌ No session returned');
+          router.replace('/login');
         }
 
       } catch (error: any) {
-        console.error('OAuth callback error:', error.message);
-        setStatus(`Error: ${error.message}`);
-        setStep(0);
-
-        Alert.alert(
-          'Authentication Error',
-          error.message || 'An error occurred during authentication.',
-          [
-            {
-              text: 'OK',
-              onPress: () => router.replace('/login')
-            }
-          ]
-        );
+        console.error('❌ OAuth callback error:', error.message);
+        router.replace('/login');
       }
     };
 
     handleCallback();
   }, []);
 
+  // Minimal loading screen - just a spinner, no text or steps
   return (
     <View style={styles.container}>
-      <View style={styles.content}>
-        <ActivityIndicator size="large" color="#3498db" />
-        <Text style={styles.title}>Completing sign in...</Text>
-        <Text style={styles.status}>{status}</Text>
-        <Text style={styles.step}>Step {step}/4</Text>
-        
-        <View style={styles.stepsContainer}>
-          <Text style={styles.stepsTitle}>PKCE OAuth Process:</Text>
-          <Text style={step >= 1 ? styles.stepActive : styles.stepInactive}>✓ Callback Received</Text>
-          <Text style={step >= 2 ? styles.stepActive : styles.stepInactive}>✓ Code Extracted</Text>
-          <Text style={step >= 3 ? styles.stepActive : styles.stepInactive}>✓ Code Exchange</Text>
-          <Text style={step >= 4 ? styles.stepActive : styles.stepInactive}>
-            {step === 4 ? '✓ Session Ready' : '⏳ Session Processing'}
-          </Text>
-        </View>
-
-        <Text style={styles.info}>
-          Please wait while we complete your sign-in. You'll be redirected automatically.
-        </Text>
-      </View>
+      <ActivityIndicator size="large" color="#3498db" />
     </View>
   );
 }
@@ -118,63 +122,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#f8f9fa',
-    padding: 20,
-  },
-  content: {
-    width: '100%',
-    maxWidth: 400,
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#2c3e50',
-    marginTop: 20,
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  status: {
-    fontSize: 16,
-    color: '#7f8c8d',
-    textAlign: 'center',
-    marginBottom: 10,
-  },
-  step: {
-    fontSize: 14,
-    color: '#95a5a6',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  stepsContainer: {
-    width: '100%',
-    backgroundColor: '#ffffff',
-    borderRadius: 10,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: '#e9ecef',
-    marginBottom: 20,
-  },
-  stepsTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#2c3e50',
-    marginBottom: 15,
-    textAlign: 'center',
-  },
-  stepActive: {
-    fontSize: 14,
-    color: '#27ae60',
-    marginBottom: 5,
-  },
-  stepInactive: {
-    fontSize: 14,
-    color: '#bdc3c7',
-    marginBottom: 5,
-  },
-  info: {
-    fontSize: 12,
-    color: '#95a5a6',
-    textAlign: 'center',
-    fontStyle: 'italic',
   },
 });

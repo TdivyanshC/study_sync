@@ -1,31 +1,39 @@
-// metro.config.js
+// metro.config.js - Optimized for faster bundling
 const { getDefaultConfig } = require("expo/metro-config");
 const path = require('path');
-const { FileStore } = require('metro-cache');
 
 const config = getDefaultConfig(__dirname);
 
-// Use a stable on-disk store (shared across web/android)
-const root = process.env.METRO_CACHE_ROOT || path.join(__dirname, '.metro-cache');
-config.cacheStores = [
-  new FileStore({ root: path.join(root, 'cache') }),
-];
-
-// Add polyfills for Node.js globals
-config.resolver.extraNodeModules = {
-  ...config.resolver.extraNodeModules,
-  buffer: require.resolve('buffer'),
-  process: require.resolve('process/browser'),
-};
-
+// Optimize transformer for faster bundling
 config.transformer.getTransformOptions = async () => ({
   transform: {
     experimentalImportSupport: false,
-    inlineRequires: true,
+    inlineRequires: true, // Enable inline requires for better performance
   },
 });
 
-// Reduce the number of workers to decrease resource usage
-config.maxWorkers = 2;
+// Optimize resolver for better performance
+config.resolver.platforms = ['ios', 'android', 'native', 'web'];
+
+// Only add necessary polyfills to reduce bundle size
+if (config.resolver.platforms.includes('web')) {
+  config.resolver.extraNodeModules = {
+    ...config.resolver.extraNodeModules,
+    buffer: require.resolve('buffer'),
+    process: require.resolve('process/browser'),
+  };
+}
+
+// Optimize worker configuration for better performance
+const cpuCount = require('os').cpus().length;
+config.maxWorkers = Math.max(1, Math.min(4, Math.floor(cpuCount / 2)));
+
+// Use default cache settings
+config.cacheStores = [];
+config.cacheVersion = 'v2';
+
+// Optimize resolver for faster file resolution
+config.resolver.unstable_enableSymlinks = true;
+config.resolver.unstable_enablePackageExports = true;
 
 module.exports = config;

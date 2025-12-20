@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,7 +8,7 @@ import {
   ScrollView,
   Alert,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Colors } from '../constants/Colors';
 import ProgressBar from '../components/ProgressBar';
 import { useAuth } from '../providers/AuthProvider';
@@ -38,9 +38,34 @@ const SESSION_OPTIONS: SessionOption[] = [
 
 export default function OnboardingStep2() {
   const { markOnboardingCompleted } = useAuth();
+  const params = useLocalSearchParams();
+  
+  // Extract step1 data from navigation params
+  const step1Data = {
+    gender: params.gender as string || '',
+    age: params.age as string || '',
+    relationship: params.relationship as string || ''
+  };
+  
   const [selectedSessions, setSelectedSessions] = useState<string[]>([]);
   const [customSession, setCustomSession] = useState('');
   const [isCompleting, setIsCompleting] = useState(false);
+  
+  // Check if we have step1 data, if not redirect back to step1
+  useEffect(() => {
+    if (!step1Data.gender || !step1Data.age || !step1Data.relationship) {
+      Alert.alert(
+        'Missing Information',
+        'Please complete step 1 first.',
+        [
+          {
+            text: 'Go Back',
+            onPress: () => router.replace('/onboarding-step1')
+          }
+        ]
+      );
+    }
+  }, [step1Data]);
 
   const handleSessionToggle = (sessionId: string) => {
     setSelectedSessions(prev => {
@@ -94,11 +119,26 @@ export default function OnboardingStep2() {
     setIsCompleting(true);
     
     try {
-      // Mark onboarding as completed in the database
-      await markOnboardingCompleted();
+      // Prepare all onboarding data
+      const step1DataFormatted = {
+        gender: step1Data.gender,
+        age: step1Data.age,
+        relationship: step1Data.relationship
+      };
       
-      // Save session preferences (in a real app, you'd save this data to the backend)
-      console.log('Onboarding completed with sessions:', selectedSessions);
+      const step2DataFormatted = {
+        preferred_sessions: selectedSessions
+      };
+      
+      const displayName = step1Data.gender && step1Data.age ? 
+        `User (${step1Data.gender}, ${step1Data.age})` : 'User';
+      
+      // Complete onboarding with all collected data
+      await markOnboardingCompleted(
+        step1DataFormatted,
+        step2DataFormatted,
+        displayName
+      );
       
       Alert.alert(
         'Welcome! 🎉',

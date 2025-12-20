@@ -15,11 +15,13 @@ interface AuthContextType {
   loading: boolean;
   isInitialized: boolean;
   hasCompletedOnboarding: boolean;
+  hasNavigated: boolean;
+  navigationLocked: boolean;
   login: (email: string, password: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   refreshSession: () => Promise<void>;
-  markOnboardingCompleted: () => Promise<void>;
+  markOnboardingCompleted: (step1Data?: any, step2Data?: any, displayName?: string) => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -35,20 +37,70 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [isInitialized, setIsInitialized] = useState(false);
   const [hasNavigated, setHasNavigated] = useState(false);
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
+  const [navigationLocked, setNavigationLocked] = useState(false);
+
+  // Centralized navigation function to prevent conflicts
+  const handleNavigation = (user: User, completedOnboarding: boolean) => {
+    // Always allow login navigation, even if navigation is locked
+    if (!user && !hasNavigated) {
+      console.log('🔄 No user - navigating to login');
+      setTimeout(() => {
+        router.replace('/login');
+        setTimeout(() => {
+          setNavigationLocked(false);
+          setHasNavigated(true);
+        }, 500);
+      }, 100);
+      return;
+    }
+    
+    if (navigationLocked) {
+      console.log('🔒 Navigation already in progress, skipping...');
+      return;
+    }
+
+    setNavigationLocked(true);
+    console.log('🧭 Starting navigation:', {
+      email: user?.email,
+      onboardingCompleted: completedOnboarding
+    });
+
+    // Add a small delay to ensure state is settled
+    setTimeout(() => {
+      if (user && !completedOnboarding) {
+        console.log('🔄 New user - navigating to onboarding step 1');
+        router.replace('/onboarding-step1');
+      } else if (user && completedOnboarding) {
+        console.log('🔄 Returning user - navigating to home');
+        router.replace('/(tabs)');
+      } else {
+        console.log('🔄 No user - navigating to login');
+        router.replace('/login');
+      }
+      
+      // Reset navigation flags after a delay to allow for any async operations
+      setTimeout(() => {
+        setNavigationLocked(false);
+        setHasNavigated(true);
+      }, 500);
+    }, 100);
+  };
 
   // Check if user has completed onboarding
   const checkOnboardingStatus = async (userId: string) => {
     try {
-      // First check if the table exists and user has a profile
+      console.log('🔍 Checking onboarding status for user:', userId);
+      
+      // Check if user has completed onboarding in the users table
       const { data, error } = await supabase
-        .from('user_profiles')
+        .from('users')
         .select('onboarding_completed')
-        .eq('user_id', userId)
+        .eq('id', userId)
         .single();
 
-      // If no profile exists yet (new user), return false
+      // If no user found, return false (new user)
       if (error && error.code === 'PGRST116') {
-        console.log('ℹ️ No user profile found, treating as new user');
+        console.log('ℹ️ No user found, treating as new user');
         return false;
       }
 
@@ -64,6 +116,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       return false; // Default to false for safety, don't block auth
     }
   };
+
+
 
   // Enhanced session initialization with better timing
   useEffect(() => {
@@ -111,6 +165,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
             setHasCompletedOnboarding(false);
             setLoading(false);
             setIsInitialized(true);
+            
+            // Navigate to login even on session error
+            if (!hasNavigated && !navigationLocked) {
+              console.log('🔄 Session error - navigating to login');
+              setTimeout(() => {
+                router.replace('/login');
+                setTimeout(() => {
+                  setNavigationLocked(false);
+                  setHasNavigated(true);
+                }, 500);
+              }, 100);
+            }
           }
           return;
         }
@@ -152,8 +218,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
               
               setHasCompletedOnboarding(completedOnboarding);
               
+              // Handle navigation for session restoration
+              if (!hasNavigated && !navigationLocked) {
+                handleNavigation(session.user, completedOnboarding);
+              }
+              
               console.log('📱 Session valid, user remains authenticated', {
-                onboardingCompleted: completedOnboarding
+                onboardingCompleted: completedOnboarding,
+                hasNavigated,
+                navigationLocked
               });
             }
           } else {
@@ -161,6 +234,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
             setSession(null);
             setUser(null);
             setHasCompletedOnboarding(false);
+            
+            // Navigate to login when no session exists
+            if (!hasNavigated && !navigationLocked) {
+              console.log('🔄 No session - navigating to login');
+              setTimeout(() => {
+                router.replace('/login');
+                setTimeout(() => {
+                  setNavigationLocked(false);
+                  setHasNavigated(true);
+                }, 500);
+              }, 100);
+            }
           }
           
           setLoading(false);
@@ -174,6 +259,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
           setHasCompletedOnboarding(false);
           setLoading(false);
           setIsInitialized(true);
+          
+          // Even on error, navigate to login to allow user to authenticate
+          if (!hasNavigated && !navigationLocked) {
+            console.log('🔄 Auth initialization failed - navigating to login');
+            setTimeout(() => {
+              router.replace('/login');
+              setTimeout(() => {
+                setNavigationLocked(false);
+                setHasNavigated(true);
+              }, 500);
+            }, 100);
+          }
         }
       }
     };
@@ -223,20 +320,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
               
               setHasCompletedOnboarding(completedOnboarding);
               
-              // Auto-navigate with better timing control
-              if (!hasNavigated) {
-                setHasNavigated(true);
-                setTimeout(() => {
-                  if (isMounted && session?.user) {
-                    if (!completedOnboarding) {
-                      console.log('🔄 New user - navigating to onboarding step 1');
-                      router.replace('/onboarding-step1');
-                    } else {
-                      console.log('🔄 Returning user - navigating to home');
-                      router.replace('/(tabs)');
-                    }
-                  }
-                }, 200); // Increased delay for better stability
+              // Use centralized navigation function
+              if (!hasNavigated && !navigationLocked) {
+                handleNavigation(session.user, completedOnboarding);
               }
             }
             break;
@@ -247,6 +333,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
             setUser(null);
             setHasCompletedOnboarding(false);
             setHasNavigated(false); // Reset navigation flag for next login
+            setNavigationLocked(false); // Reset navigation lock for next login
             break;
             
           case 'TOKEN_REFRESHED':
@@ -382,33 +469,122 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
-  // Mark onboarding as completed
-  const markOnboardingCompleted = async (): Promise<void> => {
+  // Mark onboarding as completed with all collected data
+  const markOnboardingCompleted = async (
+    step1Data?: { gender?: string; age?: string; relationship?: string },
+    step2Data?: { preferred_sessions?: string[] },
+    displayName?: string
+  ): Promise<void> => {
     if (!user?.id) {
       throw new Error('User not authenticated');
     }
 
     try {
-      const { error } = await supabase
-        .from('user_profiles')
-        .upsert({
-          user_id: user.id,
-          onboarding_completed: true,
-          updated_at: new Date().toISOString()
-        });
+      console.log('💾 Saving onboarding data to backend...');
+      
+      // Prepare the complete onboarding data
+      const onboardingData = {
+        step1_data: step1Data || {},
+        step2_data: step2Data || { preferred_sessions: [] },
+        display_name: displayName || user.user_metadata?.full_name ||
+                    user.user_metadata?.name ||
+                    user.app_metadata?.full_name ||
+                    user.app_metadata?.name ||
+                    user.email?.split('@')[0] ||
+                    'User'
+      };
 
-      if (error) {
-        console.warn('⚠️ Error saving onboarding completion to database:', error.message);
-        // Don't throw error, just log it - the app should still work
+      // Call the backend onboarding complete endpoint
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+      
+      if (!token) {
+        throw new Error('No access token available');
+      }
+      
+      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000'}/api/onboarding/complete`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(onboardingData)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.warn('⚠️ Error from onboarding endpoint:', errorData.detail || response.statusText);
+        // Fallback to direct database update
+        await saveOnboardingToDatabase(onboardingData);
+      } else {
+        console.log('✅ Onboarding data saved successfully via API');
       }
 
       setHasCompletedOnboarding(true);
-      console.log('✅ Onboarding marked as completed (status updated locally)');
+      console.log('✅ Onboarding marked as completed');
     } catch (error: any) {
-      console.warn('⚠️ Exception marking onboarding as completed:', error.message);
-      // Still update local state even if database save fails
-      setHasCompletedOnboarding(true);
-      console.log('✅ Onboarding marked as completed (local only)');
+      console.warn('⚠️ Exception completing onboarding, trying direct save:', error.message);
+      
+      // Fallback to direct database update
+      try {
+        const fallbackData = {
+          step1_data: step1Data || {},
+          step2_data: step2Data || { preferred_sessions: [] },
+          display_name: displayName || 'User'
+        };
+        await saveOnboardingToDatabase(fallbackData);
+        setHasCompletedOnboarding(true);
+        console.log('✅ Onboarding completed (via fallback)');
+      } catch (fallbackError) {
+        console.error('❌ Fallback onboarding save failed:', fallbackError);
+        // Still update local state
+        setHasCompletedOnboarding(true);
+        console.log('✅ Onboarding marked as completed (local only)');
+      }
+    }
+  };
+
+  // Helper function to save onboarding data directly to database
+  const saveOnboardingToDatabase = async (data: any) => {
+    // Prepare user data
+    const userData: any = {
+      id: user!.id,
+      email: user!.email || '',
+      username: user!.user_metadata?.full_name ||
+               user!.user_metadata?.name ||
+               user!.app_metadata?.full_name ||
+               user!.app_metadata?.name ||
+               user!.email?.split('@')[0] ||
+               'user_' + user!.id.slice(0, 8),
+      display_name: data.display_name,
+      gender: data.step1_data?.gender,
+      age: data.step1_data?.age ? parseInt(data.step1_data.age) : null,
+      relationship_status: data.step1_data?.relationship,
+      preferred_sessions: data.step2_data?.preferred_sessions || [],
+      onboarding_completed: true,
+      onboarding_completed_at: new Date().toISOString(),
+      profile_updated_at: new Date().toISOString()
+    };
+
+    // Always provide password_hash to satisfy database constraint
+    // For OAuth users, use a placeholder hash
+    const isOAuthUser = user!.app_metadata?.provider && user!.app_metadata.provider !== 'email';
+    
+    if (isOAuthUser) {
+      // OAuth users get a placeholder password hash
+      userData.password_hash = 'oauth_placeholder_hash_' + user!.id.slice(0, 8);
+    } else {
+      // Email/password users need actual password (not available in this context)
+      // Use a placeholder for now - this should be handled properly in production
+      userData.password_hash = 'email_user_placeholder_hash_' + user!.id.slice(0, 8);
+    }
+
+    const { error } = await supabase
+      .from('users')
+      .upsert(userData);
+
+    if (error) {
+      throw error;
     }
   };
 
@@ -438,6 +614,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     loading,
     isInitialized,
     hasCompletedOnboarding,
+    hasNavigated,
+    navigationLocked,
     login,
     loginWithGoogle,
     logout,

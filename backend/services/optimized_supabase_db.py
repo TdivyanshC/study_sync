@@ -507,7 +507,19 @@ class OptimizedSupabaseDB:
             asyncio.set_event_loop(loop)
         
         return loop.run_until_complete(self.update_data_async(table, filters, payload))
+    
+    def update_user(self, user_id: str, updates: Dict[str, Any]) -> Dict[str, Any]:
+        """Update a specific user's data"""
+        return self.update_data('users', {'eq_id': user_id}, updates)
+    
+    def get_user(self, user_id: str) -> Dict[str, Any]:
+        """Get a specific user's data"""
+        return self.fetch_data('users', {'eq_id': user_id})
 
 
 # Create singleton instance
 optimized_supabase_db = OptimizedSupabaseDB()
+
+def get_supabase_db():
+    """Get the singleton Supabase DB instance"""
+    return optimized_supabase_db

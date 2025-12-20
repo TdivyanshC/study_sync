@@ -6,7 +6,6 @@ import { AuthProvider } from '../providers/AuthProvider';
 import * as Linking from 'expo-linking';
 import { useEffect } from 'react';
 import { router } from 'expo-router';
-import { NotificationBanner } from '../src/components/NotificationBanner';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -144,9 +143,6 @@ export default function RootLayout() {
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
               <Stack.Screen name="timer" options={{ headerShown: false }} />
             </Stack>
-            
-            {/* Global notification banner for error handling and user feedback */}
-            <NotificationBanner position="top" maxNotifications={3} />
           </UserProvider>
         </PopupProvider>
       </QueryClientProvider>

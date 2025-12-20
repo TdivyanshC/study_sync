@@ -67,7 +67,15 @@ export default function OnboardingStep1() {
       Alert.alert('Missing Information', 'Please fill in all fields to continue.');
       return;
     }
-    router.push('/onboarding-step2');
+    // Navigate to step2 with the collected data
+    router.push({
+      pathname: '/onboarding-step2',
+      params: {
+        gender: formData.gender,
+        age: formData.age,
+        relationship: formData.relationship
+      }
+    });
   };
 
   return (

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { apiService } from '../services/apiService';
-import { DEMO_USER } from '../lib/constants';
+import { useAuth } from './AuthProvider';
 
 // User context interface
 interface UserContextType {
@@ -15,8 +15,9 @@ interface UserContextType {
 const UserContext = createContext<UserContextType | null>(null);
 
 export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<UserContextType>({
-    id: DEMO_USER,
+  const { user, isInitialized } = useAuth();
+  const [userState, setUserState] = useState<UserContextType>({
+    id: '',
     level: 1,
     streak: 0,
     isLoaded: false,
@@ -25,28 +26,34 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     async function loadUser() {
+      // Only load user data when authentication is initialized and user exists
+      if (!isInitialized || !user) {
+        console.log('⏳ Waiting for authentication before loading user data...');
+        return;
+      }
+
       try {
-        console.log('🔄 Loading user data...');
-        const data = await apiService.getUserDashboard(DEMO_USER);
+        console.log('🔄 Loading user data for authenticated user:', user.id);
+        const data = await apiService.getUserDashboard(user.id);
         
         // Even if data is undefined, we provide safe fallbacks
         const profile = data?.profile || {};
         const streak = data?.streak || {};
         
-        setUser({
-          id: DEMO_USER,
+        setUserState({
+          id: user.id,
           level: profile.level ?? 1,
           streak: streak.current_streak ?? 0,
           isLoaded: true,
           xp: profile.xp ?? 0,
         });
         
-        console.log('✅ User data loaded successfully');
+        console.log('✅ User data loaded successfully for authenticated user');
       } catch (e) {
         console.log('⚠️ Failed to load user, using safe defaults:', e);
         // On error, still provide a fully loaded user with defaults
-        setUser({
-          id: DEMO_USER,
+        setUserState({
+          id: user.id,
           level: 1,
           streak: 0,
           isLoaded: true,
@@ -56,10 +63,10 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     loadUser();
-  }, []);
+  }, [user, isInitialized]);
 
   return (
-    <UserContext.Provider value={user}>
+    <UserContext.Provider value={userState}>
       {children}
     </UserContext.Provider>
   );
