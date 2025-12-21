@@ -19,6 +19,7 @@ import { GlobalStyles } from '../constants/Theme';
 import { apiService, Space } from '../services/apiService';
 import { useStudyStore } from '../hooks/useStudySession';
 import { realtimeClient } from '../services/realtimeClient';
+import { router } from 'expo-router';
 import ActivityCard from '../components/ActivityCard';
 import ChatInput from '../components/ChatInput';
 import BadgePopup from '../components/BadgePopup';
@@ -272,13 +273,27 @@ export default function SpacesScreen() {
     }
   }, [selectedSpaceId, showNotification]);
 
-  const handleStartStreak = useCallback((spaceId: string) => {
-    // TODO: Start timer in this space and log activity
-    console.log('Starting streak in space:', spaceId);
-
-    // Could log activity when starting a session
-    // await apiService.logSpaceActivity(spaceId, USER_ID, 'started_session');
-  }, []);
+  const handleStartStreak = useCallback(async (spaceId: string) => {
+    try {
+      // Log activity when starting a session
+      await apiService.logSpaceActivity(spaceId, USER_ID, 'started_session');
+      
+      // Navigate to timer with space context
+      router.push({
+        pathname: '/timer',
+        params: {
+          spaceId: spaceId,
+          sessionType: 'Group Study',
+          isSpaceSession: 'true'
+        }
+      });
+      
+      showNotification('Starting group study session!', 'success');
+    } catch (error) {
+      console.error('Failed to start streak:', error);
+      showNotification('Failed to start session', 'warning');
+    }
+  }, [showNotification]);
 
   const handleCreateSpace = useCallback(async () => {
     try {
@@ -315,7 +330,6 @@ export default function SpacesScreen() {
       
       {/* Header */}
       <View style={styles.header}>
-        <Text style={[GlobalStyles.title, { fontSize: 32, color: 'red' }]}>SPACES SCREEN</Text>
         <Text style={GlobalStyles.title}>Study Spaces</Text>
         <Text style={GlobalStyles.textSecondary}>
           Join groups and study together

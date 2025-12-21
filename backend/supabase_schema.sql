@@ -6,6 +6,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- Users table
 CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id VARCHAR(6) UNIQUE NOT NULL, -- 6-digit alphanumeric user ID
     username VARCHAR(255) UNIQUE NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
@@ -31,7 +32,12 @@ CREATE TABLE users (
     avatar_url VARCHAR(500),
     
     -- Profile update tracking
-    profile_updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    profile_updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    
+    -- Friend activity tracking
+    current_activity VARCHAR(100), -- e.g., 'gym_session', 'study_session', 'coding'
+    activity_started_at TIMESTAMP WITH TIME ZONE,
+    total_hours_today INTEGER DEFAULT 0
 );
 
 -- Study sessions table
@@ -108,17 +114,34 @@ CREATE TABLE status_checks (
     timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Friends table for friend relationships
+CREATE TABLE friends (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    friend_user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'blocked', 'pending')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(user_id, friend_user_id)
+);
+
 -- Indexes for performance
-CREATE INDEX idx_study_sessions_user_id ON study_sessions(user_id);
-CREATE INDEX idx_study_sessions_created_at ON study_sessions(created_at);
-CREATE INDEX idx_space_memberships_space_id ON space_memberships(space_id);
-CREATE INDEX idx_space_memberships_user_id ON space_memberships(user_id);
-CREATE INDEX idx_space_activity_space_id ON space_activity(space_id);
-CREATE INDEX idx_space_activity_created_at ON space_activity(created_at);
-CREATE INDEX idx_space_chat_space_id ON space_chat(space_id);
-CREATE INDEX idx_space_chat_created_at ON space_chat(created_at);
-CREATE INDEX idx_user_badges_user_id ON user_badges(user_id);
-CREATE INDEX idx_spaces_created_by ON spaces(created_by);
+CREATE INDEX IF NOT EXISTS idx_study_sessions_user_id ON study_sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_study_sessions_created_at ON study_sessions(created_at);
+CREATE INDEX IF NOT EXISTS idx_space_memberships_space_id ON space_memberships(space_id);
+CREATE INDEX IF NOT EXISTS idx_space_memberships_user_id ON space_memberships(user_id);
+CREATE INDEX IF NOT EXISTS idx_space_activity_space_id ON space_activity(space_id);
+CREATE INDEX IF NOT EXISTS idx_space_activity_created_at ON space_activity(created_at);
+CREATE INDEX IF NOT EXISTS idx_space_chat_space_id ON space_chat(space_id);
+CREATE INDEX IF NOT EXISTS idx_space_chat_created_at ON space_chat(created_at);
+CREATE INDEX IF NOT EXISTS idx_user_badges_user_id ON user_badges(user_id);
+CREATE INDEX IF NOT EXISTS idx_spaces_created_by ON spaces(created_by);
+
+-- Friends indexes
+CREATE INDEX IF NOT EXISTS idx_friends_user_id ON friends(user_id);
+CREATE INDEX IF NOT EXISTS idx_friends_friend_user_id ON friends(friend_user_id);
+CREATE INDEX IF NOT EXISTS idx_friends_status ON friends(status);
+CREATE INDEX IF NOT EXISTS idx_users_user_id ON users(user_id);
 
 -- Onboarding and profile indexes
 CREATE INDEX IF NOT EXISTS idx_users_onboarding_completed ON users(onboarding_completed);
@@ -141,6 +164,7 @@ ALTER TABLE space_memberships ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_badges ENABLE ROW LEVEL SECURITY;
 ALTER TABLE space_activity ENABLE ROW LEVEL SECURITY;
 ALTER TABLE space_chat ENABLE ROW LEVEL SECURITY;
+ALTER TABLE friends ENABLE ROW LEVEL SECURITY;
 
 -- Basic RLS policies (adjust as needed for your auth system)
 -- For now, allowing all operations (you'll want to restrict based on user auth)
@@ -151,6 +175,7 @@ CREATE POLICY "Allow all operations on space_memberships" ON space_memberships F
 CREATE POLICY "Allow all operations on user_badges" ON user_badges FOR ALL USING (true);
 CREATE POLICY "Allow all operations on space_activity" ON space_activity FOR ALL USING (true);
 CREATE POLICY "Allow all operations on space_chat" ON space_chat FOR ALL USING (true);
+CREATE POLICY "Allow all operations on friends" ON friends FOR ALL USING (true);
 
 
 
@@ -226,3 +251,47 @@ CREATE POLICY "Allow all on xp_history" ON xp_history FOR ALL USING (true);
 CREATE POLICY "Allow all on session_audit" ON session_audit FOR ALL USING (true);
 CREATE POLICY "Allow all on session_events" ON session_events FOR ALL USING (true);
 CREATE POLICY "Allow all on daily_user_metrics" ON daily_user_metrics FOR ALL USING (true);
+
+-- Function to generate unique 6-digit alphanumeric user_id
+CREATE OR REPLACE FUNCTION generate_user_id()
+RETURNS VARCHAR(6) AS $
+DECLARE
+    chars TEXT := 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    result TEXT := '';
+    i INTEGER;
+    unique_check BOOLEAN := false;
+    temp_id VARCHAR(6);
+BEGIN
+    WHILE NOT unique_check LOOP
+        result := '';
+        FOR i IN 1..6 LOOP
+            result := result || substr(chars, floor(random() * length(chars) + 1)::integer, 1);
+        END LOOP;
+        
+        -- Check if this user_id already exists
+        SELECT EXISTS(SELECT 1 FROM users WHERE user_id = result) INTO unique_check;
+        
+        IF NOT unique_check THEN
+            temp_id := result;
+        END IF;
+    END LOOP;
+    
+    RETURN temp_id;
+END;
+$ LANGUAGE plpgsql;
+
+-- Trigger to automatically generate user_id for new users
+CREATE OR REPLACE FUNCTION set_user_id()
+RETURNS TRIGGER AS $
+BEGIN
+    IF NEW.user_id IS NULL OR NEW.user_id = '' THEN
+        NEW.user_id := generate_user_id();
+    END IF;
+    RETURN NEW;
+END;
+$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_set_user_id
+    BEFORE INSERT ON users
+    FOR EACH ROW
+    EXECUTE FUNCTION set_user_id();

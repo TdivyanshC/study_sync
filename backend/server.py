@@ -54,6 +54,9 @@ from utils.monitoring_service import monitoring_service
 from middleware.monitoring_middleware import setup_monitoring_middleware, health_check_detailed
 from routes.monitoring_routes import create_monitoring_routes
 
+# Import friends components
+from routes.friends_routes import create_friends_routes
+
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -1470,11 +1473,16 @@ if supabase:
         api_router.include_router(session_router)  # Mount under /api
         print("Session processing engine initialized successfully")
         
+        # Initialize Friends Routes
+        friends_router = create_friends_routes(supabase_db)
+        api_router.include_router(friends_router)  # Mount on /api/friends
+        print("Friends system initialized successfully")
+        
     except Exception as e:
-        print(f"Failed to initialize gamification/badge/ranking systems: {e}")
-        print("Gamification, badge, and ranking features will not be available")
+        print(f"Failed to initialize gamification/badge/ranking/friends systems: {e}")
+        print("Gamification, badge, ranking, and friends features will not be available")
 else:
-    print("Cannot initialize gamification/badge/ranking systems: Supabase client not available")
+    print("Cannot initialize gamification/badge/ranking/friends systems: Supabase client not available")
 
 # Include the tunnel router in the API router with /api prefix
 api_router.include_router(tunnel_router)

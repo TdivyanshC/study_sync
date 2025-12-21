@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { useAuth } from '../hooks/useAuth';
 import { Colors } from '../constants/Colors';
+import { router } from 'expo-router';
 
 export default function HomeScreen() {
   const { user, logout, loading } = useAuth();
@@ -81,8 +82,7 @@ export default function HomeScreen() {
           <TouchableOpacity 
             style={styles.actionButton}
             onPress={() => {
-              // TODO: Navigate to profile screen
-              console.log('Navigate to profile');
+              router.push('/profile');
             }}
           >
             <Text style={styles.actionButtonText}>Edit Profile</Text>
@@ -91,8 +91,7 @@ export default function HomeScreen() {
           <TouchableOpacity 
             style={styles.actionButton}
             onPress={() => {
-              // TODO: Navigate to settings screen
-              console.log('Navigate to settings');
+              router.push('/settings');
             }}
           >
             <Text style={styles.actionButtonText}>Settings</Text>

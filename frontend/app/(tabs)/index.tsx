@@ -17,6 +17,8 @@ import { usePopup } from '../../providers/PopupProvider';
 import { useAuth } from '../../hooks/useAuth';
 import { getRandomJoke } from '../../data/jokes';
 import { metricsService } from '../../services/metricsService';
+import { supabase } from '../../lib/supabase';
+import SessionSelectionModal from '../../components/SessionSelectionModal';
 
 // Helper function to get user's display name
 const getUserDisplayName = (user: any): string => {
@@ -191,6 +193,113 @@ export default function Index() {
     router.push('/spaces');
   };
 
+  // State for user's preferred sessions
+  const [preferredSessions, setPreferredSessions] = useState<any[]>([]);
+  const [sessionsLoading, setSessionsLoading] = useState(true);
+  
+  // State for session selection modal
+  const [sessionModalVisible, setSessionModalVisible] = useState(false);
+
+  // Available session types with their metadata
+  const SESSION_TYPES = {
+    gym: { name: 'Gym Session', emoji: '💪', color: '#ff6b35' },
+    meditation: { name: 'Meditation', emoji: '🧘', color: '#8b5cf6' },
+    coding: { name: 'Coding', emoji: '💻', color: '#06d6a0' },
+    cricket: { name: 'Cricket', emoji: '🏏', color: '#fbbf24' },
+    singing: { name: 'Singing', emoji: '🎤', color: '#ec4899' },
+    study: { name: 'Study Session', emoji: '📚', color: '#3b82f6' },
+    yoga: { name: 'Yoga', emoji: '🧘‍♀️', color: '#10b981' },
+    reading: { name: 'Reading', emoji: '📖', color: '#6366f1' },
+    writing: { name: 'Writing', emoji: '✍️', color: '#f59e0b' },
+    music: { name: 'Music Practice', emoji: '🎵', color: '#8b5cf6' },
+    gaming: { name: 'Gaming', emoji: '🎮', color: '#ef4444' },
+    cooking: { name: 'Cooking', emoji: '👨‍🍳', color: '#f97316' },
+  };
+
+  // Fetch user's preferred sessions
+  const fetchPreferredSessions = async () => {
+    if (!user) return;
+
+    try {
+      setSessionsLoading(true);
+      console.log('🔍 Fetching preferred sessions for user:', user.id);
+
+      const { data, error } = await supabase
+        .from('users')
+        .select('preferred_sessions')
+        .eq('id', user.id)
+        .single();
+
+      if (error) {
+        console.warn('⚠️ Error fetching preferred sessions:', error.message);
+        setPreferredSessions([]);
+        return;
+      }
+
+      const sessions = data?.preferred_sessions || [];
+      console.log('✅ Preferred sessions fetched:', sessions);
+
+      // Transform sessions into display format
+      const sessionCards = sessions
+        .map((sessionId: string) => {
+          const sessionType = SESSION_TYPES[sessionId as keyof typeof SESSION_TYPES];
+          if (sessionType) {
+            return {
+              id: sessionId,
+              ...sessionType,
+            };
+          }
+          return null;
+        })
+        .filter(Boolean);
+
+      setPreferredSessions(sessionCards);
+    } catch (error: any) {
+      console.error('❌ Error fetching preferred sessions:', error);
+      setPreferredSessions([]);
+    } finally {
+      setSessionsLoading(false);
+    }
+  };
+
+  // Load preferred sessions when component mounts
+  useEffect(() => {
+    if (user) {
+      fetchPreferredSessions();
+    }
+  }, [user]);
+
+  // Handle session start for specific session type
+  const handleSessionStart = (sessionType: string) => {
+    openPopup({
+      message: `Ready to start your ${SESSION_TYPES[sessionType as keyof typeof SESSION_TYPES]?.name || 'session'}?`,
+      primaryButtonText: "Let's go! 🚀",
+      secondaryButtonText: "Maybe later",
+      animation: require("../../assets/animations/avatar 1-MJ2k6.json"),
+      onPrimary: () => {
+        closePopup();
+        // Start session without passing session type
+        startSession();
+        router.push({
+          pathname: '/timer',
+          params: { modal: 'true', sessionType }
+        });
+      },
+      onSecondary: () => closePopup(),
+    });
+  };
+
+  // Handle adding new sessions
+  const handleAddSessions = () => {
+    setSessionModalVisible(true);
+  };
+
+  // Handle when a new session is added
+  const handleSessionAdded = (newSession: any) => {
+    setPreferredSessions(prev => [...prev, newSession]);
+    console.log('✅ New session added:', newSession.name);
+  };
+
   // Show loading while checking authentication
   if (!user) {
     return (
@@ -261,26 +370,71 @@ export default function Index() {
           </View>
         </View>
 
-        {/* Quick Actions */}
-        <View style={[GlobalStyles.glassCard, styles.actionsCard]}>
-          <Text style={GlobalStyles.subtitle}>Quick Actions</Text>
+        {/* Let's Roll Section */}
+        <View style={[GlobalStyles.glassCard, styles.sessionsCard]}>
+          <Text style={GlobalStyles.subtitle}>Let's Roll</Text>
+          <Text style={GlobalStyles.textSecondary}>
+            Choose your activity and get started
+          </Text>
 
-          <TouchableOpacity
-            style={[GlobalStyles.button, styles.primaryButton]}
-            onPress={handleStartSession}
-          >
-            <Ionicons name="play" size={20} color={Colors.text} />
-            <Text style={GlobalStyles.buttonText}>Start Study Session</Text>
-          </TouchableOpacity>
+          {sessionsLoading ? (
+            <View style={styles.loadingContainer}>
+              <Text style={GlobalStyles.textMuted}>Loading your sessions...</Text>
+            </View>
+          ) : preferredSessions.length > 0 ? (
+            <View style={styles.sessionsList}>
+              {preferredSessions.map((session) => (
+                <TouchableOpacity
+                  key={session.id}
+                  style={styles.sessionCard}
+                  onPress={() => handleSessionStart(session.id)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.sessionContent}>
+                    <View style={[styles.sessionIcon, { backgroundColor: session.color + '20' }]}>
+                      <Text style={styles.sessionEmoji}>{session.emoji}</Text>
+                    </View>
+                    <View style={styles.sessionInfo}>
+                      <Text style={styles.sessionName}>{session.name}</Text>
+                    </View>
+                    <TouchableOpacity
+                      style={[styles.startButton, { backgroundColor: '#3b82f6' }]}
+                      onPress={() => handleSessionStart(session.id)}
+                    >
+                      <Text style={styles.startButtonText}>Start</Text>
+                    </TouchableOpacity>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          ) : (
+            <View style={styles.emptyState}>
+              <Ionicons name="time" size={48} color={Colors.textMuted} />
+              <Text style={GlobalStyles.textMuted}>No preferred sessions set</Text>
+              <Text style={GlobalStyles.textMuted}>Complete onboarding to see your activities</Text>
+            </View>
+          )}
 
+          {/* Add More Sessions Card */}
           <TouchableOpacity
-            style={styles.secondaryButton}
-            onPress={handleViewSpaces}
+            style={styles.addSessionsCard}
+            onPress={handleAddSessions}
+            activeOpacity={0.7}
           >
-            <Ionicons name="people" size={20} color={Colors.primary} />
-            <Text style={[GlobalStyles.text, { marginLeft: 8 }]}>Join Study Spaces</Text>
+            <View style={styles.addSessionsContent}>
+              <View style={styles.addSessionsIcon}>
+                <Ionicons name="add-circle" size={32} color={Colors.primary} />
+              </View>
+              <View style={styles.addSessionsInfo}>
+                <Text style={styles.addSessionsTitle}>Add More Sessions</Text>
+                <Text style={styles.addSessionsSubtitle}>Discover new activities to track</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={Colors.textMuted} />
+            </View>
           </TouchableOpacity>
         </View>
+
+
 
         {/* Motivational Quote */}
         <View style={[GlobalStyles.glassCard, styles.quoteCard]}>
@@ -290,6 +444,14 @@ export default function Index() {
           </Text>
           <Text style={GlobalStyles.textMuted}>- B.B. King</Text>
         </View>
+
+        {/* Session Selection Modal */}
+        <SessionSelectionModal
+          visible={sessionModalVisible}
+          onClose={() => setSessionModalVisible(false)}
+          onSessionAdded={handleSessionAdded}
+          currentSessions={preferredSessions.map(s => s.id)}
+        />
       </ScrollView>
     </SafeAreaView>
     </View>
@@ -375,6 +537,64 @@ const styles = StyleSheet.create({
     color: Colors.accent,
     marginVertical: 8,
   },
+  sessionsCard: {
+    paddingVertical: 24,
+  },
+  sessionsList: {
+    marginTop: 16,
+    gap: 12,
+  },
+  sessionCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: Colors.cardBorder,
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  sessionContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+  },
+  sessionIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  sessionEmoji: {
+    fontSize: 24,
+  },
+  sessionInfo: {
+    flex: 1,
+  },
+  sessionName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.text,
+  },
+  startButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    minWidth: 70,
+  },
+  startButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 32,
+  },
   actionsCard: {
     alignItems: 'center',
     paddingVertical: 32,
@@ -408,5 +628,39 @@ const styles = StyleSheet.create({
     marginTop: 16,
     marginBottom: 8,
     lineHeight: 24,
+  },
+  addSessionsCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: Colors.primary + '40',
+    borderStyle: 'dashed',
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    marginTop: 16,
+  },
+  addSessionsContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+  },
+  addSessionsIcon: {
+    marginRight: 16,
+  },
+  addSessionsInfo: {
+    flex: 1,
+  },
+  addSessionsTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.text,
+  },
+  addSessionsSubtitle: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    marginTop: 2,
   },
 });
