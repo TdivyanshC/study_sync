@@ -195,7 +195,8 @@ class SessionCreate(BaseModel):
     efficiency: Optional[float] = None
 
 class UserSignup(BaseModel):
-    username: str
+    auth_name: str  # Google auth display name
+    username: str   # Custom chosen username
     email: str
     password: str
 
@@ -605,8 +606,12 @@ async def health():
 async def signup(user_data: UserSignup):
     try:
         # Enhanced input validation with security hardening
+        validated_auth_name = InputValidationEngine.validate_and_sanitize_input(
+            user_data.auth_name, 'auth_name',
+            validation_rules={'max_length': 100, 'min_length': 1}
+        )
         validated_username = InputValidationEngine.validate_and_sanitize_input(
-            user_data.username, 'username', 
+            user_data.username, 'username',
             validation_rules={'max_length': 50, 'min_length': 3}
         )
         validated_email = InputValidationEngine.validate_and_sanitize_input(
@@ -653,6 +658,7 @@ async def signup(user_data: UserSignup):
         # Hash password using enhanced security
         hashed_password = authentication_manager.hash_password(user_data.password)
         user_dict = {
+            "auth_name": validated_auth_name,
             "username": validated_username,
             "email": validated_email,
             "password_hash": hashed_password
@@ -672,18 +678,18 @@ async def signup(user_data: UserSignup):
 
         # Create enhanced JWT token
         token = authentication_manager.create_jwt_token(
-            user['id'], 
-            additional_claims={"username": user['username'], "email": user['email']}
+            user['id'],
+            additional_claims={"username": user['username'], "auth_name": user['auth_name'], "email": user['email']}
         )
 
         logger.info(f"User created successfully: {validated_email}")
-        
+
         return {
             "success": True,
             "message": "User created successfully",
             "data": {
                 "token": token,
-                "user": {"id": user['id'], "username": user['username'], "email": user['email']}
+                "user": {"id": user['id'], "username": user['username'], "auth_name": user['auth_name'], "email": user['email']}
             }
         }
 
@@ -728,7 +734,7 @@ async def login(user_data: UserLogin):
         # Create enhanced JWT token
         token = authentication_manager.create_jwt_token(
             user['id'],
-            additional_claims={"username": user['username'], "email": user['email']}
+            additional_claims={"username": user['username'], "auth_name": user['auth_name'], "email": user['email']}
         )
 
         return {
@@ -736,7 +742,7 @@ async def login(user_data: UserLogin):
             "message": "Login successful",
             "data": {
                 "token": token,
-                "user": {"id": user['id'], "username": user['username'], "email": user['email']}
+                "user": {"id": user['id'], "username": user['username'], "auth_name": user['auth_name'], "email": user['email']}
             }
         }
         
@@ -1090,7 +1096,8 @@ async def get_user_profile(user_id: str):
 
         return {
             "user_id": user_id,
-            "username": user['username'],
+            "username": user['username'],  # Custom chosen username
+            "auth_name": user['auth_name'],  # Google auth display name
             "xp": xp,
             "level": level,
             "streak_count": streak_result.current_streak,

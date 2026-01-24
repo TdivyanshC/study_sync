@@ -33,7 +33,6 @@ config.cacheStores = [];
 config.cacheVersion = 'v2';
 
 // Optimize resolver for faster file resolution
-config.resolver.unstable_enableSymlinks = true;
 config.resolver.unstable_enablePackageExports = true;
 
 module.exports = config;

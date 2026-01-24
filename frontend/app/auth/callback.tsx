@@ -13,36 +13,37 @@ import { supabase } from '../../lib/supabase';
 export default function AuthCallback() {
   const params = useLocalSearchParams();
 
-  // Check if user has completed onboarding
-  const checkOnboardingStatus = async (userId: string) => {
+  // Check user status (username and onboarding)
+  const checkUserStatus = async (userId: string) => {
     try {
-      console.log('🔍 Checking onboarding status for user:', userId);
-      
-      // Check if user has completed onboarding in the users table
+      console.log('🔍 Checking user status for user:', userId);
+
+      // Check username and onboarding status in the users table
       const { data, error } = await supabase
         .from('users')
-        .select('onboarding_completed')
+        .select('username, onboarding_completed')
         .eq('id', userId)
         .single();
 
-      // If no user found, return false (new user)
+      // If no user found, return defaults (new user)
       if (error && error.code === 'PGRST116') {
         console.log('ℹ️ No user found, treating as new user');
-        return false;
+        return { hasUsername: false, hasCompletedOnboarding: false };
       }
 
       // If other error, log but don't fail the auth process
       if (error) {
-        console.warn('⚠️ Error checking onboarding status:', error.message);
-        return false; // Default to false for safety
+        console.warn('⚠️ Error checking user status:', error.message);
+        return { hasUsername: false, hasCompletedOnboarding: false }; // Default to false for safety
       }
 
-      const completed = data?.onboarding_completed || false;
-      console.log('✅ Onboarding status:', completed);
-      return completed;
+      return {
+        hasUsername: !!(data?.username && data.username.trim()),
+        hasCompletedOnboarding: data?.onboarding_completed || false
+      };
     } catch (error) {
-      console.warn('⚠️ Exception checking onboarding status:', error);
-      return false; // Default to false for safety, don't block auth
+      console.warn('⚠️ Exception checking user status:', error);
+      return { hasUsername: false, hasCompletedOnboarding: false }; // Default to false for safety, don't block auth
     }
   };
 
@@ -50,13 +51,34 @@ export default function AuthCallback() {
     const handleCallback = async () => {
       try {
         console.log('🔔 OAuth callback received');
-        console.log('URL params:', params);
+        console.log('URL params:', JSON.stringify(params, null, 2));
+        console.log('Available param keys:', Object.keys(params));
 
         // Check if we have a code parameter (PKCE flow)
         const code = params.code as string;
-        
-        if (!code) {
-          console.error('❌ No code found in params');
+
+        if (!code || code.trim() === '') {
+          console.error('❌ No code found in params or code is empty');
+          console.log('🔄 Falling back to session detection...');
+
+          // Fallback: Try to get existing session
+          const { data: sessionData } = await supabase.auth.getSession();
+          if (sessionData.session) {
+            console.log('✅ Found existing session');
+            const userStatus = await checkUserStatus(sessionData.session.user.id);
+            // Navigate based on user status
+            setTimeout(() => {
+              if (!userStatus.hasUsername) {
+                router.replace('/username-selection');
+              } else if (userStatus.hasUsername && !userStatus.hasCompletedOnboarding) {
+                router.replace('/onboarding-step1');
+              } else {
+                router.replace('/(tabs)');
+              }
+            }, 100);
+            return;
+          }
+
           router.replace('/login');
           return;
         }
@@ -75,19 +97,23 @@ export default function AuthCallback() {
         if (data.session && data.session.user) {
           console.log('✅ Session established:', data.session.user.email);
           
-          // Check onboarding status
-          const completedOnboarding = await checkOnboardingStatus(data.session.user.id);
-          
-          // Navigate based on onboarding status
+          // Check user status
+          const userStatus = await checkUserStatus(data.session.user.id);
+
+          // Navigate based on user status
           console.log('🧭 Navigation decision:', {
             email: data.session.user.email,
-            onboardingCompleted: completedOnboarding
+            hasUsername: userStatus.hasUsername,
+            onboardingCompleted: userStatus.hasCompletedOnboarding
           });
-          
+
           // Small delay to ensure smooth transition
           setTimeout(() => {
-            if (!completedOnboarding) {
-              console.log('🔄 New user - navigating to onboarding step 1');
+            if (!userStatus.hasUsername) {
+              console.log('🔄 New user - navigating to username selection');
+              router.replace('/username-selection');
+            } else if (userStatus.hasUsername && !userStatus.hasCompletedOnboarding) {
+              console.log('🔄 User has username but no onboarding - navigating to onboarding step 1');
               router.replace('/onboarding-step1');
             } else {
               console.log('🔄 Returning user - navigating to home');

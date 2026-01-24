@@ -542,17 +542,11 @@ class StreakService:
     async def _update_user_streak(self, user_id: str, current_streak: int):
         """Update user's streak count in profile"""
         try:
-            # Prepare update data without updated_at column for compatibility
+            # Only update streak_count to avoid schema cache issues
             update_data = {
                 'streak_count': current_streak
             }
-            
-            # Try to include updated_at if it exists (ignore if schema cache doesn't have it)
-            try:
-                update_data['updated_at'] = datetime.now().isoformat()
-            except:
-                pass  # Skip updated_at if column doesn't exist
-            
+
             self.supabase.table('users').update(update_data).eq('id', user_id).execute()
         except Exception as e:
             logger.warning(f"Failed to update user streak: {str(e)}")
@@ -560,27 +554,17 @@ class StreakService:
     async def _record_daily_streak(self, user_id: str, date: date, streak: int, broken: bool):
         """Record daily streak information"""
         try:
-            # Prepare data without current_streak for compatibility
+            # Only include columns that definitely exist
             record_data = {
                 'user_id': user_id,
                 'date': date.isoformat(),
-                'streak_active': not broken
+                'streak_active': not broken,
+                'total_minutes': 0,  # Default values
+                'xp_earned': 0
             }
-            
-            # Try to include current_streak if column exists
-            try:
-                record_data['current_streak'] = streak
-            except:
-                pass  # Skip current_streak if column doesn't exist
-            
-            # Try to include updated_at if column exists
-            try:
-                record_data['updated_at'] = datetime.now().isoformat()
-            except:
-                pass  # Skip updated_at if column doesn't exist
-            
+
             self.supabase.table('daily_user_metrics').upsert(
-                record_data, 
+                record_data,
                 on_conflict='user_id,date'
             ).execute()
         except Exception as e:

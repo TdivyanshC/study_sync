@@ -71,7 +71,7 @@ interface StudyStore {
   showNotification: (message: string, type: NotificationState['type']) => void;
   hideNotification: () => void;
   setSocketConnection: (connected: boolean) => void;
-  startSession: () => void;
+  startSession: (subject?: string, spaceId?: string) => void;
   stopSession: () => void;
   takeBreak: () => void;
   resumeFromBreak: () => void;
@@ -191,9 +191,14 @@ export const useStudyStore = create<StudyStore>((set, get) => ({
   },
 
   // Timer/session management functions
-  startSession: () => {
+  startSession: (subject?: string, spaceId?: string) => {
     set({
-      currentSession: { isBreak: false, startTime: Date.now() },
+      currentSession: {
+        isBreak: false,
+        startTime: Date.now(),
+        subject: subject || 'General Study',
+        spaceId: spaceId || null
+      },
       isTimerRunning: true
     });
     get().showNotification('Study session started!', 'success');

@@ -324,3 +324,7 @@
 2025-12-12 23:58:05,503 - studysync - ERROR - HTTP 500: GET /api/xp/stats/888db9f5-684a-4271-9c21-51d7e8d99b3a
 2025-12-21 22:23:37,831 - studysync - ERROR - HTTP 500: GET /api/xp/stats/22fe63d2-9488-44e0-829a-c616ba7432fe
 2025-12-21 22:23:37,845 - studysync - ERROR - HTTP 500: GET /api/metrics/today
+2026-01-20 23:56:37,297 - studysync - ERROR - HTTP 500: POST /api/session/process/35106b7d-8aae-483e-8d3d-88f47e12729e
+2026-01-21 00:04:57,123 - studysync - ERROR - HTTP 500: POST /api/session/process/3f15cc43-b52b-4039-a510-184da7c5c96d
+2026-01-22 01:50:39,548 - studysync - ERROR - HTTP 500: GET /api/metrics/today
+2026-01-22 01:50:39,554 - studysync - ERROR - HTTP 500: GET /api/xp/stats/b036684a-48ef-476a-b4d1-8e4e94f5d908

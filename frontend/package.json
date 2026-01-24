@@ -28,7 +28,7 @@
     "date-fns": "^4.1.0",
     "dayjs": "^1.11.13",
     "events": "^3.3.0",
-    "expo": "~54.0.30",
+    "expo": "~54.0.31",
     "expo-auth-session": "~7.0.10",
     "expo-blur": "~15.0.8",
     "expo-constants": "~18.0.9",

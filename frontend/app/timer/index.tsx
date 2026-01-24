@@ -16,7 +16,7 @@ import { useTimer, useStudyStore } from '../../hooks/useStudySession';
 import { useUser } from '../../providers/UserProvider';
 import { router } from 'expo-router';
 import { sessionApi, SessionSummary } from '../../src/api/sessionApi';
-import { supabase } from '../../lib/supabaseClient';
+import { supabase } from '../../lib/supabase';
 import SessionCompleteScreen from '../../components/SessionCompleteScreen';
 import BadgePopup from '../../components/BadgePopup';
 
@@ -121,7 +121,7 @@ function TimerScreen() {
 
   // Auto-save functionality - save session every 30 seconds when running
   useEffect(() => {
-    if (!isStudying || !currentSession?.id) {
+    if (!isStudying || !currentSession) {
       return;
     }
 
@@ -135,7 +135,7 @@ function TimerScreen() {
           console.log('Auto-saving session progress...');
           
           // Send heartbeat/auto-save to backend
-          await sessionApi.saveSessionProgress(currentSession.id, {
+          await sessionApi.saveSessionProgress('local-session', {
             last_heartbeat: now.toISOString(),
             auto_save: true
           });
@@ -149,17 +149,16 @@ function TimerScreen() {
     }, 5000); // Check every 5 seconds
 
     return () => clearInterval(autoSaveInterval);
-  }, [isStudying, currentSession?.id, lastAutoSave]);
+  }, [isStudying, currentSession, lastAutoSave]);
 
   // Defensive error handling for all handlers
   const handleCompleteTask = React.useCallback(async () => {
     try {
       setIsProcessing(true);
-      
-      // Stop the session and get session ID
-      const sessionId = currentSession?.id;
-      if (!sessionId) {
-        console.error('No session ID found');
+
+      // Check if there's an active session
+      if (!currentSession) {
+        console.error('No active session found');
         reset();
         stopSession();
         router.back();
@@ -292,7 +291,7 @@ function TimerScreen() {
         setSessionSummary({
           success: false,
           user_id: user.id,
-          session_id: currentSession?.id || '',
+          session_id: '', // No session ID since creation failed
           processed_at: new Date().toISOString(),
           xp_delta: 0,
           xp_reason: `Session creation failed: ${error instanceof Error ? error.message : 'Unknown error'}`,

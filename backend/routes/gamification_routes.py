@@ -162,23 +162,41 @@ def create_gamification_routes(xp_service: XPService) -> APIRouter:
             if not user_result.data:
                 logger.info(f"User {user_id} not found in users table - creating profile for OAuth user")
                 
-                # Create basic user profile
+                # Create basic user profile with explicit user_id to avoid trigger timeout
+                import secrets
+                import string
+
+                # Generate a unique 6-character user_id
+                def generate_unique_user_id():
+                    chars = string.ascii_uppercase + string.digits
+                    while True:
+                        user_id_code = ''.join(secrets.choice(chars) for _ in range(6))
+                        # Check if it exists
+                        check_result = xp_service.supabase.table('users').select('id').eq('user_id', user_id_code).execute()
+                        if not check_result.data:
+                            return user_id_code
+
+                unique_user_id = generate_unique_user_id()
+
                 user_data = {
                     'id': user_id,
+                    'user_id': unique_user_id,
+                    'auth_name': f'oauth_user_{user_id[:8]}',  # Required NOT NULL field
                     'username': f'oauth_user_{user_id[:8]}',
                     'email': f'{user_id}@oauth.user',
-                    'password_hash': '',  # OAuth users don't need password hash
+                    'password_hash': None,  # Set to NULL for OAuth users
                     'xp': 0,
                     'level': 1,
                     'streak_count': 0,
+                    'onboarding_completed': False,
                     'created_at': datetime.now().isoformat()
                 }
-                
+
                 try:
                     create_result = xp_service.supabase.table('users').insert(user_data).execute()
                     if create_result.data:
-                        user = user_data  # Use the data we tried to insert
-                        logger.info(f"Successfully created user profile for {user_id}")
+                        user = create_result.data[0]  # Use the actual created data
+                        logger.info(f"Successfully created user profile for {user_id} with user_id {unique_user_id}")
                     else:
                         raise HTTPException(status_code=404, detail="User not found and could not be created")
                 except Exception as create_error:

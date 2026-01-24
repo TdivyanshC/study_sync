@@ -16,10 +16,12 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#000000"
       },
+      "statusBar": {
+        "backgroundColor": "#000000"
+      },
       "edgeToEdgeEnabled": true,
       "jsEngine": "hermes",
-      "package": "com.studystreak.app",
-      "networkSecurityConfig": "./android/app/src/main/res/xml/network_security_config.xml"
+      "package": "com.studystreak.app"
     },
     "web": {
       "bundler": "metro",

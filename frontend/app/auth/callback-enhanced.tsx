@@ -6,37 +6,37 @@ import { supabase } from '../../lib/supabase';
 
 // Seamless OAuth callback with aggressive session detection
 export default function AuthCallbackEnhanced() {
-  // Check if user has completed onboarding
-  const checkOnboardingStatus = async (userId: string) => {
+  // Check user status (username and onboarding)
+  const checkUserStatus = async (userId: string) => {
     try {
-      console.log('🔍 Checking onboarding status for user:', userId);
-      
-      // First check if the table exists and user has a profile
+      console.log('🔍 Checking user status for user:', userId);
+
+      // Check username and onboarding status in the users table
       const { data, error } = await supabase
-        .from('user_profiles')
-        .select('onboarding_completed')
-        .eq('user_id', userId)
+        .from('users')
+        .select('username, onboarding_completed')
+        .eq('id', userId)
         .single();
 
-      // If no profile exists yet (new user), create one and return false
+      // If no user found, return defaults (new user)
       if (error && error.code === 'PGRST116') {
-        console.log('ℹ️ No user profile found, creating profile for new user');
-        await createUserProfile(userId);
-        return false;
+        console.log('ℹ️ No user found, treating as new user');
+        return { hasUsername: false, hasCompletedOnboarding: false };
       }
 
       // If other error, log but don't fail the auth process
       if (error) {
-        console.warn('⚠️ Error checking onboarding status:', error.message);
-        return false; // Default to false for safety
+        console.warn('⚠️ Error checking user status:', error.message);
+        return { hasUsername: false, hasCompletedOnboarding: false }; // Default to false for safety
       }
 
-      const completed = data?.onboarding_completed || false;
-      console.log('✅ Onboarding status:', completed);
-      return completed;
+      return {
+        hasUsername: !!(data?.username && data.username.trim()),
+        hasCompletedOnboarding: data?.onboarding_completed || false
+      };
     } catch (error) {
-      console.warn('⚠️ Exception checking onboarding status:', error);
-      return false; // Default to false for safety, don't block auth
+      console.warn('⚠️ Exception checking user status:', error);
+      return { hasUsername: false, hasCompletedOnboarding: false }; // Default to false for safety, don't block auth
     }
   };
 
@@ -69,19 +69,22 @@ export default function AuthCallbackEnhanced() {
     }
   };
 
-  // Helper function to navigate based on onboarding status
+  // Helper function to navigate based on user status
   const navigateBasedOnOnboarding = async (session: any) => {
     if (!session?.user) return;
-    
-    const completedOnboarding = await checkOnboardingStatus(session.user.id);
-    
+
+    const userStatus = await checkUserStatus(session.user.id);
+
     setTimeout(() => {
-      if (!completedOnboarding) {
-        console.log('🔄 New user - navigating to onboarding step 1');
+      if (!userStatus.hasUsername) {
+        console.log('🔄 New user - navigating to username selection');
+        router.replace('/username-selection');
+      } else if (userStatus.hasUsername && !userStatus.hasCompletedOnboarding) {
+        console.log('🔄 User has username but no onboarding - navigating to onboarding step 1');
         router.replace('/onboarding-step1');
       } else {
         console.log('🔄 Returning user - navigating to home');
-        router.replace('/home');
+        router.replace('/(tabs)');
       }
     }, 100);
   };

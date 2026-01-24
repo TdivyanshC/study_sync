@@ -179,7 +179,7 @@ export default function Index() {
       animation: require("../../assets/animations/avatar 1-MJ2k6.json"),
       onPrimary: () => {
         closePopup();
-        startSession();
+        startSession('General Study');
         router.push({
           pathname: '/timer',
           params: { modal: 'true' }
@@ -278,8 +278,9 @@ export default function Index() {
       animation: require("../../assets/animations/avatar 1-MJ2k6.json"),
       onPrimary: () => {
         closePopup();
-        // Start session without passing session type
-        startSession();
+        // Start session with session type name
+        const sessionName = SESSION_TYPES[sessionType as keyof typeof SESSION_TYPES]?.name || 'Study Session';
+        startSession(sessionName);
         router.push({
           pathname: '/timer',
           params: { modal: 'true', sessionType }
