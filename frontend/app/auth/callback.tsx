@@ -1,28 +1,25 @@
 import { useEffect, useRef, useState } from 'react';
-import { View, ActivityIndicator, StyleSheet, Text, TouchableOpacity, Alert } from 'react-native';
+import { View, ActivityIndicator, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import * as Linking from 'expo-linking';
 import { supabase } from '../../lib/supabase';
+import { Colors } from '../../constants/Colors';
 
 /**
  * OAuth callback handler for PKCE flow
  * 
- * With detectSessionInUrl: true in the Supabase config,
- * the session exchange happens automatically when the
- * OAuth callback URL is received.
- * 
- * This component waits for the session to be established
- * and then navigation is handled by AuthProvider's
- * onAuthStateChange listener.
+ * With PKCE flow, we need to manually exchange the authorization code
+ * for a session when the OAuth callback URL is received.
  */
 export default function AuthCallback() {
   const params = useLocalSearchParams();
   const hasProcessed = useRef(false);
   const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
 
   const handleRetry = () => {
     hasProcessed.current = false;
     setError(null);
+    setStatus('loading');
   };
 
   const handleGoToLogin = () => {
@@ -40,12 +37,68 @@ export default function AuthCallback() {
 
         // Check if we have a code in the URL
         const codeFromParams = params.code as string;
-        const hasCode = codeFromParams && codeFromParams.trim();
+        const hasCode = codeFromParams && codeFromParams.trim().length > 0;
 
         if (hasCode) {
           console.log('✅ Authorization code found in URL');
-          console.log('📝 Supabase will automatically exchange the code for a session');
-          console.log('🔄 Waiting for auth state change...');
+          console.log('🔄 Manually exchanging code for session...');
+          
+          setStatus('loading');
+
+          try {
+            // Manually exchange the authorization code for a session
+            // This is required for PKCE flow in Expo/React Native
+            const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(codeFromParams);
+
+            if (exchangeError) {
+              console.error('❌ Code exchange error:', exchangeError.message);
+              
+              // If exchange fails, try to get existing session anyway
+              const { data: sessionData } = await supabase.auth.getSession();
+              if (sessionData.session) {
+                console.log('✅ Found existing session after exchange failure');
+                setStatus('success');
+              } else {
+                setError(`Failed to establish session: ${exchangeError.message}`);
+                setStatus('error');
+              }
+            } else if (data.session) {
+              console.log('✅ Session established successfully via code exchange');
+              console.log('📧 User email:', data.session.user.email);
+              setStatus('success');
+            } else {
+              console.warn('⚠️ No session returned from code exchange');
+              setError('Session establishment returned no session');
+              setStatus('error');
+            }
+          } catch (exchangeCatchError: any) {
+            console.error('❌ Code exchange exception:', exchangeCatchError);
+            
+            // Try to get existing session as fallback
+            const { data: sessionData } = await supabase.auth.getSession();
+            if (sessionData.session) {
+              console.log('✅ Found existing session after exchange exception');
+              setStatus('success');
+            } else {
+              setError(`Failed to establish session: ${exchangeCatchError.message}`);
+              setStatus('error');
+            }
+          }
+          
+          // Add a safety timeout - if we don't navigate within 5 seconds, check status
+          const safetyTimeout = setTimeout(async () => {
+            console.log('⏰ Safety timeout reached, verifying session...');
+            const { data: sessionData } = await supabase.auth.getSession();
+            if (!sessionData.session && status !== 'error') {
+              console.log('⚠️ Still no session after timeout, showing error');
+              setError('Session establishment timed out. Please try again.');
+              setStatus('error');
+            }
+          }, 5000);
+
+          return () => {
+            clearTimeout(safetyTimeout);
+          };
         } else {
           console.log('⚠️ No code found in URL params');
           console.log('🔄 Checking for existing session...');
@@ -54,20 +107,18 @@ export default function AuthCallback() {
           const { data: sessionData } = await supabase.auth.getSession();
           if (sessionData.session) {
             console.log('✅ Found existing session');
+            setStatus('success');
           } else {
             console.log('❌ No session found');
             setError('No authentication code or session found');
+            setStatus('error');
           }
         }
-
-        // The session will be automatically established by Supabase's
-        // detectSessionInUrl: true setting
-        // The AuthProvider's onAuthStateChange listener will handle
-        // the navigation based on user status
 
       } catch (err: any) {
         console.error('❌ Callback error:', err.message);
         setError(err.message);
+        setStatus('error');
       }
     };
 
@@ -82,11 +133,11 @@ export default function AuthCallback() {
   }, [params]);
 
   // If there's an error, show retry option
-  if (error) {
+  if (status === 'error') {
     return (
       <View style={styles.container}>
         <Text style={styles.errorText}>Authentication Error</Text>
-        <Text style={styles.subText}>{error}</Text>
+        <Text style={styles.subText}>{error || 'An unknown error occurred'}</Text>
         <TouchableOpacity style={styles.button} onPress={handleRetry}>
           <Text style={styles.buttonText}>Retry</Text>
         </TouchableOpacity>
@@ -100,8 +151,8 @@ export default function AuthCallback() {
   // Loading screen - session will be handled by AuthProvider
   return (
     <View style={styles.container}>
-      <ActivityIndicator size="large" color="#3498db" />
-      <Text style={styles.text}>Completing sign in...</Text>
+      <ActivityIndicator size="large" color={Colors.primary} />
+      <Text style={styles.loadingText}>Completing sign in...</Text>
       <Text style={styles.subText}>Please wait while we verify your account</Text>
     </View>
   );
@@ -112,34 +163,38 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f8f9fa',
+    backgroundColor: Colors.background,
+    padding: 20,
   },
-  text: {
+  loadingText: {
     marginTop: 16,
-    fontSize: 16,
-    color: '#1f2937',
+    fontSize: 18,
     fontWeight: '600',
+    color: Colors.text,
+    textAlign: 'center',
   },
   subText: {
     marginTop: 8,
     fontSize: 14,
-    color: '#6b7280',
+    color: Colors.text + '80',
+    textAlign: 'center',
   },
   errorText: {
-    fontSize: 18,
-    color: '#dc2626',
-    fontWeight: '600',
-    marginBottom: 8,
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#FF4444',
+    marginBottom: 16,
+    textAlign: 'center',
   },
   button: {
-    backgroundColor: '#3498db',
-    borderRadius: 8,
-    paddingVertical: 12,
+    backgroundColor: Colors.primary,
     paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
     marginTop: 16,
   },
   buttonText: {
-    color: 'white',
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
   },

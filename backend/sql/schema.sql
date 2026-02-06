@@ -10,7 +10,7 @@ create table users (
   email text unique not null,
   gmail_name text,
   username text unique not null,
-  public_user_id char(6) unique not null,
+  public_user_id varchar(7) unique not null,
   avatar_url text,
   display_name text,
   gender text,

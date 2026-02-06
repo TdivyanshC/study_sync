@@ -26,7 +26,7 @@ def test_onboarding_endpoint():
     try:
         # Test the endpoint without auth first (should return 401)
         response = requests.post(
-            "http://localhost:8000/api/onboarding/complete",
+            "http://localhost:3000/api/users/onboarding",
             json=test_onboarding_data,
             timeout=10
         )

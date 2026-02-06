@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -63,6 +64,9 @@ export default function Index() {
     error: null as string | null,
   });
 
+  // State for pull-to-refresh
+  const [refreshing, setRefreshing] = useState(false);
+
   // Redirect to login if not authenticated
   useEffect(() => {
     if (!user) {
@@ -72,30 +76,39 @@ export default function Index() {
     }
   }, [user]);
 
-  // Fetch today's metrics on component mount and when screen is focused
+  // Fetch today's metrics on component mount
+  // Removed interval-based refresh to avoid excessive API calls and bundling
   useEffect(() => {
     if (!user) return;
-    
     loadTodayMetrics();
-    
-    // Refresh data when user returns to this screen
-    const interval = setInterval(() => {
-      loadTodayMetrics();
-    }, 30000); // Refresh every 30 seconds
-    
-    return () => clearInterval(interval);
   }, [user]);
 
-  const loadTodayMetrics = async () => {
+  // Optional: Manual refresh trigger - can be called from UI
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await loadTodayMetrics(true);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [user]);
+
+  // Track if initial load is complete
+  const metricsLoadedRef = React.useRef(false);
+
+  const loadTodayMetrics = async (isRefresh = false) => {
     if (!user) {
       console.log('No user available for metrics loading');
       return;
     }
 
     try {
-      setTodayMetrics(prev => ({ ...prev, loading: true, error: null }));
+      // Only show loading state on initial load, not on refreshes
+      if (!isRefresh) {
+        setTodayMetrics(prev => ({ ...prev, loading: true, error: null }));
+      }
       
-      console.log(`📊 Loading today's metrics for user: ${user.id}`);
+      console.log(`📊 Loading today's metrics for user: ${user.id}${isRefresh ? ' (refresh)' : ''}`);
       
       // Use our service layer to get authenticated user data
       const [todayData, xpStats, streakData] = await Promise.all([
@@ -313,7 +326,13 @@ export default function Index() {
   return (
     <View style={{ flex: 1 }}>
       <SafeAreaView style={GlobalStyles.safeArea}>
-      <ScrollView style={GlobalStyles.container} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={GlobalStyles.container} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
 
 
         {/* Personalized Greeting */}

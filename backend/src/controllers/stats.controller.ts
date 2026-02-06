@@ -4,10 +4,12 @@ import { statsService } from '../services/stats.service';
 export class StatsController {
   /**
    * Get comprehensive productivity stats
+   * Supports both authenticated user (no params) and specific userId in path
    */
   async getProductivityStats(req: Request, res: Response): Promise<void> {
     try {
-      const userId = (req as any).user?.id;
+      // Prefer userId from path params if provided, otherwise use authenticated user
+      const userId = req.params.userId || (req as any).user?.id;
 
       if (!userId) {
         res.status(401).json({ error: 'Unauthorized' });
@@ -24,10 +26,12 @@ export class StatsController {
 
   /**
    * Get streak data
+   * Supports both authenticated user (no params) and specific userId in path
    */
   async getStreakData(req: Request, res: Response): Promise<void> {
     try {
-      const userId = (req as any).user?.id;
+      // Prefer userId from path params if provided, otherwise use authenticated user
+      const userId = req.params.userId || (req as any).user?.id;
 
       if (!userId) {
         res.status(401).json({ error: 'Unauthorized' });
@@ -44,10 +48,13 @@ export class StatsController {
 
   /**
    * Get today's metrics (convenience endpoint)
+   * Supports both authenticated user (no params) and specific userId in path
    */
   async getTodayMetrics(req: Request, res: Response): Promise<void> {
     try {
-      const userId = (req as any).user?.id;
+      // Prefer userId from path params if provided, otherwise use authenticated user
+      // Also check query params for backward compatibility
+      const userId = req.params.userId || req.query.user_id as string || (req as any).user?.id;
 
       if (!userId) {
         res.status(401).json({ error: 'Unauthorized' });

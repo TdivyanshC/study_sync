@@ -90,15 +90,29 @@ export class UserController {
         return;
       }
 
-      // Prepare user update data
+      console.log('📝 Completing onboarding for user:', userId);
+
+      // Generate username from display_name or email, or use fallback
+      const username = onboardingData.display_name 
+        ? onboardingData.display_name.toLowerCase().replace(/[^a-zA-Z0-9_]/g, '_') + '_' + userId.substring(0, 6)
+        : 'user_' + userId.substring(0, 8);
+
+      // Generate public_user_id (7 characters starting with U)
+      const publicUserId = 'U' + Math.random().toString(36).substring(2, 8).toUpperCase().slice(0, 6);
+
+      // Prepare user update/insert data
       const userUpdateData: any = {
+        id: userId,
+        username: username,
+        public_user_id: publicUserId,
         onboarding_completed: true,
         onboarding_completed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       };
 
-      // Update username if provided (from step1 or display_name)
+      // Add optional fields if provided
       if (onboardingData.display_name) {
-        userUpdateData.username = onboardingData.display_name.toLowerCase().replace(/[^a-zA-Z0-9_]/g, '_');
+        userUpdateData.display_name = onboardingData.display_name;
       }
       if (onboardingData.step1_data.gender) {
         userUpdateData.gender = onboardingData.step1_data.gender;
@@ -113,21 +127,55 @@ export class UserController {
         userUpdateData.preferred_sessions = JSON.stringify(onboardingData.step2_data.preferred_sessions);
       }
 
-      // Update user record
-      const { data: updatedUser, error: userError } = await supabaseAdmin
+      // First, check if user record exists
+      const { data: existingUser, error: fetchError } = await supabaseAdmin
         .from('users')
-        .update(userUpdateData)
+        .select('id')
         .eq('id', userId)
-        .select()
         .single();
 
-      if (userError) {
-        console.error('Error updating user during onboarding:', userError);
-        res.status(400).json({ error: `Failed to complete onboarding: ${userError.message}` });
-        return;
+      if (fetchError && fetchError.code !== 'PGRST116') {
+        // PGRST116 means no rows returned, which is expected for new users
+        console.error('Error checking existing user:', fetchError);
+        throw fetchError;
       }
 
-      // Create session types for selected sessions (O(n) where n = number of sessions)
+      let updatedUser;
+
+      if (existingUser) {
+        // Update existing user
+        console.log('📝 Updating existing user record');
+        const { data, error: updateError } = await supabaseAdmin
+          .from('users')
+          .update(userUpdateData)
+          .eq('id', userId)
+          .select()
+          .single();
+
+        if (updateError) {
+          console.error('Error updating user:', updateError);
+          throw updateError;
+        }
+        updatedUser = data;
+      } else {
+        // Insert new user record
+        console.log('📝 Creating new user record');
+        const { data, error: insertError } = await supabaseAdmin
+          .from('users')
+          .insert(userUpdateData)
+          .select()
+          .single();
+
+        if (insertError) {
+          console.error('Error inserting user:', insertError);
+          throw insertError;
+        }
+        updatedUser = data;
+      }
+
+      console.log('✅ User record saved:', updatedUser?.id);
+
+      // Create session types for selected sessions
       if (onboardingData.step2_data?.preferred_sessions && onboardingData.step2_data.preferred_sessions.length > 0) {
         await this.createSessionTypesForUser(userId, onboardingData.step2_data.preferred_sessions);
       }
@@ -137,9 +185,9 @@ export class UserController {
         user: updatedUser,
         message: 'Onboarding completed successfully'
       });
-    } catch (error) {
-      console.error('Complete onboarding error:', error);
-      res.status(500).json({ error: 'Failed to complete onboarding' });
+    } catch (error: any) {
+      console.error('❌ Complete onboarding error:', error);
+      res.status(500).json({ error: `Failed to complete onboarding: ${error.message}` });
     }
   }
 

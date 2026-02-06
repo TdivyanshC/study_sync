@@ -4,7 +4,7 @@ import { PopupProvider } from '../providers/PopupProvider';
 import { UserProvider } from '../providers/UserProvider';
 import { AuthProvider } from '../providers/AuthProvider';
 import * as Linking from 'expo-linking';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { router } from 'expo-router';
 
 // Create a client
@@ -19,6 +19,9 @@ const queryClient = new QueryClient({
 
 // Deep link handler component
 function DeepLinkHandler() {
+  const processedUrls = useRef<Set<string>>(new Set());
+  const isProcessing = useRef(false);
+
   useEffect(() => {
     // Handle initial URL
     const handleInitialUrl = async () => {
@@ -41,6 +44,21 @@ function DeepLinkHandler() {
   }, []);
 
   const handleUrl = (url: string) => {
+    // Prevent processing the same URL multiple times
+    if (processedUrls.current.has(url)) {
+      console.log('⏭️ URL already processed, skipping:', url);
+      return;
+    }
+
+    // Mark URL as processed
+    processedUrls.current.add(url);
+    
+    // Don't process if already navigating to auth callback
+    if (isProcessing.current) {
+      console.log('⏭️ Already processing a URL, skipping:', url);
+      return;
+    }
+
     console.log('🔗 Deep link handler processing URL:', url);
     
     // Handle Expo OAuth callback URLs (exp://...)
@@ -54,12 +72,16 @@ function DeepLinkHandler() {
       console.log('📋 Extracted OAuth parameters:', params);
       
       // Navigate to auth callback with parameters
-      // Use setTimeout to ensure the callback component is ready
+      isProcessing.current = true;
       setTimeout(() => {
         router.push({
           pathname: '/auth/callback',
           params: params
         });
+        // Allow processing new URLs after a delay
+        setTimeout(() => {
+          isProcessing.current = false;
+        }, 2000);
       }, 100);
       return;
     }
@@ -73,8 +95,12 @@ function DeepLinkHandler() {
         
         if (hasTokens) {
           console.log('🔄 OAuth tokens found, navigating to auth callback');
+          isProcessing.current = true;
           setTimeout(() => {
             router.push('/auth/callback');
+            setTimeout(() => {
+              isProcessing.current = false;
+            }, 2000);
           }, 100);
           return;
         }
@@ -142,9 +168,22 @@ export default function RootLayout() {
                 }} 
               />
               
+              {/* Username selection screen */}
+              <Stack.Screen
+                name="username-selection"
+                options={{
+                  headerShown: false,
+                  presentation: 'modal'
+                }}
+              />
+              
               {/* Existing routes */}
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
               <Stack.Screen name="timer" options={{ headerShown: false }} />
+              <Stack.Screen name="spaces" options={{ headerShown: false }} />
+              <Stack.Screen name="profile" options={{ headerShown: false }} />
+              <Stack.Screen name="settings" options={{ headerShown: false }} />
+              <Stack.Screen name="debug-navigation" options={{ headerShown: false }} />
             </Stack>
           </UserProvider>
         </PopupProvider>

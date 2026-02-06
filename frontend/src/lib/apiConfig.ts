@@ -21,7 +21,7 @@ export function getBackendUrl(): string {
   try {
     const localIP = getLocalIPAddress();
     if (localIP) {
-      return `http://${localIP}:8000`;
+      return `http://${localIP}:3000`; // Backend runs on port 3000
     }
   } catch (error) {
     console.warn('Failed to detect local IP:', error);
@@ -29,11 +29,11 @@ export function getBackendUrl(): string {
 
   // Platform-specific fallback
   if (Platform.OS === 'android') {
-    return "http://10.0.2.2:8000"; // Android emulator
+    return "http://10.0.2.2:3000"; // Android emulator - backend on 3000
   } else if (Platform.OS === 'ios') {
-    return "http://localhost:8000"; // iOS simulator
+    return "http://localhost:3000"; // iOS simulator - backend on 3000
   } else {
-    return "http://localhost:8000"; // Web fallback
+    return "http://localhost:3000"; // Web fallback - backend on 3000
   }
 }
 
@@ -77,19 +77,19 @@ export const API_ENDPOINTS = {
   // Health check
   HEALTH: '/health',
   
-  // Gamification endpoints (under /api/xp/)
-  XP_AWARD: '/xp/award',
-  XP_CALCULATE_SESSION: '/xp/calculate-session',
-  XP_LEADERBOARD: '/xp/leaderboard',
-  XP_HISTORY: '/xp/history',
-  XP_STATS: '/xp/stats',
-  XP_AUDIT_VALIDATE: '/xp/audit/validate',
-  XP_SYNC_OFFLINE: '/xp/sync/offline',
-  XP_EVENTS: '/xp/events',
-  XP_AUDIT_SESSIONS: '/xp/audit/sessions',
+  // XP endpoints (for backward compatibility - maps to /stats)
+  XP_AWARD: '/stats/award',
+  XP_CALCULATE_SESSION: '/stats/calculate-session',
+  XP_LEADERBOARD: '/stats/leaderboard',
+  XP_HISTORY: '/stats/history',
+  XP_STATS: '/stats',
+  XP_AUDIT_VALIDATE: '/stats/audit/validate',
+  XP_SYNC_OFFLINE: '/stats/sync/offline',
+  XP_EVENTS: '/stats/events',
+  XP_AUDIT_SESSIONS: '/stats/audit/sessions',
   
-  // Metrics endpoints (under /api/)
-  METRICS_TODAY: '/metrics/today',
+  // Metrics endpoints (under /api/stats/)
+  METRICS_TODAY: '/stats/today',
   
   // Session endpoints (under /api/session/)
   SESSION_START: '/session/start',

@@ -91,6 +91,18 @@ export interface UserProfile {
   created_at: string;
 }
 
+export interface OnboardingData {
+  step1_data: {
+    gender?: string;
+    age?: string;
+    relationship?: string;
+  };
+  step2_data: {
+    preferred_sessions?: string[];
+  };
+  display_name?: string;
+}
+
 // ============================================
 // Error Classes
 // ============================================
@@ -225,10 +237,10 @@ class BackendApi {
     });
   }
 
-  async completeOnboarding(username: string): Promise<UserProfile> {
-    return this.request<UserProfile>(API_ENDPOINTS.USER_ONBOARDING, {
+  async completeOnboarding(data: OnboardingData): Promise<{ success: boolean; user: any; message: string }> {
+    return this.request<{ success: boolean; user: any; message: string }>(API_ENDPOINTS.USER_ONBOARDING, {
       method: 'POST',
-      body: JSON.stringify({ username }),
+      body: JSON.stringify(data),
     });
   }
 

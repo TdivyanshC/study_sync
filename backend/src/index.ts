@@ -2,9 +2,27 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
+import os from 'os';
 import { config } from './config/env';
+import { supabaseAdmin } from './config/supabase';
 import { apiRateLimiter, authRateLimiter, skipRateLimiter } from './middleware/rateLimit.middleware';
 import { errorHandler, notFoundHandler } from './middleware/error.middleware';
+
+// Get local IP address for network access
+const getLocalIP = (): string => {
+  const interfaces = os.networkInterfaces();
+  for (const name of Object.keys(interfaces)) {
+    const iface = interfaces[name];
+    if (iface) {
+      for (const entry of iface) {
+        if (entry.family === 'IPv4' && !entry.internal) {
+          return entry.address;
+        }
+      }
+    }
+  }
+  return 'localhost';
+};
 
 // Routes
 import authRoutes from './routes/auth.routes';
@@ -61,10 +79,14 @@ app.use(errorHandler);
 
 // Start server
 const PORT = config.PORT;
-app.listen(PORT, () => {
+const HOST = '0.0.0.0'; // Bind to all interfaces for network access
+const LOCAL_IP = getLocalIP();
+
+app.listen(PORT, HOST, () => {
   console.log(`🚀 StudySync Backend running on port ${PORT}`);
   console.log(`📍 Environment: ${config.NODE_ENV}`);
   console.log(`🔗 Health check: http://localhost:${PORT}/health`);
+  console.log(`🌐 Network access: http://${LOCAL_IP}:${PORT}`);
 });
 
 export default app;
