@@ -201,3 +201,9 @@ The improvements actually enhance performance:
 These comprehensive fixes address the root causes of session persistence issues while providing a more robust and reliable authentication experience. The enhanced error handling, retry logic, and proper state management ensure that users remain authenticated even when facing network issues or app refreshes.
 
 The implementation maintains backward compatibility while significantly improving the reliability and user experience of the authentication system.
+
+<!-- SUPABASE_URL="https://rekngekjsdsdvgmsznva.supabase.co"
+
+SUPABASE_SERVICE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJla25nZWtqc2RzZHZnbXN6bnZhIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MjYxNjg1NywiZXhwIjoyMDc4MTkyODU3fQ.7UWmBwOQWLxphp9GhciYBfqOTs2Eai2bQl6_DRVmqY0"
+
+JWT_SECRET="zhzDTnFpo0e+6qQrltBcgfpdqCGxtAKmoH7n3/8HS7Rbp9rd3v4ml+FCsBpwsWHI2EBSrkfIX9LynOYl1ON9YA==" -->

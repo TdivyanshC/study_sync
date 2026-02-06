@@ -444,8 +444,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
         throw new Error('Google Web Client ID is not configured. Please set EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID in your .env file.');
       }
 
-      const devIP = process.env.EXPO_PUBLIC_DEV_IP || '192.168.1.9';
-      const redirectTo = `exp://${devIP}:8081/--/auth/callback`;
+      // Use makeRedirectUri for proper Expo deep link handling
+      const redirectTo = makeRedirectUri({
+        scheme: 'exp',
+        path: 'auth/callback',
+      });
 
       console.log('🔄 Starting Google OAuth...');
       console.log('Redirect to:', redirectTo);
@@ -465,6 +468,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       console.log('✅ OAuth URL generated');
 
+      // Open the OAuth URL in the web browser
       const result = await WebBrowser.openAuthSessionAsync(
         data.url,
         redirectTo
@@ -477,6 +481,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         throw new Error('Authentication was cancelled');
       } else if (result.type === 'success') {
         console.log('✅ OAuth completed, processing callback...');
+        // The session will be automatically detected by detectSessionInUrl: true
+        // and the onAuthStateChange listener will handle navigation
       }
 
     } catch (error: any) {
@@ -579,7 +585,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // First check if user exists
     const { data: existingUser, error: checkError } = await supabase
       .from('users')
-      .select('id, user_id')
+      .select('id, public_user_id')
       .eq('id', user!.id)
       .single();
 
@@ -601,33 +607,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
       relationship_status: data.step1_data?.relationship,
       preferred_sessions: data.step2_data?.preferred_sessions || [],
       onboarding_completed: true,
-      onboarding_completed_at: new Date().toISOString(),
-      profile_updated_at: new Date().toISOString()
+      onboarding_completed_at: new Date().toISOString()
     };
-
-    // Always provide password_hash to satisfy database constraint
-    // For OAuth users, use a placeholder hash
-    const isOAuthUser = user!.app_metadata?.provider && user!.app_metadata.provider !== 'email';
-
-    if (isOAuthUser) {
-      userData.password_hash = 'oauth_placeholder_hash_' + user!.id.slice(0, 8);
-    } else {
-      userData.password_hash = 'email_user_placeholder_hash_' + user!.id.slice(0, 8);
-    }
 
     // Set additional fields only for new users
     if (!userExists) {
-      // Generate user_id manually to avoid trigger timeout
-      userData.user_id = generateUserId();
-      // Set auth_name for OAuth users
-      userData.auth_name = `oauth_user_${user!.id.slice(0, 8)}`;
-      // Use a simple username format
+      // Generate public_user_id manually to avoid trigger timeout
+      userData.public_user_id = generateUserId();
+      // Set a simple username format
       userData.username = user!.email?.split('@')[0]?.replace(/[^a-zA-Z0-9]/g, '_') ||
                          'user_' + user!.id.slice(0, 8);
-      // Set default values
-      userData.xp = 0;
-      userData.level = 1;
-      userData.streak_count = 0;
     }
 
     console.log('📦 Prepared user data:', userData);

@@ -21,14 +21,14 @@ if (!supabaseUrl || !supabaseAnonKey) {
 console.log(`Initializing Supabase client for ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'} environment`);
 
 // Create and export the Supabase client (Singleton pattern)
-// Enhanced Flow A configuration with PKCE for better mobile compatibility
+// Flow A configuration with automatic PKCE exchange via detectSessionInUrl
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     storage: AsyncStorage,   // Use AsyncStorage for persistent session storage
     autoRefreshToken: true,  // Automatically refresh access tokens
     persistSession: true,    // Persist session to AsyncStorage automatically
-    detectSessionInUrl: true, // Detect OAuth callback URLs
-    flowType: 'pkce',  // Explicitly use PKCE flow for mobile apps
+    detectSessionInUrl: true, // Enable for automatic PKCE code exchange
+    flowType: 'pkce',  // PKCE flow for security
   }
 });
 

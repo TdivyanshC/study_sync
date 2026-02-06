@@ -1,143 +1,108 @@
-import { useEffect } from 'react';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { View, ActivityIndicator, StyleSheet, Text, TouchableOpacity, Alert } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
+import * as Linking from 'expo-linking';
 import { supabase } from '../../lib/supabase';
 
 /**
- * Seamless OAuth callback handler for PKCE flow
+ * OAuth callback handler for PKCE flow
  * 
- * This component handles the OAuth callback with minimal user interface.
- * It processes the authentication and navigates directly without showing
- * detailed progress steps.
+ * With detectSessionInUrl: true in the Supabase config,
+ * the session exchange happens automatically when the
+ * OAuth callback URL is received.
+ * 
+ * This component waits for the session to be established
+ * and then navigation is handled by AuthProvider's
+ * onAuthStateChange listener.
  */
 export default function AuthCallback() {
   const params = useLocalSearchParams();
+  const hasProcessed = useRef(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Check user status (username and onboarding)
-  const checkUserStatus = async (userId: string) => {
-    try {
-      console.log('🔍 Checking user status for user:', userId);
+  const handleRetry = () => {
+    hasProcessed.current = false;
+    setError(null);
+  };
 
-      // Check username and onboarding status in the users table
-      const { data, error } = await supabase
-        .from('users')
-        .select('username, onboarding_completed')
-        .eq('id', userId)
-        .single();
-
-      // If no user found, return defaults (new user)
-      if (error && error.code === 'PGRST116') {
-        console.log('ℹ️ No user found, treating as new user');
-        return { hasUsername: false, hasCompletedOnboarding: false };
-      }
-
-      // If other error, log but don't fail the auth process
-      if (error) {
-        console.warn('⚠️ Error checking user status:', error.message);
-        return { hasUsername: false, hasCompletedOnboarding: false }; // Default to false for safety
-      }
-
-      return {
-        hasUsername: !!(data?.username && data.username.trim()),
-        hasCompletedOnboarding: data?.onboarding_completed || false
-      };
-    } catch (error) {
-      console.warn('⚠️ Exception checking user status:', error);
-      return { hasUsername: false, hasCompletedOnboarding: false }; // Default to false for safety, don't block auth
-    }
+  const handleGoToLogin = () => {
+    router.replace('/login');
   };
 
   useEffect(() => {
+    if (hasProcessed.current) return;
+    hasProcessed.current = true;
+
     const handleCallback = async () => {
       try {
         console.log('🔔 OAuth callback received');
         console.log('URL params:', JSON.stringify(params, null, 2));
-        console.log('Available param keys:', Object.keys(params));
 
-        // Check if we have a code parameter (PKCE flow)
-        const code = params.code as string;
+        // Check if we have a code in the URL
+        const codeFromParams = params.code as string;
+        const hasCode = codeFromParams && codeFromParams.trim();
 
-        if (!code || code.trim() === '') {
-          console.error('❌ No code found in params or code is empty');
-          console.log('🔄 Falling back to session detection...');
-
-          // Fallback: Try to get existing session
+        if (hasCode) {
+          console.log('✅ Authorization code found in URL');
+          console.log('📝 Supabase will automatically exchange the code for a session');
+          console.log('🔄 Waiting for auth state change...');
+        } else {
+          console.log('⚠️ No code found in URL params');
+          console.log('🔄 Checking for existing session...');
+          
+          // Try to get existing session
           const { data: sessionData } = await supabase.auth.getSession();
           if (sessionData.session) {
             console.log('✅ Found existing session');
-            const userStatus = await checkUserStatus(sessionData.session.user.id);
-            // Navigate based on user status
-            setTimeout(() => {
-              if (!userStatus.hasUsername) {
-                router.replace('/username-selection');
-              } else if (userStatus.hasUsername && !userStatus.hasCompletedOnboarding) {
-                router.replace('/onboarding-step1');
-              } else {
-                router.replace('/(tabs)');
-              }
-            }, 100);
-            return;
+          } else {
+            console.log('❌ No session found');
+            setError('No authentication code or session found');
           }
-
-          router.replace('/login');
-          return;
         }
 
-        console.log('✅ Authorization code received');
+        // The session will be automatically established by Supabase's
+        // detectSessionInUrl: true setting
+        // The AuthProvider's onAuthStateChange listener will handle
+        // the navigation based on user status
 
-        // Explicitly exchange the code for tokens to ensure session is established
-        const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-        
-        if (error) {
-          console.error('❌ Code exchange failed:', error.message);
-          router.replace('/login');
-          return;
-        }
-        
-        if (data.session && data.session.user) {
-          console.log('✅ Session established:', data.session.user.email);
-          
-          // Check user status
-          const userStatus = await checkUserStatus(data.session.user.id);
-
-          // Navigate based on user status
-          console.log('🧭 Navigation decision:', {
-            email: data.session.user.email,
-            hasUsername: userStatus.hasUsername,
-            onboardingCompleted: userStatus.hasCompletedOnboarding
-          });
-
-          // Small delay to ensure smooth transition
-          setTimeout(() => {
-            if (!userStatus.hasUsername) {
-              console.log('🔄 New user - navigating to username selection');
-              router.replace('/username-selection');
-            } else if (userStatus.hasUsername && !userStatus.hasCompletedOnboarding) {
-              console.log('🔄 User has username but no onboarding - navigating to onboarding step 1');
-              router.replace('/onboarding-step1');
-            } else {
-              console.log('🔄 Returning user - navigating to home');
-              router.replace('/(tabs)');
-            }
-          }, 100);
-        } else {
-          console.error('❌ No session returned');
-          router.replace('/login');
-        }
-
-      } catch (error: any) {
-        console.error('❌ OAuth callback error:', error.message);
-        router.replace('/login');
+      } catch (err: any) {
+        console.error('❌ Callback error:', err.message);
+        setError(err.message);
       }
     };
 
-    handleCallback();
-  }, []);
+    // Small delay to ensure params are loaded
+    const initTimeout = setTimeout(() => {
+      handleCallback();
+    }, 100);
 
-  // Minimal loading screen - just a spinner, no text or steps
+    return () => {
+      clearTimeout(initTimeout);
+    };
+  }, [params]);
+
+  // If there's an error, show retry option
+  if (error) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.errorText}>Authentication Error</Text>
+        <Text style={styles.subText}>{error}</Text>
+        <TouchableOpacity style={styles.button} onPress={handleRetry}>
+          <Text style={styles.buttonText}>Retry</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.button} onPress={handleGoToLogin}>
+          <Text style={styles.buttonText}>Go to Login</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  // Loading screen - session will be handled by AuthProvider
   return (
     <View style={styles.container}>
       <ActivityIndicator size="large" color="#3498db" />
+      <Text style={styles.text}>Completing sign in...</Text>
+      <Text style={styles.subText}>Please wait while we verify your account</Text>
     </View>
   );
 }
@@ -148,5 +113,34 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#f8f9fa',
+  },
+  text: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#1f2937',
+    fontWeight: '600',
+  },
+  subText: {
+    marginTop: 8,
+    fontSize: 14,
+    color: '#6b7280',
+  },
+  errorText: {
+    fontSize: 18,
+    color: '#dc2626',
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  button: {
+    backgroundColor: '#3498db',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    marginTop: 16,
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

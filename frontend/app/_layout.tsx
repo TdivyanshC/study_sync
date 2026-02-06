@@ -54,25 +54,28 @@ function DeepLinkHandler() {
       console.log('📋 Extracted OAuth parameters:', params);
       
       // Navigate to auth callback with parameters
-      router.push({
-        pathname: '/auth/callback',
-        params: params
-      });
+      // Use setTimeout to ensure the callback component is ready
+      setTimeout(() => {
+        router.push({
+          pathname: '/auth/callback',
+          params: params
+        });
+      }, 100);
       return;
     }
     
-    // Handle custom scheme OAuth callbacks (studysync://...)
+    // Handle custom scheme OAuth callbacks
     if (url.startsWith('studysync://') || url.startsWith('studysync://auth/callback')) {
-      // Parse URL to check for auth parameters
       const fragment = url.split('#')[1];
       if (fragment) {
         const params = new URLSearchParams(fragment);
         const hasTokens = params.has('access_token') && params.has('refresh_token');
         
         if (hasTokens) {
-          // Navigate to auth callback screen to handle the OAuth response
           console.log('🔄 OAuth tokens found, navigating to auth callback');
-          router.push('/auth/callback');
+          setTimeout(() => {
+            router.push('/auth/callback');
+          }, 100);
           return;
         }
       }
