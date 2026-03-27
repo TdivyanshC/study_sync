@@ -4,6 +4,9 @@ import { authMiddleware } from '../middleware/auth.middleware';
 
 const router = Router();
 
+// Google Sign-In for native React Native app
+router.post('/google', authController.googleSignIn.bind(authController));
+
 // Auth callback - sync user on first login
 router.post('/callback', authController.handleAuthCallback.bind(authController));
 

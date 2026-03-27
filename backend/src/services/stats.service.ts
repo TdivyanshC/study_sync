@@ -1,4 +1,4 @@
-import { supabaseAdmin } from '../config/supabase';
+import SessionEvent from '../models/SessionEvent';
 import { getStartOfDay, getStartOfWeek, getStartOfMonth } from '../utils/time';
 
 export interface ProductivityStats {
@@ -31,8 +31,6 @@ export interface StreakData {
 }
 
 export class StatsService {
-  private sessionTable = 'session_events';
-
   /**
    * Get aggregated productivity stats for a user
    */
@@ -44,9 +42,9 @@ export class StatsService {
 
       // Parallel queries with timeout protection
       const [todayData, weekData, monthData, totalData] = await Promise.all([
-        this.getAggregatedStatsWithTimeout(userId, today.toISOString(), 5000),
-        this.getAggregatedStatsWithTimeout(userId, weekStart.toISOString(), 5000),
-        this.getAggregatedStatsWithTimeout(userId, monthStart.toISOString(), 5000),
+        this.getAggregatedStatsWithTimeout(userId, today, 5000),
+        this.getAggregatedStatsWithTimeout(userId, weekStart, 5000),
+        this.getAggregatedStatsWithTimeout(userId, monthStart, 5000),
         this.getTotalStatsWithTimeout(userId, 5000),
       ]);
 
@@ -73,33 +71,27 @@ export class StatsService {
    */
   private async getAggregatedStatsWithTimeout(
     userId: string,
-    since: string,
+    since: Date,
     timeoutMs: number
   ): Promise<{ total_seconds: number; session_count: number; efficiency?: number }> {
     try {
-      const query = supabaseAdmin
-        .from(this.sessionTable)
-        .select('duration_seconds, efficiency')
-        .eq('user_id', userId)
-        .gte('started_at', since)
-        .not('duration_seconds', 'is', null);
+      const query = SessionEvent.find({
+        userId: userId,
+        startedAt: { $gte: since },
+        durationSeconds: { $exists: true, $ne: null }
+      }).select('durationSeconds efficiency');
 
       // Create a timeout promise
       const timeoutPromise = new Promise<never>((_, reject) => 
         setTimeout(() => reject(new Error('Query timeout')), timeoutMs)
       );
 
-      const { data, error } = await Promise.race([query, timeoutPromise]) as any;
+      const sessions = await Promise.race([query, timeoutPromise]) as any;
 
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      const sessions = data || [];
-      const totalSeconds = sessions.reduce((sum: number, s: any) => sum + (s.duration_seconds || 0), 0);
-      const efficiencies = sessions.filter((s: any) => s.efficiency !== null && s.efficiency !== undefined);
+      const totalSeconds = sessions.reduce((sum: number, session: any) => sum + (session.durationSeconds || 0), 0);
+      const efficiencies = sessions.filter((session: any) => session.efficiency !== null && session.efficiency !== undefined);
       const avgEfficiency = efficiencies.length > 0
-        ? efficiencies.reduce((sum: number, s: any) => sum + (s.efficiency || 0), 0) / efficiencies.length
+        ? efficiencies.reduce((sum: number, session: any) => sum + (session.efficiency || 0), 0) / efficiencies.length
         : undefined;
 
       return {
@@ -121,25 +113,19 @@ export class StatsService {
     timeoutMs: number
   ): Promise<{ total_seconds: number; session_count: number }> {
     try {
-      const query = supabaseAdmin
-        .from(this.sessionTable)
-        .select('duration_seconds')
-        .eq('user_id', userId)
-        .not('duration_seconds', 'is', null);
+      const query = SessionEvent.find({
+        userId: userId,
+        durationSeconds: { $exists: true, $ne: null }
+      }).select('durationSeconds');
 
       const timeoutPromise = new Promise<never>((_, reject) => 
         setTimeout(() => reject(new Error('Query timeout')), timeoutMs)
       );
 
-      const { data, error } = await Promise.race([query, timeoutPromise]) as any;
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      const sessions = data || [];
+      const sessions = await Promise.race([query, timeoutPromise]) as any;
+      
       return {
-        total_seconds: sessions.reduce((sum: number, s: any) => sum + (s.duration_seconds || 0), 0),
+        total_seconds: sessions.reduce((sum: number, session: any) => sum + (session.durationSeconds || 0), 0),
         session_count: sessions.length,
       };
     } catch (error) {
@@ -149,53 +135,21 @@ export class StatsService {
   }
 
   /**
-   * Get total stats (no date filter)
-   */
-  private async getTotalStats(
-    userId: string
-  ): Promise<{ total_seconds: number; session_count: number }> {
-    const { data, error } = await supabaseAdmin
-      .from(this.sessionTable)
-      .select('duration_seconds')
-      .eq('user_id', userId)
-      .not('duration_seconds', 'is', null);
-
-    if (error) {
-      console.error('Error getting total stats:', error);
-      throw new Error(`Failed to get total stats: ${error.message}`);
-    }
-
-    const sessions = data || [];
-    return {
-      total_seconds: sessions.reduce((sum, s) => sum + (s.duration_seconds || 0), 0),
-      session_count: sessions.length,
-    };
-  }
-
-  /**
    * Calculate streak data for a user
    */
   async getStreakData(userId: string): Promise<StreakData> {
     try {
       // Get all sessions sorted by date with timeout
-      const query = supabaseAdmin
-        .from(this.sessionTable)
-        .select('started_at, efficiency')
-        .eq('user_id', userId)
-        .not('started_at', 'is', null)
-        .order('started_at', { ascending: true });
+      const query = SessionEvent.find({
+        userId: userId,
+        startedAt: { $exists: true, $ne: null }
+      }).select('startedAt efficiency').sort({ startedAt: 1 });
 
       const timeoutPromise = new Promise<never>((_, reject) => 
         setTimeout(() => reject(new Error('Query timeout')), 8000)
       );
 
-      const { data, error } = await Promise.race([query, timeoutPromise]) as any;
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      const sessions = data || [];
+      const sessions = await Promise.race([query, timeoutPromise]) as any;
       
       if (sessions.length === 0) {
         return {
@@ -210,15 +164,15 @@ export class StatsService {
       let bestStreak = 0;
       let tempStreak = 0;
       const efficiencies: number[] = [];
-      let lastSessionDate: string | undefined;
+      let lastSessionDate: Date | undefined;
+      const uniqueDates = new Set<string>();
 
       // Get unique dates (start of day)
-      const uniqueDates = new Set<string>();
-      sessions.forEach((s: any) => {
-        const date = new Date(s.started_at).toISOString().split('T')[0];
+      sessions.forEach((session: any) => {
+        const date = new Date(session.startedAt).toISOString().split('T')[0];
         uniqueDates.add(date);
-        efficiencies.push(s.efficiency || 0);
-        lastSessionDate = s.started_at;
+        efficiencies.push(session.efficiency || 0);
+        lastSessionDate = session.startedAt;
       });
 
       // Sort unique dates
@@ -262,7 +216,7 @@ export class StatsService {
         current_streak: currentStreak,
         best_streak: bestStreak,
         average_efficiency: avgEfficiency,
-        last_session_date: lastSessionDate,
+        last_session_date: lastSessionDate?.toISOString(),
       };
     } catch (error) {
       console.error('Error getting streak data:', error);
@@ -280,26 +234,14 @@ export class StatsService {
   async getTodayMetrics(userId: string): Promise<{ total_seconds: number; session_count: number }> {
     try {
       const today = getStartOfDay();
-      const query = supabaseAdmin
-        .from(this.sessionTable)
-        .select('duration_seconds')
-        .eq('user_id', userId)
-        .gte('started_at', today.toISOString())
-        .not('duration_seconds', 'is', null);
+      const sessions = await SessionEvent.find({
+        userId: userId,
+        startedAt: { $gte: today },
+        durationSeconds: { $exists: true, $ne: null }
+      }).select('durationSeconds');
 
-      const timeoutPromise = new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error('Query timeout')), 5000)
-      );
-
-      const { data, error } = await Promise.race([query, timeoutPromise]) as any;
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      const sessions = data || [];
       return {
-        total_seconds: sessions.reduce((sum: number, s: any) => sum + (s.duration_seconds || 0), 0),
+        total_seconds: sessions.reduce((sum: number, session: any) => sum + (session.durationSeconds || 0), 0),
         session_count: sessions.length,
       };
     } catch (error) {

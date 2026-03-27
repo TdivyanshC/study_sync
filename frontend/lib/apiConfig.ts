@@ -25,6 +25,7 @@ export const API_ENDPOINTS = {
   HEALTH: '/health',
   
   // Auth
+  AUTH_GOOGLE: '/api/auth/google', // Native Google Sign-In
   AUTH_CALLBACK: '/api/auth/callback',
   AUTH_PROFILE: '/api/auth/profile',
   

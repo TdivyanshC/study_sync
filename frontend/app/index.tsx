@@ -24,7 +24,7 @@ export default function IndexScreen() {
     }
 
     // Check if we're on the auth callback route
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && window.location) {
       const currentPath = window.location.pathname;
       const hasAuthCode = window.location.hash.includes('access_token') || 
                          window.location.search.includes('code=') ||

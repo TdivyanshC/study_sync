@@ -1,19 +1,36 @@
 import React, { createContext, useContext, useEffect, useState, useRef, ReactNode } from 'react';
-import { makeRedirectUri } from 'expo-auth-session';
-import * as WebBrowser from 'expo-web-browser';
-import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabase';
-import * as Linking from 'expo-linking';
 import { router } from 'expo-router';
-import { getApiBaseUrl } from '../lib/constants';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { 
+  signInWithGoogleNative, 
+  signOutGoogle, 
+  AuthResponse,
+} from '../lib/auth/nativeGoogleAuth';
+import { 
+  setAuthToken,
+  getAuthToken,
+  getUserData,
+  setUserData,
+  removeAuthToken,
+  removeUserData,
+  clearAuthData
+} from '../lib/auth/tokenStorage';
 import { backendApi } from '../src/api/backendApi';
 
-// Initialize WebBrowser for OAuth
-WebBrowser.maybeCompleteAuthSession();
+// Custom user type for native auth
+interface CustomUser {
+  id: string;
+  email: string;
+  username: string;
+  displayName?: string | null;
+  avatarUrl?: string | null;
+  gmailName?: string | null;
+  onboardingCompleted: boolean;
+}
 
 interface AuthContextType {
-  user: User | null;
-  session: Session | null;
+  user: CustomUser | null;
+  session: string | null;
   loading: boolean;
   isInitialized: boolean;
   hasCompletedOnboarding: boolean;
@@ -33,9 +50,13 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+// Keys for storing auth data
+const AUTH_TOKEN_KEY = 'study_sync_auth_token';
+const USER_DATA_KEY = 'study_sync_user_data';
+
 export function AuthProvider({ children }: AuthProviderProps): React.ReactNode {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<CustomUser | null>(null);
+  const [session, setSession] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [isInitialized, setIsInitialized] = useState(false);
   const [hasNavigated, setHasNavigated] = useState(false);
@@ -49,7 +70,7 @@ export function AuthProvider({ children }: AuthProviderProps): React.ReactNode {
   const NAVIGATION_DEBOUNCE_MS = 2000;
 
   // Centralized navigation function to prevent conflicts
-  const handleNavigation = (user: User, userStatus: { hasUsername: boolean; hasCompletedOnboarding: boolean }) => {
+  const handleNavigation = (user: CustomUser, userStatus: { hasUsername: boolean; hasCompletedOnboarding: boolean }) => {
     const now = Date.now();
     
     // Debounce: prevent navigation if it happened recently
@@ -114,31 +135,15 @@ export function AuthProvider({ children }: AuthProviderProps): React.ReactNode {
     try {
       console.log('🔍 Checking user status for user:', userId);
 
-      // Check username and onboarding status in the users table
-      const { data, error } = await supabase
-        .from('users')
-        .select('username, onboarding_completed')
-        .eq('id', userId)
-        .single();
-
-      // If no user found, return defaults (new user)
-      if (error && error.code === 'PGRST116') {
-        console.log('ℹ️ No user found, treating as new user');
-        return { hasUsername: false, hasCompletedOnboarding: false };
-      }
-
-      // If other error, log but don't fail the auth process
-      if (error) {
-        console.warn('⚠️ Error checking user status:', error.message);
-        return { hasUsername: false, hasCompletedOnboarding: false };
-      }
-
+      // Get user data from our backend (MongoDB)
+      const userData = await backendApi.getProfile();
+      
       return {
-        hasUsername: !!(data?.username && data.username.trim()),
-        hasCompletedOnboarding: data?.onboarding_completed || false
+        hasUsername: !!(userData?.username && userData.username.trim()),
+        hasCompletedOnboarding: userData?.onboarding_completed || false
       };
     } catch (error) {
-      console.warn('⚠️ Exception checking user status:', error);
+      console.warn('⚠️ Error checking user status:', error);
       return { hasUsername: false, hasCompletedOnboarding: false };
     }
   };
@@ -154,132 +159,69 @@ export function AuthProvider({ children }: AuthProviderProps): React.ReactNode {
         initializationAttempts++;
         console.log(`🚀 Initializing authentication... (Attempt ${initializationAttempts})`);
         
-        // Wait for Supabase to be ready with exponential backoff
+        // Wait with exponential backoff
         const delay = Math.min(1000 * Math.pow(2, initializationAttempts - 1), 5000);
         if (initializationAttempts > 1) {
           await new Promise(resolve => setTimeout(resolve, delay));
         }
         
-        // Get session with retry logic
-        const getSessionWithRetry = async (): Promise<{ data: { session: Session | null }, error: any }> => {
-          for (let i = 0; i < 3; i++) {
-            try {
-              const result = await supabase.auth.getSession();
-              if (result.error && i < 2) {
-                console.log(`⚠️ Session fetch attempt ${i + 1} failed, retrying...`);
-                await new Promise(resolve => setTimeout(resolve, 500 * (i + 1)));
-                continue;
-              }
-              return result;
-            } catch (error) {
-              if (i === 2) throw error;
-              await new Promise(resolve => setTimeout(resolve, 500 * (i + 1)));
-            }
-          }
-          throw new Error('Failed to get session after 3 attempts');
-        };
+        // Check for stored token (native auth)
+        const token = await AsyncStorage.getItem(AUTH_TOKEN_KEY);
+        const storedUserData = await AsyncStorage.getItem(USER_DATA_KEY);
 
-        const { data: { session }, error } = await getSessionWithRetry();
+        if (!isMounted) return;
+
+        if (token && storedUserData) {
+          // We have a stored session from native Google Sign-In
+          const userData = JSON.parse(storedUserData) as CustomUser;
+          console.log('✅ Session restored from native auth:', {
+            email: userData.email,
+            id: userData.id
+          });
+
+          setSession(token);
+          setUser(userData);
+          
+          // Check user status for existing users with timeout
+          let userStatus = { hasUsername: false, hasCompletedOnboarding: false };
+          try {
+            const timeoutPromise = new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('Timeout')), 3000)
+            );
+            const checkPromise = checkUserStatus(userData.id);
+
+            userStatus = await Promise.race([checkPromise, timeoutPromise]) as { hasUsername: boolean; hasCompletedOnboarding: boolean };
+            console.log('✅ User status checked successfully');
+          } catch (statusError) {
+            console.warn('⚠️ User status check failed, defaulting to false:', statusError);
+            userStatus = { hasUsername: false, hasCompletedOnboarding: false };
+          }
+
+          setHasUsername(userStatus.hasUsername);
+          setHasCompletedOnboarding(userStatus.hasCompletedOnboarding);
+
+          // Handle navigation for session restoration
+          if (!hasNavigated && !navigationLocked) {
+            handleNavigation(userData, userStatus);
+          }
+        } else {
+          console.log('ℹ️ No existing session found - user needs to authenticate');
+          
+          // Navigate to login when no session exists
+          if (!hasNavigated && !navigationLocked) {
+            console.log('🔄 No session - navigating to login');
+            setTimeout(() => {
+              router.replace('/login');
+              setTimeout(() => {
+                setNavigationLocked(false);
+                setHasNavigated(true);
+              }, 500);
+            }, 100);
+          }
+        }
         
-        if (error) {
-          console.error('❌ Error getting session:', error.message);
-          if (isMounted) {
-            setSession(null);
-            setUser(null);
-            setHasCompletedOnboarding(false);
-            setHasUsername(false);
-            setLoading(false);
-            setIsInitialized(true);
-
-            // Navigate to login even on session error
-            if (!hasNavigated && !navigationLocked) {
-              console.log('🔄 Session error - navigating to login');
-              setTimeout(() => {
-                router.replace('/login');
-                setTimeout(() => {
-                  setNavigationLocked(false);
-                  setHasNavigated(true);
-                }, 500);
-              }, 100);
-            }
-          }
-          return;
-        }
-
-        if (isMounted) {
-          if (session?.user) {
-            console.log('✅ Session restored successfully:', {
-              email: session.user.email,
-              id: session.user.id,
-              expiresAt: session.expires_at,
-              provider: session.user.app_metadata?.provider
-            });
-            
-            // Check if session is expired
-            const now = Math.floor(Date.now() / 1000);
-            if (session.expires_at && session.expires_at < now) {
-              console.log('⚠️ Session expired, user needs to re-authenticate');
-              setSession(null);
-              setUser(null);
-              setHasCompletedOnboarding(false);
-              setHasUsername(false);
-            } else {
-              setSession(session);
-              setUser(session.user);
-              
-              // Check user status for existing users with timeout
-              let userStatus = { hasUsername: false, hasCompletedOnboarding: false };
-              try {
-                const timeoutPromise = new Promise((_, reject) =>
-                  setTimeout(() => reject(new Error('Timeout')), 3000)
-                );
-                const checkPromise = checkUserStatus(session.user.id);
-
-                userStatus = await Promise.race([checkPromise, timeoutPromise]) as { hasUsername: boolean; hasCompletedOnboarding: boolean };
-                console.log('✅ User status checked successfully');
-              } catch (statusError) {
-                console.warn('⚠️ User status check failed, defaulting to false:', statusError);
-                userStatus = { hasUsername: false, hasCompletedOnboarding: false };
-              }
-
-              setHasUsername(userStatus.hasUsername);
-              setHasCompletedOnboarding(userStatus.hasCompletedOnboarding);
-
-              // Handle navigation for session restoration
-              if (!hasNavigated && !navigationLocked) {
-                handleNavigation(session.user, userStatus);
-              }
-              
-              console.log('📱 Session valid, user remains authenticated', {
-                hasUsername: userStatus.hasUsername,
-                onboardingCompleted: userStatus.hasCompletedOnboarding,
-                hasNavigated,
-                navigationLocked
-              });
-            }
-          } else {
-            console.log('ℹ️ No existing session found - user needs to authenticate');
-            setSession(null);
-            setUser(null);
-            setHasCompletedOnboarding(false);
-            setHasUsername(false);
-
-            // Navigate to login when no session exists
-            if (!hasNavigated && !navigationLocked) {
-              console.log('🔄 No session - navigating to login');
-              setTimeout(() => {
-                router.replace('/login');
-                setTimeout(() => {
-                  setNavigationLocked(false);
-                  setHasNavigated(true);
-                }, 500);
-              }, 100);
-            }
-          }
-           
-          setLoading(false);
-          setIsInitialized(true);
-        }
+        setLoading(false);
+        setIsInitialized(true);
       } catch (error) {
         console.error('❌ Error initializing auth:', error);
         if (isMounted) {
@@ -289,7 +231,7 @@ export function AuthProvider({ children }: AuthProviderProps): React.ReactNode {
           setHasUsername(false);
           setLoading(false);
           setIsInitialized(true);
-           
+            
           // Even on error, navigate to login to allow user to authenticate
           if (!hasNavigated && !navigationLocked) {
             console.log('🔄 Auth initialization failed - navigating to login');
@@ -308,150 +250,24 @@ export function AuthProvider({ children }: AuthProviderProps): React.ReactNode {
     // Start initialization
     initializeAuth();
 
-    // Listen for auth state changes with enhanced handling
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('🔄 Auth state changed:', event, session ? 'Session present' : 'No session');
-        
-        if (!isMounted) return;
-
-        // Handle session updates immediately
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        // Only stop loading after initial initialization
-        if (isInitialized) {
-          setLoading(false);
-        }
-
-        // Handle different auth events
-        switch (event) {
-          case 'INITIAL_SESSION':
-            console.log('🎯 Initial session detected from OAuth callback');
-            if (session?.user) {
-              console.log('✅ User from initial session:', {
-                email: session.user.email,
-                provider: session.user.app_metadata?.provider
-              });
-              
-              // Check user status and navigate accordingly with timeout
-              let userStatus = { hasUsername: false, hasCompletedOnboarding: false };
-              try {
-                const timeoutPromise = new Promise((_, reject) =>
-                  setTimeout(() => reject(new Error('Timeout')), 5000)
-                );
-                const checkPromise = checkUserStatus(session.user.id);
-
-                userStatus = await Promise.race([checkPromise, timeoutPromise]) as { hasUsername: boolean; hasCompletedOnboarding: boolean };
-                console.log('✅ User status checked from initial session:', userStatus);
-              } catch (statusError) {
-                console.warn('⚠️ User status check failed from initial session, defaulting to false:', statusError);
-                userStatus = { hasUsername: false, hasCompletedOnboarding: false };
-              }
-
-              setHasUsername(userStatus.hasUsername);
-              setHasCompletedOnboarding(userStatus.hasCompletedOnboarding);
-
-              // Use centralized navigation function
-              if (!hasNavigated && !navigationLocked) {
-                handleNavigation(session.user, userStatus);
-              }
-            }
-            break;
-
-          case 'SIGNED_IN':
-            if (session?.user) {
-              console.log('✅ User signed in:', {
-                email: session.user.email,
-                provider: session.user.app_metadata?.provider
-              });
-              
-              // Check user status and navigate accordingly with timeout
-              let userStatus = { hasUsername: false, hasCompletedOnboarding: false };
-              try {
-                const timeoutPromise = new Promise((_, reject) =>
-                  setTimeout(() => reject(new Error('Timeout')), 3000)
-                );
-                const checkPromise = checkUserStatus(session.user.id);
-
-                userStatus = await Promise.race([checkPromise, timeoutPromise]) as { hasUsername: boolean; hasCompletedOnboarding: boolean };
-                console.log('✅ User status checked during sign in');
-              } catch (statusError) {
-                console.warn('⚠️ User status check failed during sign in, defaulting to false:', statusError);
-                userStatus = { hasUsername: false, hasCompletedOnboarding: false };
-              }
-
-              setHasUsername(userStatus.hasUsername);
-              setHasCompletedOnboarding(userStatus.hasCompletedOnboarding);
-
-              // Use centralized navigation function
-              if (!hasNavigated && !navigationLocked) {
-                handleNavigation(session.user, userStatus);
-              }
-            }
-            break;
-             
-          case 'SIGNED_OUT':
-            console.log('👋 User signed out');
-            setSession(null);
-            setUser(null);
-            setHasCompletedOnboarding(false);
-            setHasUsername(false);
-            setHasNavigated(false);
-            setNavigationLocked(false);
-            setOauthInProgress(false);
-            break;
-             
-          case 'TOKEN_REFRESHED':
-            console.log('🔄 Token refreshed successfully');
-            // Only update session state, don't trigger navigation on token refresh
-            // This prevents infinite render loops in the web bundler
-            if (session) {
-              setSession(session);
-              setUser(session.user);
-            }
-            // Don't trigger navigation on TOKEN_REFRESHED - this causes the render loop
-            return; // Early return to prevent navigation
-             
-          case 'USER_UPDATED':
-            if (session?.user) {
-              console.log('👤 User data updated');
-              setSession(session);
-              setUser(session.user);
-            }
-            break;
-        }
-
-        // Set loading to false after any auth state change
-        setLoading(false);
-      }
-    );
-
-    // Cleanup
     return () => {
       isMounted = false;
-      subscription.unsubscribe();
     };
   }, []);
 
-  // Enhanced refresh session function
+  // Refresh session function
   const refreshSession = async (): Promise<void> => {
     try {
       console.log('🔄 Refreshing session...');
       setLoading(true);
       
-      const { data, error } = await supabase.auth.refreshSession();
-      
-      if (error) {
-        console.error('❌ Session refresh failed:', error.message);
-        throw error;
+      // For native auth, just verify we have a valid token
+      const token = await AsyncStorage.getItem(AUTH_TOKEN_KEY);
+      if (!token) {
+        throw new Error('No session found');
       }
       
-      if (data.session) {
-        console.log('✅ Session refreshed successfully');
-        setSession(data.session);
-        setUser(data.session.user);
-      }
+      console.log('✅ Session refreshed successfully');
     } catch (error) {
       console.error('❌ Session refresh error:', error);
       throw error;
@@ -460,33 +276,13 @@ export function AuthProvider({ children }: AuthProviderProps): React.ReactNode {
     }
   };
 
-  // Deep link handling moved to _layout.tsx to avoid conflicts
-  // OAuth callback handling is now done in the auth callback component
-
-  // Enhanced login function with better error handling
+  // Email/password login (deprecated - kept for backward compatibility)
   const login = async (email: string, password: string): Promise<void> => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        throw error;
-      }
-
-      console.log('✅ Email login successful');
-      // Navigation will be handled by onAuthStateChange
-    } catch (error: any) {
-      console.error('❌ Login error:', error.message);
-      throw new Error(error.message || 'Failed to sign in');
-    } finally {
-      setLoading(false);
-    }
+    // This is deprecated - we now use Google Sign-In only
+    throw new Error('Email/password login is not supported. Please use Google Sign-In.');
   };
 
-  // Enhanced Google OAuth function with better error handling
+  // Native Google Sign-In function
   const loginWithGoogle = async (): Promise<void> => {
     // Prevent multiple OAuth flows
     if (oauthInProgress) {
@@ -498,51 +294,34 @@ export function AuthProvider({ children }: AuthProviderProps): React.ReactNode {
     setLoading(true);
     
     try {
-      const googleClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
-      if (!googleClientId || googleClientId === 'your_google_web_client_id_here') {
-        throw new Error('Google Web Client ID is not configured. Please set EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID in your .env file.');
-      }
+      console.log('🔄 Starting Native Google Sign-In...');
 
-      // Use makeRedirectUri for proper Expo deep link handling
-      const redirectTo = makeRedirectUri({
-        scheme: 'exp',
-        path: 'auth/callback',
+      // Use native Google Sign-In
+      const authResponse: AuthResponse = await signInWithGoogleNative();
+      
+      console.log('✅ Google Sign-In successful:', {
+        email: authResponse.user.email,
+        id: authResponse.user.id,
+        isNewUser: authResponse.isNewUser
       });
 
-      console.log('🔄 Starting Google OAuth...');
-      console.log('Redirect to:', redirectTo);
+      // Store token and user data
+      await AsyncStorage.setItem(AUTH_TOKEN_KEY, authResponse.token);
+      await AsyncStorage.setItem(USER_DATA_KEY, JSON.stringify(authResponse.user));
 
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: redirectTo,
-          skipBrowserRedirect: true,
-        }
-      });
+      setSession(authResponse.token);
+      setUser(authResponse.user);
+      setHasUsername(!!authResponse.user.username);
+      setHasCompletedOnboarding(authResponse.user.onboardingCompleted);
 
-      if (error) {
-        console.error('❌ OAuth error:', error);
-        throw error;
-      }
-
-      console.log('✅ OAuth URL generated');
-
-      // Open the OAuth URL in the web browser
-      const result = await WebBrowser.openAuthSessionAsync(
-        data.url,
-        redirectTo
-      );
-
-      console.log('🔍 Auth session result:', result.type);
-
-      if (result.type === 'cancel') {
-        console.log('❌ OAuth cancelled');
-        throw new Error('Authentication was cancelled');
-      } else if (result.type === 'success') {
-        console.log('✅ OAuth completed, processing callback...');
-        // The session will be automatically detected by detectSessionInUrl: true
-        // and the onAuthStateChange listener will handle navigation
-        // We DON'T reset oauthInProgress here - it will be reset on SIGNED_OUT or timeout
+      // Handle navigation
+      const userStatus = { 
+        hasUsername: !!authResponse.user.username, 
+        hasCompletedOnboarding: authResponse.user.onboardingCompleted 
+      };
+      
+      if (!hasNavigated && !navigationLocked) {
+        handleNavigation(authResponse.user, userStatus);
       }
 
     } catch (error: any) {
@@ -550,8 +329,7 @@ export function AuthProvider({ children }: AuthProviderProps): React.ReactNode {
       setOauthInProgress(false);
       throw new Error(error.message || 'Failed to sign in with Google');
     } finally {
-      // Don't reset loading(false) here - let the onAuthStateChange handle it
-      // This prevents the login button from appearing again during OAuth flow
+      // Don't reset loading here - let navigation handle it
     }
   };
 
@@ -569,7 +347,6 @@ export function AuthProvider({ children }: AuthProviderProps): React.ReactNode {
       console.log('💾 Marking onboarding as completed...');
 
       // Call the backend API to complete onboarding
-      // This uses the service role key which bypasses RLS
       const result = await backendApi.completeOnboarding({
         step1_data: step1Data || {},
         step2_data: step2Data || {},
@@ -585,51 +362,48 @@ export function AuthProvider({ children }: AuthProviderProps): React.ReactNode {
       // Update local state
       setHasUsername(true);
       setHasCompletedOnboarding(true);
+      
+      // Update stored user data
+      const updatedUser = { 
+        ...user, 
+        username: result.user?.username || user.username,
+        displayName: displayName || user.displayName,
+        onboardingCompleted: true 
+      };
+      await AsyncStorage.setItem(USER_DATA_KEY, JSON.stringify(updatedUser));
+      setUser(updatedUser);
+
     } catch (error: any) {
       console.error('❌ Error completing onboarding via backend:', error.message);
+      throw new Error(error.message || 'Failed to save onboarding data');
+    }
+  };
+
+  // Logout function
+  const logout = async () => {
+    try {
+      console.log('🔄 Logging out...');
+      setLoading(true);
       
-      // Fallback: try direct Supabase upsert if backend fails
-      try {
-        console.log('🔄 Attempting fallback direct Supabase upsert...');
-        
-        const username = displayName 
-          ? displayName.toLowerCase().replace(/[^a-z0-9]/g, '') + '_' + user.id.substring(0, 6)
-          : user.email?.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '') + '_' + user.id.substring(0, 6) || 'user_' + user.id.substring(0, 6);
-        
-        const publicUserId = 'U' + Math.random().toString(36).substring(2, 8).toUpperCase().slice(0, 6);
-
-        // Update auth metadata
-        await supabase.auth.updateUser({
-          data: { onboarding_completed: true, username }
-        });
-
-        // Upsert user record
-        const { error: userError } = await supabase
-          .from('users')
-          .upsert({
-            id: user.id,
-            email: user.email,
-            username,
-            public_user_id: publicUserId,
-            display_name: displayName,
-            onboarding_completed: true,
-            gender: step1Data?.gender,
-            age: step1Data?.age ? parseInt(step1Data.age) : null,
-            relationship_status: step1Data?.relationship,
-            preferred_sessions: step2Data?.preferred_sessions || [],
-            updated_at: new Date().toISOString()
-          }, { onConflict: 'id' });
-
-        if (userError) {
-          console.warn('⚠️ Fallback upsert also failed:', userError.message);
-        } else {
-          setHasUsername(true);
-          setHasCompletedOnboarding(true);
-        }
-      } catch (fallbackError: any) {
-        console.error('❌ Fallback also failed:', fallbackError.message);
-        throw new Error(error.message || 'Failed to save onboarding data');
-      }
+      // Sign out from Google
+      await signOutGoogle();
+      
+      // Clear stored auth data
+      await clearAuthData();
+      
+      setUser(null);
+      setSession(null);
+      setHasNavigated(false);
+      setNavigationLocked(false);
+      setOauthInProgress(false);
+      
+      // Navigate to login
+      router.replace('/login');
+      
+    } catch (error) {
+      console.error('❌ Logout error:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -646,19 +420,7 @@ export function AuthProvider({ children }: AuthProviderProps): React.ReactNode {
         navigationLocked,
         login,
         loginWithGoogle,
-        logout: async () => {
-          try {
-            setLoading(true);
-            await supabase.auth.signOut();
-            setHasNavigated(false);
-            setNavigationLocked(false);
-            setOauthInProgress(false);
-          } catch (error) {
-            console.error('❌ Logout error:', error);
-          } finally {
-            setLoading(false);
-          }
-        },
+        logout,
         refreshSession,
         markOnboardingCompleted
       }}

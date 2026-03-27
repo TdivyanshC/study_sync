@@ -1,5 +1,7 @@
-import { supabaseAdmin } from '../config/supabase';
-import { v4 as uuidv4 } from 'uuid';
+import Space from '../models/Space';
+import SpaceMember from '../models/SpaceMember';
+import SessionEvent from '../models/SessionEvent';
+import { Types } from 'mongoose';
 import { statsService } from './stats.service';
 
 export interface Space {
@@ -25,121 +27,86 @@ export interface CreateSpaceInput {
 }
 
 export class SpaceService {
-  private spacesTable = 'spaces';
-  private membersTable = 'space_members';
-
   /**
    * Create a new space with creator as owner
    */
   async createSpace(input: CreateSpaceInput): Promise<Space> {
     // Create space
-    const { data: space, error: spaceError } = await supabaseAdmin
-      .from(this.spacesTable)
-      .insert({
-        id: uuidv4(),
-        name: input.name,
-        description: input.description,
-        created_by: input.created_by,
-      })
-      .select()
-      .single();
-
-    if (spaceError) {
-      console.error('Error creating space:', spaceError);
-      throw new Error(`Failed to create space: ${spaceError.message}`);
-    }
+    const space = await Space.create({
+      _id: new Types.ObjectId().toHexString(), // Generate UUID-like ID
+      name: input.name,
+      description: input.description,
+      createdBy: input.created_by,
+    });
 
     // Add creator as owner member
-    const { error: memberError } = await supabaseAdmin
-      .from(this.membersTable)
-      .insert({
-        id: uuidv4(),
-        space_id: space.id,
-        user_id: input.created_by,
-        role: 'owner',
-      });
+    await SpaceMember.create({
+      _id: new Types.ObjectId().toHexString(), // Generate UUID-like ID
+      spaceId: space._id,
+      userId: input.created_by,
+      role: 'owner',
+    });
 
-    if (memberError) {
-      console.error('Error adding space member:', memberError);
-      throw new Error(`Failed to add space member: ${memberError.message}`);
-    }
-
-    return space;
+    return {
+      id: space._id,
+      created_by: space.createdBy,
+      name: space.name,
+      description: space.description,
+      created_at: space.createdAt.toISOString(),
+    };
   }
 
   /**
    * Get space by ID
    */
   async getSpace(spaceId: string): Promise<Space | null> {
-    const { data, error } = await supabaseAdmin
-      .from(this.spacesTable)
-      .select('*')
-      .eq('id', spaceId)
-      .single();
+    const space = await Space.findById(spaceId);
 
-    if (error && error.code !== 'PGRST116') {
-      console.error('Error getting space:', error);
-      throw new Error(`Failed to get space: ${error.message}`);
+    if (!space) {
+      return null;
     }
 
-    return data || null;
+    return {
+      id: space._id,
+      created_by: space.createdBy,
+      name: space.name,
+      description: space.description,
+      created_at: space.createdAt.toISOString(),
+    };
   }
 
   /**
    * Get all spaces for a user
    */
   async getUserSpaces(userId: string): Promise<Space[]> {
-    const { data, error } = await supabaseAdmin
-      .from(this.membersTable)
-      .select(`
-        spaces:spaces (*)
-      `)
-      .eq('user_id', userId);
+    const spaceMembers = await SpaceMember.find({ userId: userId }).populate('spaceId');
 
-    if (error) {
-      console.error('Error getting user spaces:', error);
-      throw new Error(`Failed to get spaces: ${error.message}`);
-    }
-
-    return (data || []).map((item: any) => item.spaces);
+    return spaceMembers
+      .map(member => member.spaceId)
+      .filter((space): space is ImportType<typeof Space> => space !== null)
+      .map(space => ({
+        id: space._id,
+        created_by: space.createdBy,
+        name: space.name,
+        description: space.description,
+        created_at: space.createdAt.toISOString(),
+      }));
   }
 
   /**
    * Check if user is a member of space
    */
   async isMember(spaceId: string, userId: string): Promise<boolean> {
-    const { data, error } = await supabaseAdmin
-      .from(this.membersTable)
-      .select('id')
-      .eq('space_id', spaceId)
-      .eq('user_id', userId)
-      .single();
-
-    if (error && error.code !== 'PGRST116') {
-      console.error('Error checking membership:', error);
-      throw new Error(`Failed to check membership: ${error.message}`);
-    }
-
-    return !!data;
+    const member = await SpaceMember.findOne({ spaceId, userId: userId });
+    return !!member;
   }
 
   /**
    * Get user's role in space
    */
   async getMemberRole(spaceId: string, userId: string): Promise<string | null> {
-    const { data, error } = await supabaseAdmin
-      .from(this.membersTable)
-      .select('role')
-      .eq('space_id', spaceId)
-      .eq('user_id', userId)
-      .single();
-
-    if (error && error.code !== 'PGRST116') {
-      console.error('Error getting role:', error);
-      throw new Error(`Failed to get role: ${error.message}`);
-    }
-
-    return data?.role || null;
+    const member = await SpaceMember.findOne({ spaceId, userId: userId });
+    return member ? member.role : null;
   }
 
   /**
@@ -152,66 +119,69 @@ export class SpaceService {
       throw new Error('Already a member of this space');
     }
 
-    const { data, error } = await supabaseAdmin
-      .from(this.membersTable)
-      .insert({
-        id: uuidv4(),
-        space_id: spaceId,
-        user_id: userId,
-        role: 'member',
-      })
-      .select()
-      .single();
+    const spaceMember = await SpaceMember.create({
+      _id: new Types.ObjectId().toHexString(), // Generate UUID-like ID
+      spaceId: spaceId,
+      userId: userId,
+      role: 'member',
+    });
 
-    if (error) {
-      console.error('Error joining space:', error);
-      throw new Error(`Failed to join space: ${error.message}`);
-    }
-
-    return data;
+    return {
+      id: spaceMember._id,
+      space_id: spaceMember.spaceId,
+      user_id: spaceMember.userId,
+      role: spaceMember.role,
+      joined_at: spaceMember.joinedAt.toISOString(),
+    };
   }
 
   /**
    * Get space members
    */
   async getSpaceMembers(spaceId: string): Promise<any[]> {
-    const { data, error } = await supabaseAdmin
-      .from(this.membersTable)
-      .select(`
-        *,
-        user:users (id, username, email, avatar_url)
-      `)
-      .eq('space_id', spaceId);
+    const spaceMembers = await SpaceMember.find({ spaceId: spaceId }).populate('userId', 'id username email avatarUrl');
 
-    if (error) {
-      console.error('Error getting space members:', error);
-      throw new Error(`Failed to get members: ${error.message}`);
-    }
-
-    return data || [];
+    return spaceMembers.map(member => ({
+      id: member._id,
+      space_id: member.spaceId,
+      user_id: member.userId._id,
+      role: member.role,
+      joined_at: member.joinedAt.toISOString(),
+      user: {
+        id: member.userId._id,
+        username: member.userId.username,
+        email: member.userId.email,
+        avatar_url: member.userId.avatarUrl,
+      }
+    }));
   }
 
   /**
    * Get space activity (session events)
    */
   async getSpaceActivity(spaceId: string, limit: number = 20): Promise<any[]> {
-    const { data, error } = await supabaseAdmin
-      .from('session_events')
-      .select(`
-        *,
-        user:users (id, username, avatar_url)
-      `)
-      .eq('space_id', spaceId)
-      .not('ended_at', 'is', null)
-      .order('ended_at', { ascending: false })
-      .limit(limit);
+    const sessions = await SessionEvent.find({ spaceId: spaceId, endedAt: { $ne: null } })
+      .sort({ endedAt: -1 })
+      .limit(limit)
+      .populate('userId', 'id username avatarUrl');
 
-    if (error) {
-      console.error('Error getting space activity:', error);
-      throw new Error(`Failed to get activity: ${error.message}`);
-    }
-
-    return data || [];
+    return sessions.map(session => ({
+      id: session._id,
+      user_id: session.userId,
+      session_type_id: session.sessionTypeId,
+      space_id: session.spaceId,
+      started_at: session.startedAt.toISOString(),
+      ended_at: session.endedAt?.toISOString(),
+      duration_seconds: session.durationSeconds,
+      efficiency: session.efficiency,
+      notes: session.notes,
+      created_at: session.createdAt.toISOString(),
+      user: {
+        id: session.userId._id,
+        username: session.userId.username,
+        avatar_url: session.userId.avatarUrl,
+      }
+    }));
   }
 
   /**
@@ -223,37 +193,26 @@ export class SpaceService {
     active_today: number;
   }> {
     // Get member count
-    const { count: memberCount } = await supabaseAdmin
-      .from(this.membersTable)
-      .select('id', { count: 'exact', head: true })
-      .eq('space_id', spaceId);
+    const memberCount = await SpaceMember.countDocuments({ spaceId: spaceId });
 
     // Get total session time for space
-    const { data: sessions } = await supabaseAdmin
-      .from('session_events')
-      .select('duration_seconds, started_at')
-      .eq('space_id', spaceId)
-      .not('duration_seconds', 'is', null);
-
-    const totalSeconds = (sessions || []).reduce(
-      (sum: number, s: any) => sum + (s.duration_seconds || 0),
-      0
-    );
+    const sessions = await SessionEvent.find({ spaceId: spaceId, durationSeconds: { $exists: true, $ne: null } });
+    const totalSeconds = sessions.reduce((sum, session) => sum + (session.durationSeconds || 0), 0);
 
     // Get active members today
     const today = new Date();
     today.setUTCHours(0, 0, 0, 0);
 
-    const { data: todaySessions } = await supabaseAdmin
-      .from('session_events')
-      .select('user_id')
-      .eq('space_id', spaceId)
-      .gte('started_at', today.toISOString());
+    const todaySessions = await SessionEvent.find({
+      spaceId: spaceId,
+      startedAt: { $gte: today },
+      endedAt: { $ne: null }
+    }).distinct('userId');
 
-    const activeToday = new Set((todaySessions || []).map(s => s.user_id)).size;
+    const activeToday = todaySessions.length;
 
     return {
-      member_count: memberCount || 0,
+      member_count: memberCount,
       total_session_seconds: totalSeconds,
       active_today: activeToday,
     };
@@ -268,16 +227,18 @@ export class SpaceService {
       throw new Error('Only the owner can delete this space');
     }
 
-    const { error } = await supabaseAdmin
-      .from(this.spacesTable)
-      .delete()
-      .eq('id', spaceId);
+    // Delete space members first (due to foreign key constraints)
+    await SpaceMember.deleteMany({ spaceId: spaceId });
 
-    if (error) {
-      console.error('Error deleting space:', error);
-      throw new Error(`Failed to delete space: ${error.message}`);
+    // Delete the space
+    const result = await Space.findByIdAndDelete(spaceId);
+    if (!result) {
+      throw new Error('Space not found');
     }
   }
 }
 
 export const spaceService = new SpaceService();
+
+// Helper type for conditional mapping
+type ImportType<T> = T extends (...args: any[]) => infer R ? R : T;

@@ -4,7 +4,7 @@ import helmet from 'helmet';
 import dotenv from 'dotenv';
 import os from 'os';
 import { config } from './config/env';
-import { supabaseAdmin } from './config/supabase';
+import { connectDB } from './config/database';
 import { apiRateLimiter, authRateLimiter, skipRateLimiter } from './middleware/rateLimit.middleware';
 import { errorHandler, notFoundHandler } from './middleware/error.middleware';
 
@@ -37,6 +37,9 @@ import streakRoutes from './routes/streak.routes';
 
 // Load environment variables
 dotenv.config();
+
+// Connect to MongoDB
+connectDB();
 
 const app = express();
 

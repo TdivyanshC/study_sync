@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
-import { supabaseAdmin } from '../config/supabase';
+import User from '../models/User';
 import { generatePublicUserId } from '../utils/ids';
-import { v4 as uuidv4 } from 'uuid';
+import { Types } from 'mongoose';
 
 /**
  * Test controller for creating users programmatically
@@ -10,6 +10,8 @@ import { v4 as uuidv4 } from 'uuid';
 export class TestController {
   /**
    * Create a test user with email/password authentication
+   * Note: For MongoDB version, we'll create a user directly without Supabase Auth
+   * In a real implementation, you would integrate with an auth service like JWT or Auth0
    */
   async createTestUser(req: Request, res: Response): Promise<void> {
     try {
@@ -22,40 +24,19 @@ export class TestController {
         return;
       }
 
-      // Check if user already exists in users table by email
-      const { data: existingUser, error: existingUserError } = await supabaseAdmin
-        .from('users')
-        .select('id, email')
-        .eq('email', email)
-        .single();
+      // Check if user already exists by email
+      const existingUser = await User.findOne({ email: email });
       
-      // If user exists (no error means we found one)
-      if (!existingUserError && existingUser) {
+      if (existingUser) {
         res.status(400).json({ error: 'User with this email already exists' });
         return;
       }
 
-      // Create user in Supabase Auth
-      const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
-        email,
-        password,
-        email_confirm: true,
-        user_metadata: {
-          username,
-          display_name: display_name || username,
-        }
-      });
-
-      if (authError) {
-        console.error('Auth creation error:', authError);
-        res.status(400).json({ error: `Auth creation failed: ${authError.message}` });
-        return;
-      }
-
-      const userId = authUser.user?.id;
-
-      if (!userId) {
-        res.status(500).json({ error: 'Failed to get user ID from auth' });
+      // Check if username already exists
+      const existingUsername = await User.findOne({ username: username.toLowerCase() });
+      
+      if (existingUsername) {
+        res.status(400).json({ error: 'Username already taken' });
         return;
       }
 
@@ -65,11 +46,7 @@ export class TestController {
       const maxAttempts = 10;
 
       while (attempts < maxAttempts) {
-        const { data: existing } = await supabaseAdmin
-          .from('users')
-          .select('public_user_id')
-          .eq('public_user_id', publicUserId)
-          .single();
+        const existing = await User.findOne({ publicUserId: publicUserId });
         
         if (!existing) break;
         publicUserId = generatePublicUserId();
@@ -81,35 +58,36 @@ export class TestController {
         return;
       }
 
-      // Create user record in users table
-      const { data: newUser, error: userError } = await supabaseAdmin
-        .from('users')
-        .insert({
-          id: userId,
-          email,
-          username: username.toLowerCase(),
-          public_user_id: publicUserId,
-          display_name: display_name || username,
-          gender: gender || null,
-          age: age ? parseInt(age) : null,
-          relationship_status: relationship || null,
-          preferred_sessions: [],
-          onboarding_completed: false,
-        })
-        .select()
-        .single();
-
-      if (userError) {
-        console.error('User record creation error:', userError);
-        // Try to rollback auth user
-        await supabaseAdmin.auth.admin.deleteUser(userId);
-        res.status(400).json({ error: `User record creation failed: ${userError.message}` });
-        return;
-      }
+      // Create user record
+      const newUser = await User.create({
+        _id: new Types.ObjectId().toHexString(), // Generate UUID-like ID
+        email: email,
+        username: username.toLowerCase(),
+        publicUserId: publicUserId,
+        displayName: display_name || username,
+        gender: gender || null,
+        age: age ? parseInt(age) : null,
+        relationshipStatus: relationship || null,
+        preferredSessions: [],
+        onboardingCompleted: false,
+      });
 
       res.status(201).json({
         success: true,
-        user: newUser,
+        user: {
+          id: newUser._id,
+          email: newUser.email,
+          username: newUser.username,
+          publicUserId: newUser.publicUserId,
+          displayName: newUser.displayName,
+          gender: newUser.gender,
+          age: newUser.age,
+          relationshipStatus: newUser.relationshipStatus,
+          preferredSessions: newUser.preferredSessions,
+          onboardingCompleted: newUser.onboardingCompleted,
+          createdAt: newUser.createdAt,
+          updatedAt: newUser.updatedAt
+        },
         message: 'Test user created successfully'
       });
     } catch (error: any) {
@@ -133,11 +111,9 @@ export class TestController {
       // Get user ID from email if not provided
       let userId = user_id;
       if (email) {
-        // List users by email to find the user ID
-        const { data: authUsers } = await supabaseAdmin.auth.admin.listUsers();
-        const authUser = authUsers?.users.find(u => u.email === email);
-        if (authUser) {
-          userId = authUser.id;
+        const user = await User.findOne({ email: email });
+        if (user) {
+          userId = user._id;
         }
       }
 
@@ -146,16 +122,8 @@ export class TestController {
         return;
       }
 
-      // Delete from users table first
-      await supabaseAdmin.from('users').delete().eq('id', userId);
-
-      // Delete from auth.users
-      const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
-
-      if (error) {
-        res.status(400).json({ error: `Delete failed: ${error.message}` });
-        return;
-      }
+      // Delete user
+      await User.findByIdAndDelete(userId);
 
       res.json({ success: true, message: 'User deleted successfully' });
     } catch (error: any) {

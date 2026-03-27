@@ -1,21 +1,20 @@
 # StudySync Backend
 
-A scalable backend API for StudySync built with Express.js and Supabase (PostgreSQL).
+A scalable backend API for StudySync built with Express.js and MongoDB.
 
 ## Architecture
 
 ```
 backend/
 ├── src/
-│   ├── config/         # Environment and Supabase configuration
+│   ├── config/         # Environment and database configuration
 │   ├── controllers/     # Request handlers
 │   ├── middleware/     # Auth, rate limiting, error handling
 │   ├── routes/         # API route definitions
 │   ├── services/       # Business logic
 │   ├── utils/          # Helper functions
 │   └── index.ts        # Entry point
-├── sql/
-│   └── schema.sql      # Database schema
+├── src/models/         # MongoDB models
 └── package.json
 ```
 
@@ -71,15 +70,10 @@ npm install
 2. Configure environment variables:
 ```bash
 cp .env.example .env
-# Edit .env with your Supabase credentials
+# Edit .env with your MongoDB connection string
 ```
 
-3. Run database migrations:
-```bash
-npm run db:migrate
-```
-
-4. Start development server:
+3. Start development server:
 ```bash
 npm run dev
 ```
@@ -88,8 +82,7 @@ npm run dev
 
 | Variable | Description |
 |----------|-------------|
-| `SUPABASE_URL` | Supabase project URL |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key |
+| `MONGODB_URI` | MongoDB connection string |
 | `PORT` | Server port (default: 3000) |
 | `NODE_ENV` | Environment (development/production) |
 | `CORS_ORIGIN` | CORS origin |

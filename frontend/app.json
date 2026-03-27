@@ -9,7 +9,8 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.studystreak.app"
+      "bundleIdentifier": "com.studystreak.app",
+      "googleServicesFile": "./GoogleService-Info.plist"
     },
     "android": {
       "adaptiveIcon": {
@@ -40,7 +41,16 @@
         }
       ],
       "expo-web-browser",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosClientId": "944168135230-i3dv0ar7uq7vubv9i03bq5o0nq2deh1j.apps.googleusercontent.com",
+          "androidClientId": "944168135230-i3dv0ar7uq7vubv9i03bq5o0nq2deh1j.apps.googleusercontent.com",
+          "webClientId": "944168135230-i3dv0ar7uq7vubv9i03bq5o0nq2deh1j.apps.googleusercontent.com",
+          "iosUrlScheme": "com.googleusercontent.apps.944168135230-i3dv0ar7uq7vubv9i03bq5o0nq2deh1j"
+        }
+      ]
     ],
     "extra": {
       "eas": {

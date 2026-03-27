@@ -1,6 +1,6 @@
-import { supabaseAdmin } from '../config/supabase';
+import SessionEvent from '../models/SessionEvent';
 import { calculateDurationSeconds } from '../utils/time';
-import { v4 as uuidv4 } from 'uuid';
+import { Types } from 'mongoose';
 
 export interface SessionEvent {
   id: string;
@@ -26,30 +26,28 @@ export interface EndSessionInput {
 }
 
 export class SessionService {
-  private tableName = 'session_events';
-
   /**
    * Start a new session - insert with started_at timestamp
    */
   async startSession(input: CreateSessionInput): Promise<SessionEvent> {
-    const { data, error } = await supabaseAdmin
-      .from(this.tableName)
-      .insert({
-        id: uuidv4(),
-        user_id: input.user_id,
-        session_type_id: input.session_type_id,
-        space_id: input.space_id,
-        started_at: input.started_at || new Date().toISOString(),
-      })
-      .select()
-      .single();
+    const session = await SessionEvent.create({
+      _id: new Types.ObjectId().toHexString(), // Generate UUID-like ID
+      userId: input.user_id,
+      sessionTypeId: input.session_type_id,
+      spaceId: input.space_id,
+      startedAt: input.started_at ? new Date(input.started_at) : new Date(),
+    });
 
-    if (error) {
-      console.error('Error starting session:', error);
-      throw new Error(`Failed to start session: ${error.message}`);
-    }
-
-    return data;
+    return {
+      id: session._id,
+      user_id: session.userId,
+      session_type_id: session.sessionTypeId,
+      space_id: session.spaceId,
+      started_at: session.startedAt.toISOString(),
+      ended_at: session.endedAt?.toISOString(),
+      duration_seconds: session.durationSeconds,
+      created_at: session.createdAt.toISOString(),
+    };
   }
 
   /**
@@ -57,63 +55,70 @@ export class SessionService {
    */
   async endSession(input: EndSessionInput): Promise<SessionEvent> {
     // Get the session first
-    const { data: existing, error: fetchError } = await supabaseAdmin
-      .from(this.tableName)
-      .select('*')
-      .eq('id', input.session_id)
-      .single();
+    const existing = await SessionEvent.findById(input.session_id);
 
-    if (fetchError || !existing) {
+    if (!existing) {
       throw new Error('Session not found');
     }
 
-    if (existing.ended_at) {
+    if (existing.endedAt) {
       throw new Error('Session already ended');
     }
 
-    const endedAt = input.ended_at || new Date().toISOString();
-    const durationSeconds = calculateDurationSeconds(
-      new Date(existing.started_at),
-      new Date(endedAt)
+    const endedAt = input.ended_at ? new Date(input.ended_at) : new Date();
+    const durationSeconds = calculateDurationSeconds(existing.startedAt, endedAt);
+
+    // Update the session
+    const session = await SessionEvent.findByIdAndUpdate(
+      input.session_id,
+      {
+        endedAt,
+        durationSeconds,
+      },
+      { new: true }
     );
 
-    const { data, error } = await supabaseAdmin
-      .from(this.tableName)
-      .update({
-        ended_at: endedAt,
-        duration_seconds: durationSeconds,
-      })
-      .eq('id', input.session_id)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error ending session:', error);
-      throw new Error(`Failed to end session: ${error.message}`);
+    if (!session) {
+      throw new Error('Session not found');
     }
 
-    return data;
+    return {
+      id: session._id,
+      user_id: session.userId,
+      session_type_id: session.sessionTypeId,
+      space_id: session.spaceId,
+      started_at: session.startedAt.toISOString(),
+      ended_at: session.endedAt?.toISOString(),
+      duration_seconds: session.durationSeconds,
+      created_at: session.createdAt.toISOString(),
+    };
   }
 
   /**
    * Get active session for user (started but not ended)
    */
   async getActiveSession(userId: string): Promise<SessionEvent | null> {
-    const { data, error } = await supabaseAdmin
-      .from(this.tableName)
-      .select('*')
-      .eq('user_id', userId)
-      .is('ended_at', null)
-      .order('started_at', { ascending: false })
-      .limit(1)
-      .single();
+    const session = await SessionEvent.findOne({
+      userId: userId,
+      endedAt: null,
+    })
+      .sort({ startedAt: -1 })
+      .limit(1);
 
-    if (error && error.code !== 'PGRST116') {
-      console.error('Error getting active session:', error);
-      throw new Error(`Failed to get active session: ${error.message}`);
+    if (!session) {
+      return null;
     }
 
-    return data || null;
+    return {
+      id: session._id,
+      user_id: session.userId,
+      session_type_id: session.sessionTypeId,
+      space_id: session.spaceId,
+      started_at: session.startedAt.toISOString(),
+      ended_at: session.endedAt?.toISOString(),
+      duration_seconds: session.durationSeconds,
+      created_at: session.createdAt.toISOString(),
+    };
   }
 
   /**
@@ -123,48 +128,44 @@ export class SessionService {
     userId: string,
     options: { limit?: number; offset?: number; spaceId?: string } = {}
   ): Promise<SessionEvent[]> {
-    let query = supabaseAdmin
-      .from(this.tableName)
-      .select('*')
-      .eq('user_id', userId)
-      .order('started_at', { ascending: false });
+    let query = SessionEvent.find({ userId: userId })
+      .sort({ startedAt: -1 });
 
     if (options.spaceId) {
-      query = query.eq('space_id', options.spaceId);
+      query = query.where('spaceId', options.spaceId);
     }
 
-    if (options.offset) {
-      query = query.range(options.offset, (options.offset || 0) + (options.limit || 20) - 1);
-    } else if (options.limit) {
+    // Apply pagination
+    if (options.offset !== undefined && options.limit !== undefined) {
+      query = query.skip(options.offset).limit(options.limit);
+    } else if (options.limit !== undefined) {
       query = query.limit(options.limit);
     }
 
-    const { data, error } = await query;
+    const sessions = await query.exec();
 
-    if (error) {
-      console.error('Error getting user sessions:', error);
-      throw new Error(`Failed to get sessions: ${error.message}`);
-    }
-
-    return data || [];
+    return sessions.map(session => ({
+      id: session._id,
+      user_id: session.userId,
+      session_type_id: session.sessionTypeId,
+      space_id: session.spaceId,
+      started_at: session.startedAt.toISOString(),
+      ended_at: session.endedAt?.toISOString(),
+      duration_seconds: session.durationSeconds,
+      created_at: session.createdAt.toISOString(),
+    }));
   }
 
   /**
    * Get total session time for user
    */
   async getTotalSessionTime(userId: string): Promise<number> {
-    const { data, error } = await supabaseAdmin
-      .from(this.tableName)
-      .select('duration_seconds')
-      .eq('user_id', userId)
-      .not('duration_seconds', 'is', null);
+    const sessions = await SessionEvent.find({
+      userId: userId,
+      durationSeconds: { $exists: true, $ne: null },
+    }).exec();
 
-    if (error) {
-      console.error('Error getting total session time:', error);
-      throw new Error(`Failed to get total session time: ${error.message}`);
-    }
-
-    return (data || []).reduce((sum, s) => sum + (s.duration_seconds || 0), 0);
+    return sessions.reduce((sum, session) => sum + (session.durationSeconds || 0), 0);
   }
 }
 

@@ -1,8 +1,102 @@
 import { Request, Response } from 'express';
-import { supabaseAdmin } from '../config/supabase';
+import User from '../models/User';
 import { generatePublicUserId } from '../utils/ids';
+import { generateToken, verifyToken, extractToken } from '../config/jwt';
+import { verifyGoogleIdToken, GoogleUserPayload } from '../services/google-auth.service';
 
 export class AuthController {
+  /**
+   * Handle Google Sign-In from native React Native app
+   * Verifies the Google ID token and creates/updates user in MongoDB
+   */
+  async googleSignIn(req: Request, res: Response): Promise<void> {
+    try {
+      const { idToken } = req.body;
+
+      if (!idToken) {
+        res.status(400).json({ error: 'Missing Google ID token' });
+        return;
+      }
+
+      // Verify Google ID token
+      const googleUser: GoogleUserPayload | null = await verifyGoogleIdToken(idToken);
+
+      if (!googleUser) {
+        res.status(401).json({ error: 'Invalid Google ID token' });
+        return;
+      }
+
+      // Check if user already exists by email
+      let user = await User.findOne({ email: googleUser.email });
+
+      let isNewUser = false;
+
+      if (!user) {
+        // Create new user
+        isNewUser = true;
+        
+        // Generate unique public_user_id with retry
+        let publicUserId: string;
+        let attempts = 0;
+        const maxAttempts = 10;
+
+        do {
+          publicUserId = generatePublicUserId();
+          const existing = await User.findOne({ publicUserId });
+          
+          if (!existing) break;
+          attempts++;
+        } while (attempts < maxAttempts);
+
+        if (attempts >= maxAttempts) {
+          res.status(500).json({ error: 'Failed to generate unique user ID' });
+          return;
+        }
+
+        // Create user record
+        user = await User.create({
+          _id: googleUser.googleId,
+          email: googleUser.email,
+          gmailName: googleUser.name,
+          username: googleUser.email.split('@')[0],
+          publicUserId,
+          avatarUrl: googleUser.picture,
+          displayName: googleUser.name,
+        });
+      } else {
+        // Update existing user's Google info
+        user = await User.findByIdAndUpdate(
+          user._id,
+          {
+            gmailName: googleUser.name || user.gmailName,
+            avatarUrl: googleUser.picture || user.avatarUrl,
+          },
+          { new: true }
+        );
+      }
+
+      // Generate our own JWT token for the user
+      const token = generateToken(user._id, user.email);
+
+      res.json({
+        token,
+        user: {
+          id: user._id,
+          email: user.email,
+          username: user.username,
+          displayName: user.displayName,
+          avatarUrl: user.avatarUrl,
+          gmailName: user.gmailName,
+          onboardingCompleted: user.onboardingCompleted,
+        },
+        isNewUser,
+      });
+    } catch (error: any) {
+      console.error('Google Sign-In error:', error);
+      res.status(500).json({ error: `Internal server error: ${error.message}` });
+    }
+  }
+
   /**
    * Handle Supabase auth callback - sync user to users table on first login
    */
@@ -15,12 +109,8 @@ export class AuthController {
         return;
       }
 
-      // Check if user already exists in users table
-      const { data: existingUser } = await supabaseAdmin
-        .from('users')
-        .select('*')
-        .eq('id', user_id)
-        .single();
+      // Check if user already exists in users collection
+      const existingUser = await User.findById(user_id);
 
       if (existingUser) {
         res.json({ user: existingUser, isNewUser: false });
@@ -34,11 +124,7 @@ export class AuthController {
 
       do {
         publicUserId = generatePublicUserId();
-        const { data: existing } = await supabaseAdmin
-          .from('users')
-          .select('public_user_id')
-          .eq('public_user_id', publicUserId)
-          .single();
+        const existing = await User.findOne({ publicUserId });
         
         if (!existing) break;
         attempts++;
@@ -50,27 +136,17 @@ export class AuthController {
       }
 
       // Create user record
-      const { data: newUser, error } = await supabaseAdmin
-        .from('users')
-        .insert({
-          id: user_id,
-          email,
-          username: email.split('@')[0],
-          public_user_id: publicUserId,
-        })
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error creating user:', error);
-        res.status(500).json({ error: `Failed to create user: ${error.message}` });
-        return;
-      }
+      const newUser = await User.create({
+        _id: user_id,
+        email,
+        username: email.split('@')[0],
+        publicUserId,
+      });
 
       res.json({ user: newUser, isNewUser: true });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Auth callback error:', error);
-      res.status(500).json({ error: 'Internal server error' });
+      res.status(500).json({ error: `Internal server error: ${error.message}` });
     }
   }
 
@@ -86,21 +162,17 @@ export class AuthController {
         return;
       }
 
-      const { data, error } = await supabaseAdmin
-        .from('users')
-        .select('*')
-        .eq('id', userId)
-        .single();
+      const user = await User.findById(userId);
 
-      if (error || !data) {
+      if (!user) {
         res.status(404).json({ error: 'User not found' });
         return;
       }
 
-      res.json(data);
-    } catch (error) {
+      res.json(user);
+    } catch (error: any) {
       console.error('Get profile error:', error);
-      res.status(500).json({ error: 'Internal server error' });
+      res.status(500).json({ error: `Internal server error: ${error.message}` });
     }
   }
 
@@ -117,27 +189,26 @@ export class AuthController {
         return;
       }
 
-      const { data, error } = await supabaseAdmin
-        .from('users')
-        .update({
-          ...(username && { username }),
-          ...(avatar_url && { avatar_url }),
-          ...(gmail_name && { gmail_name }),
-        })
-        .eq('id', userId)
-        .select()
-        .single();
+      const updateData: any = {};
+      if (username) updateData.username = username;
+      if (avatar_url) updateData.avatarUrl = avatar_url;
+      if (gmail_name) updateData.gmailName = gmail_name;
 
-      if (error) {
-        console.error('Error updating profile:', error);
-        res.status(500).json({ error: `Failed to update profile: ${error.message}` });
+      const user = await User.findByIdAndUpdate(
+        userId,
+        updateData,
+        { new: true, runValidators: true }
+      );
+
+      if (!user) {
+        res.status(404).json({ error: 'User not found' });
         return;
       }
 
-      res.json(data);
-    } catch (error) {
+      res.json(user);
+    } catch (error: any) {
       console.error('Update profile error:', error);
-      res.status(500).json({ error: 'Internal server error' });
+      res.status(500).json({ error: `Internal server error: ${error.message}` });
     }
   }
 }

@@ -7,6 +7,7 @@ import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import NetInfo from '@react-native-community/netinfo';
 import { buildApiUrl, API_ENDPOINTS } from '../../lib/apiConfig';
+import { getAuthToken } from '../../lib/auth/tokenStorage';
 
 // ============================================
 // Types
@@ -88,6 +89,7 @@ export interface UserProfile {
   public_user_id: string;
   avatar_url?: string;
   gmail_name?: string;
+  onboarding_completed?: boolean;
   created_at: string;
 }
 
@@ -138,10 +140,17 @@ class BackendApi {
   }
 
   /**
-   * Get Supabase auth token
+   * Get auth token - try custom JWT first, then fallback to Supabase
    */
   private async getAuthToken(): Promise<string | null> {
     try {
+      // First try to get our custom JWT token
+      const customToken = await getAuthToken();
+      if (customToken) {
+        return customToken;
+      }
+      
+      // Fallback to Supabase token
       if (Platform.OS === 'web') {
         return localStorage.getItem('supabase.auth.token');
       }

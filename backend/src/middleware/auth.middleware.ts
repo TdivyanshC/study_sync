@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
-import { supabaseAdmin } from '../config/supabase';
 import { config } from '../config/env';
+import { verifyToken, extractToken } from '../config/jwt';
 
-export interface AuthenticatedRequest extends Request {
+export interface AuthAuthenticatedRequest extends Request {
   user?: {
     id: string;
     email: string;
@@ -10,11 +10,11 @@ export interface AuthenticatedRequest extends Request {
 }
 
 /**
- * Auth middleware - verifies Supabase JWT token
+ * Auth middleware - verifies JWT token
  * For development, allows bypass with X-Dev-User-Id header
  */
 export async function authMiddleware(
-  req: AuthenticatedRequest,
+  req: AuthAuthenticatedRequest,
   res: Response,
   next: NextFunction
 ): Promise<void> {
@@ -36,22 +36,26 @@ export async function authMiddleware(
       return;
     }
 
-    const token = authHeader.split(' ')[1];
-
-    // Verify token with Supabase
-    const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
-
-    if (error || !user) {
-      res.status(401).json({ error: 'Invalid or expired token' });
+    const token = extractToken(authHeader);
+    if (!token) {
+      res.status(401).json({ error: 'Missing or invalid authorization header' });
       return;
     }
 
-    req.user = {
-      id: user.id,
-      email: user.email || '',
-    };
+    // Verify JWT token
+    const customPayload = verifyToken(token);
+    if (customPayload) {
+      req.user = {
+        id: customPayload.userId,
+        email: customPayload.email,
+      };
+      next();
+      return;
+    }
 
-    next();
+    // Token invalid
+    res.status(401).json({ error: 'Invalid or expired token' });
+    return;
   } catch (error) {
     console.error('Auth middleware error:', error);
     res.status(500).json({ error: 'Authentication failed' });
@@ -62,7 +66,7 @@ export async function authMiddleware(
  * Optional auth middleware - sets user if token present, but doesn't require it
  */
 export async function optionalAuthMiddleware(
-  req: AuthenticatedRequest,
+  req: AuthAuthenticatedRequest,
   res: Response,
   next: NextFunction
 ): Promise<void> {
@@ -73,13 +77,18 @@ export async function optionalAuthMiddleware(
       return;
     }
 
-    const token = authHeader.split(' ')[1];
-    const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+    const token = extractToken(authHeader);
+    if (!token) {
+      next();
+      return;
+    }
 
-    if (!error && user) {
+    // Verify JWT token
+    const customPayload = verifyToken(token);
+    if (customPayload) {
       req.user = {
-        id: user.id,
-        email: user.email || '',
+        id: customPayload.userId,
+        email: customPayload.email,
       };
     }
 

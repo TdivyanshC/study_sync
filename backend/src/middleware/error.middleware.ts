@@ -40,8 +40,8 @@ export function errorHandler(
     return;
   }
 
-  // Supabase errors
-  if (err.message && err.message.includes('supabase')) {
+  // MongoDB errors
+  if (err.message && err.message.includes('MongoDB')) {
     res.status(500).json({
       error: 'Database error',
       message: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error',

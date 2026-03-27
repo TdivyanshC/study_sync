@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
-import { supabaseAdmin } from '../config/supabase';
-import { v4 as uuidv4 } from 'uuid';
+import Friendship from '../models/Friendship';
+import User from '../models/User';
+import { Types } from 'mongoose';
 
 export class FriendshipController {
   /**
@@ -16,32 +17,22 @@ export class FriendshipController {
       }
 
       // Get friendships where user is requester or receiver and status is accepted
-      const { data, error } = await supabaseAdmin
-        .from('friendships')
-        .select(`
-          *,
-          requester:users!requester_id (id, username, avatar_url, public_user_id),
-          receiver:users!receiver_id (id, username, avatar_url, public_user_id)
-        `)
-        .or(`requester_id.eq.${userId},receiver_id.eq.${userId}`)
-        .eq('status', 'accepted');
-
-      if (error) {
-        console.error('Get friends error:', error);
-        res.status(500).json({ error: 'Failed to get friends' });
-        return;
-      }
+      const friendships = await Friendship.find({
+        $or: [{ requesterId: userId }, { receiverId: userId }],
+        status: 'accepted'
+      }).populate('requesterId', 'id username avatarUrl publicUserId')
+        .populate('receiverId', 'id username avatarUrl publicUserId');
 
       // Transform to flat friend list
-      const friends = (data || []).map((f: any) => {
-        const isRequester = f.requester_id === userId;
-        return isRequester ? f.receiver : f.requester;
+      const friends = friendships.map(friendship => {
+        const isRequester = friendship.requesterId._id.toString() === userId;
+        return isRequester ? friendship.receiverId : friendship.requesterId;
       });
 
       res.json(friends);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Get friends error:', error);
-      res.status(500).json({ error: 'Failed to get friends' });
+      res.status(500).json({ error: `Failed to get friends: ${error.message}` });
     }
   }
 
@@ -57,25 +48,28 @@ export class FriendshipController {
         return;
       }
 
-      const { data, error } = await supabaseAdmin
-        .from('friendships')
-        .select(`
-          *,
-          requester:users!requester_id (id, username, avatar_url, public_user_id)
-        `)
-        .eq('receiver_id', userId)
-        .eq('status', 'pending');
+      const friendships = await Friendship.find({
+        receiverId: userId,
+        status: 'pending'
+      }).populate('requesterId', 'id username avatarUrl publicUserId');
 
-      if (error) {
-        console.error('Get pending requests error:', error);
-        res.status(500).json({ error: 'Failed to get pending requests' });
-        return;
-      }
-
-      res.json(data || []);
-    } catch (error) {
+      res.json(friendships.map(friendship => ({
+        id: friendship._id,
+        requesterId: friendship.requesterId._id,
+        receiverId: friendship.receiverId._id,
+        status: friendship.status,
+        createdAt: friendship.createdAt,
+        updatedAt: friendship.updatedAt,
+        requester: {
+          id: friendship.requesterId._id,
+          username: friendship.requesterId.username,
+          avatar_url: friendship.requesterId.avatarUrl,
+          public_user_id: friendship.requesterId.publicUserId
+        }
+      })));
+    } catch (error: any) {
       console.error('Get pending requests error:', error);
-      res.status(500).json({ error: 'Failed to get pending requests' });
+      res.status(500).json({ error: `Failed to get pending requests: ${error.message}` });
     }
   }
 
@@ -98,39 +92,37 @@ export class FriendshipController {
       }
 
       // Check if already friends or request exists
-      const { data: existing } = await supabaseAdmin
-        .from('friendships')
-        .select('*')
-        .or(`(requester_id.eq.${userId},receiver_id.eq.${receiver_id}),(requester_id.eq.${receiver_id},receiver_id.eq.${userId})`)
-        .in('status', ['pending', 'accepted'])
-        .single();
+      const existing = await Friendship.findOne({
+        $or: [
+          { requesterId: userId, receiverId: receiver_id },
+          { requesterId: receiver_id, receiverId: userId }
+        ],
+        status: { $in: ['pending', 'accepted'] }
+      });
 
       if (existing) {
         res.status(400).json({ error: 'Friend request already exists or users are already friends' });
         return;
       }
 
-      const { data, error } = await supabaseAdmin
-        .from('friendships')
-        .insert({
-          id: uuidv4(),
-          requester_id: userId,
-          receiver_id,
-          status: 'pending',
-        })
-        .select()
-        .single();
+      const friendship = await Friendship.create({
+        _id: new Types.ObjectId().toHexString(), // Generate UUID-like ID
+        requesterId: userId,
+        receiverId: receiver_id,
+        status: 'pending'
+      });
 
-      if (error) {
-        console.error('Send request error:', error);
-        res.status(500).json({ error: 'Failed to send friend request' });
-        return;
-      }
-
-      res.status(201).json(data);
-    } catch (error) {
+      res.status(201).json({
+        id: friendship._id,
+        requesterId: friendship.requesterId,
+        receiverId: friendship.receiverId,
+        status: friendship.status,
+        createdAt: friendship.createdAt,
+        updatedAt: friendship.updatedAt
+      });
+    } catch (error: any) {
       console.error('Send request error:', error);
-      res.status(500).json({ error: 'Failed to send friend request' });
+      res.status(500).json({ error: `Failed to send friend request: ${error.message}` });
     }
   }
 
@@ -148,36 +140,31 @@ export class FriendshipController {
       }
 
       // Verify request belongs to user
-      const { data: request } = await supabaseAdmin
-        .from('friendships')
-        .select('*')
-        .eq('id', request_id)
-        .eq('receiver_id', userId)
-        .eq('status', 'pending')
-        .single();
+      const friendship = await Friendship.findOne({
+        _id: request_id,
+        receiverId: userId,
+        status: 'pending'
+      });
 
-      if (!request) {
+      if (!friendship) {
         res.status(404).json({ error: 'Request not found' });
         return;
       }
 
-      const { data, error } = await supabaseAdmin
-        .from('friendships')
-        .update({ status: 'accepted' })
-        .eq('id', request_id)
-        .select()
-        .single();
+      friendship.status = 'accepted';
+      await friendship.save();
 
-      if (error) {
-        console.error('Accept request error:', error);
-        res.status(500).json({ error: 'Failed to accept request' });
-        return;
-      }
-
-      res.json(data);
-    } catch (error) {
+      res.json({
+        id: friendship._id,
+        requesterId: friendship.requesterId,
+        receiverId: friendship.receiverId,
+        status: friendship.status,
+        createdAt: friendship.createdAt,
+        updatedAt: friendship.updatedAt
+      });
+    } catch (error: any) {
       console.error('Accept request error:', error);
-      res.status(500).json({ error: 'Failed to accept request' });
+      res.status(500).json({ error: `Failed to accept request: ${error.message}` });
     }
   }
 
@@ -194,24 +181,31 @@ export class FriendshipController {
         return;
       }
 
-      const { data, error } = await supabaseAdmin
-        .from('friendships')
-        .update({ status: 'rejected' })
-        .eq('id', request_id)
-        .eq('receiver_id', userId)
-        .select()
-        .single();
+      const friendship = await Friendship.findOne({
+        _id: request_id,
+        receiverId: userId,
+        status: 'pending'
+      });
 
-      if (error) {
-        console.error('Reject request error:', error);
-        res.status(500).json({ error: 'Failed to reject request' });
+      if (!friendship) {
+        res.status(404).json({ error: 'Request not found' });
         return;
       }
 
-      res.json(data);
-    } catch (error) {
+      friendship.status = 'rejected';
+      await friendship.save();
+
+      res.json({
+        id: friendship._id,
+        requesterId: friendship.requesterId,
+        receiverId: friendship.receiverId,
+        status: friendship.status,
+        createdAt: friendship.createdAt,
+        updatedAt: friendship.updatedAt
+      });
+    } catch (error: any) {
       console.error('Reject request error:', error);
-      res.status(500).json({ error: 'Failed to reject request' });
+      res.status(500).json({ error: `Failed to reject request: ${error.message}` });
     }
   }
 
@@ -228,22 +222,18 @@ export class FriendshipController {
         return;
       }
 
-      const { error } = await supabaseAdmin
-        .from('friendships')
-        .delete()
-        .eq('status', 'accepted')
-        .or(`(requester_id.eq.${userId},receiver_id.eq.${friend_id}),(requester_id.eq.${friend_id},receiver_id.eq.${userId})`);
-
-      if (error) {
-        console.error('Remove friend error:', error);
-        res.status(500).json({ error: 'Failed to remove friend' });
-        return;
-      }
+      await Friendship.deleteOne({
+        status: 'accepted',
+        $or: [
+          { requesterId: userId, receiverId: friend_id },
+          { requesterId: friend_id, receiverId: userId }
+        ]
+      });
 
       res.json({ message: 'Friend removed successfully' });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Remove friend error:', error);
-      res.status(500).json({ error: 'Failed to remove friend' });
+      res.status(500).json({ error: `Failed to remove friend: ${error.message}` });
     }
   }
 }

@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
-import { supabaseAdmin } from '../config/supabase';
+import User from '../models/User';
+import SessionType from '../models/SessionType';
 
 interface OnboardingData {
   step1_data: {
@@ -14,7 +15,7 @@ interface OnboardingData {
 }
 
 interface SessionTypeData {
-  user_id: string;
+  userId: string;
   name: string;
   icon: string;
   color: string;
@@ -28,21 +29,17 @@ export class UserController {
     try {
       const { user_id } = req.params;
 
-      const { data, error } = await supabaseAdmin
-        .from('users')
-        .select('id, username, email, avatar_url, public_user_id, created_at')
-        .eq('id', user_id)
-        .single();
+      const user = await User.findById(user_id);
 
-      if (error || !data) {
+      if (!user) {
         res.status(404).json({ error: 'User not found' });
         return;
       }
 
-      res.json(data);
-    } catch (error) {
+      res.json(user);
+    } catch (error: any) {
       console.error('Get user error:', error);
-      res.status(500).json({ error: 'Failed to get user' });
+      res.status(500).json({ error: `Failed to get user: ${error.message}` });
     }
   }
 
@@ -53,21 +50,17 @@ export class UserController {
     try {
       const { public_id } = req.params;
 
-      const { data, error } = await supabaseAdmin
-        .from('users')
-        .select('id, username, avatar_url, public_user_id')
-        .eq('public_user_id', public_id)
-        .single();
+      const user = await User.findOne({ publicUserId: public_id });
 
-      if (error || !data) {
+      if (!user) {
         res.status(404).json({ error: 'User not found' });
         return;
       }
 
-      res.json(data);
-    } catch (error) {
+      res.json(user);
+    } catch (error: any) {
       console.error('Get user by public id error:', error);
-      res.status(500).json({ error: 'Failed to get user' });
+      res.status(500).json({ error: `Failed to get user: ${error.message}` });
     }
   }
 
@@ -102,17 +95,15 @@ export class UserController {
 
       // Prepare user update/insert data
       const userUpdateData: any = {
-        id: userId,
         username: username,
-        public_user_id: publicUserId,
-        onboarding_completed: true,
-        onboarding_completed_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        publicUserId: publicUserId,
+        onboardingCompleted: true,
+        onboardingCompletedAt: new Date(),
       };
 
       // Add optional fields if provided
       if (onboardingData.display_name) {
-        userUpdateData.display_name = onboardingData.display_name;
+        userUpdateData.displayName = onboardingData.display_name;
       }
       if (onboardingData.step1_data.gender) {
         userUpdateData.gender = onboardingData.step1_data.gender;
@@ -121,59 +112,35 @@ export class UserController {
         userUpdateData.age = parseInt(onboardingData.step1_data.age) || null;
       }
       if (onboardingData.step1_data.relationship) {
-        userUpdateData.relationship_status = onboardingData.step1_data.relationship;
+        userUpdateData.relationshipStatus = onboardingData.step1_data.relationship;
       }
       if (onboardingData.step2_data?.preferred_sessions) {
-        userUpdateData.preferred_sessions = JSON.stringify(onboardingData.step2_data.preferred_sessions);
+        userUpdateData.preferredSessions = onboardingData.step2_data.preferred_sessions;
       }
 
       // First, check if user record exists
-      const { data: existingUser, error: fetchError } = await supabaseAdmin
-        .from('users')
-        .select('id')
-        .eq('id', userId)
-        .single();
-
-      if (fetchError && fetchError.code !== 'PGRST116') {
-        // PGRST116 means no rows returned, which is expected for new users
-        console.error('Error checking existing user:', fetchError);
-        throw fetchError;
-      }
+      let existingUser = await User.findById(userId);
 
       let updatedUser;
 
       if (existingUser) {
         // Update existing user
         console.log('📝 Updating existing user record');
-        const { data, error: updateError } = await supabaseAdmin
-          .from('users')
-          .update(userUpdateData)
-          .eq('id', userId)
-          .select()
-          .single();
-
-        if (updateError) {
-          console.error('Error updating user:', updateError);
-          throw updateError;
-        }
-        updatedUser = data;
+        updatedUser = await User.findByIdAndUpdate(
+          userId,
+          userUpdateData,
+          { new: true, runValidators: true }
+        );
       } else {
         // Insert new user record
         console.log('📝 Creating new user record');
-        const { data, error: insertError } = await supabaseAdmin
-          .from('users')
-          .insert(userUpdateData)
-          .select()
-          .single();
-
-        if (insertError) {
-          console.error('Error inserting user:', insertError);
-          throw insertError;
-        }
-        updatedUser = data;
+        updatedUser = await User.create({
+          _id: userId,
+          ...userUpdateData
+        });
       }
 
-      console.log('✅ User record saved:', updatedUser?.id);
+      console.log('✅ User record saved:', updatedUser?._id);
 
       // Create session types for selected sessions
       if (onboardingData.step2_data?.preferred_sessions && onboardingData.step2_data.preferred_sessions.length > 0) {
@@ -215,20 +182,19 @@ export class UserController {
     const sessionTypesToInsert: SessionTypeData[] = sessionIds
       .filter(id => sessionTypeMap[id])
       .map(id => ({
-        user_id: userId,
+        userId: userId,
         name: sessionTypeMap[id].name,
         icon: sessionTypeMap[id].icon,
         color: sessionTypeMap[id].color,
       }));
 
     if (sessionTypesToInsert.length > 0) {
-      const { error } = await supabaseAdmin
-        .from('session_types')
-        .upsert(sessionTypesToInsert, { onConflict: 'user_id, name' });
-
-      if (error) {
-        console.error('Error creating session types:', error);
+      // Use insertMany with ordered: false to continue even if some fail
+      try {
+        await SessionType.insertMany(sessionTypesToInsert, { ordered: false });
+      } catch (error) {
         // Don't fail onboarding if session types fail
+        console.error('Error creating session types:', error);
       }
     }
   }
