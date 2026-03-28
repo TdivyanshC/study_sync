@@ -98,7 +98,8 @@ export class AuthController {
   }
 
   /**
-   * Handle Supabase auth callback - sync user to users table on first login
+   * Handle auth callback - sync user to users table on first login
+   * Note: Using native JWT auth with MongoDB instead of Supabase
    */
   async handleAuthCallback(req: Request, res: Response): Promise<void> {
     try {

@@ -16,7 +16,7 @@ const getBackendUrl = (): string => {
   }
   
   // Production
-  return 'https://api.studysync.app';
+  return 'https://api.prodify.app';
 };
 
 // API endpoints

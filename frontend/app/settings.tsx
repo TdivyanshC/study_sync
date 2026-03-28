@@ -83,8 +83,8 @@ export default function SettingsScreen() {
 
   const handleAbout = () => {
     Alert.alert(
-      'About StudySync',
-      'StudySync v1.0.0\n\nYour ultimate study companion for staying focused and building study habits.',
+      'About Prodify',
+      'Prodify v1.0.0\n\nYour ultimate study companion for staying focused and building study habits.',
       [{ text: 'OK' }]
     );
   };

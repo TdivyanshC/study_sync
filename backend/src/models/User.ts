@@ -2,7 +2,7 @@ import { Schema, model, models, Document } from 'mongoose';
 
 // Define the User interface
 export interface IUser extends Document<string, any, IUser> {
-  _id: string; // This will be the Supabase auth user ID
+  _id: string; // MongoDB document ID (auto-generated)
   email: string;
   gmailName?: string;
   username: string;
@@ -26,7 +26,7 @@ const UserSchema = new Schema<IUser>(
       type: String, 
       required: true, 
       unique: true 
-    }, // Supabase auth user ID
+    }, // MongoDB document ID
     email: { 
       type: String, 
       required: true, 

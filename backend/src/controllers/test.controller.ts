@@ -10,8 +10,8 @@ import { Types } from 'mongoose';
 export class TestController {
   /**
    * Create a test user with email/password authentication
-   * Note: For MongoDB version, we'll create a user directly without Supabase Auth
-   * In a real implementation, you would integrate with an auth service like JWT or Auth0
+   * Note: For MongoDB version, we create users directly with native JWT auth
+   * Instead of using Supabase Auth or external auth services
    */
   async createTestUser(req: Request, res: Response): Promise<void> {
     try {

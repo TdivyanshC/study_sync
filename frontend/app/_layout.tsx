@@ -87,7 +87,7 @@ function DeepLinkHandler() {
     }
     
     // Handle custom scheme OAuth callbacks
-    if (url.startsWith('studysync://') || url.startsWith('studysync://auth/callback')) {
+    if (url.startsWith('prodify://') || url.startsWith('prodify://auth/callback')) {
       const fragment = url.split('#')[1];
       if (fragment) {
         const params = new URLSearchParams(fragment);

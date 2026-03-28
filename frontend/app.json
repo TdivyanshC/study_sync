@@ -1,28 +1,34 @@
 {
   "expo": {
-    "name": "StudySync",
-    "slug": "study-sync",
+    "name": "Prodify",
+    "slug": "prodify",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "studysync",
+    "scheme": "prodify",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.studystreak.app",
-      "googleServicesFile": "./GoogleService-Info.plist"
+      "bundleIdentifier": "com.prodify.app",
+      "googleServicesFile": "./GoogleService-Info.plist",
+      "icon": "./assets/all-icons/iOS/Icon-1024.png"
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#000000"
+        "foregroundImage": "./assets/all-icons/Android/Icon-192.png",
+        "backgroundColor": "#000000",
+        "monochromeImage": "./assets/all-icons/Android/Icon-192.png"
       },
+      "icon": "./assets/all-icons/Android/Icon-192.png",
       "statusBar": {
         "backgroundColor": "#000000"
       },
       "edgeToEdgeEnabled": true,
       "jsEngine": "hermes",
-      "package": "com.studystreak.app"
+      "package": "com.prodify.app"
+    },
+    "macos": {
+      "icon": "./assets/all-icons/macOS/Icon-1024.png"
     },
     "web": {
       "bundler": "metro",
