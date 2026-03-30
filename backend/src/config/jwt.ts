@@ -1,14 +1,17 @@
-import jwt from 'jsonwebtoken';
+import jwt, { SignOptions } from 'jsonwebtoken';
 import { config } from './env';
 
 /**
  * Generate JWT token for authenticated user
  */
 export const generateToken = (userId: string, email: string): string => {
+  const options: SignOptions = {
+    expiresIn: config.JWT_EXPIRES_IN as string
+  };
   return jwt.sign(
     { userId, email },
     config.JWT_SECRET,
-    { expiresIn: config.JWT_EXPIRES_IN }
+    options
   );
 };
 
