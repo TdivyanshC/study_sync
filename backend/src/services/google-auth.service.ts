@@ -2,13 +2,29 @@ import { OAuth2Client } from 'google-auth-library';
 import { config } from '../config/env';
 
 /**
- * Google OAuth2 Client instance
+ * Google Web OAuth2 Client instance (for backend token verification)
+ * Requires GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET env vars
  */
-export const googleOAuth2Client = new OAuth2Client(
+export const googleWebOAuth2Client = new OAuth2Client(
   config.GOOGLE_CLIENT_ID,
   config.GOOGLE_CLIENT_SECRET,
-  'postmessage' // Redirect URI for native apps
+  'postmessage'
 );
+
+/**
+ * Google Android OAuth2 Client instance (for Android token verification)
+ * Requires GOOGLE_ANDROID_CLIENT_ID and GOOGLE_CLIENT_SECRET env vars
+ */
+export const googleAndroidOAuth2Client = new OAuth2Client(
+  config.GOOGLE_ANDROID_CLIENT_ID,
+  config.GOOGLE_CLIENT_SECRET,
+  'postmessage'
+);
+
+/**
+ * @deprecated Use googleWebOAuth2Client or googleAndroidOAuth2Client instead
+ */
+export const googleOAuth2Client = googleWebOAuth2Client;
 
 /**
  * Verify Google ID token from native Google Sign-In
@@ -18,8 +34,8 @@ export const verifyGoogleIdToken = async (idToken: string): Promise<GoogleUserPa
     const ticket = await googleOAuth2Client.verifyIdToken({
       idToken,
       audience: [
-        config.GOOGLE_CLIENT_ID, // Android/iOS client ID
-        config.GOOGLE_CLIENT_ID, // Web client ID (same as native for this app)
+        config.GOOGLE_ANDROID_CLIENT_ID, // Android client ID
+        config.GOOGLE_CLIENT_ID, // Web client ID
       ],
     });
 
@@ -28,13 +44,17 @@ export const verifyGoogleIdToken = async (idToken: string): Promise<GoogleUserPa
       return null;
     }
 
+    if (!payload.email) {
+      return null;
+    }
+
     return {
       googleId: payload.sub,
       email: payload.email,
-      name: payload.name,
-      picture: payload.picture,
-      givenName: payload.given_name,
-      familyName: payload.family_name,
+      name: payload.name || undefined,
+      picture: payload.picture || undefined,
+      givenName: payload.given_name || undefined,
+      familyName: payload.family_name || undefined,
     };
   } catch (error) {
     console.error('Google ID token verification failed:', error);

@@ -13,9 +13,10 @@ export const config = {
   JWT_SECRET: process.env.JWT_SECRET || crypto.randomBytes(64).toString('hex'),
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '7d',
   
-  // Google OAuth
-  GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || '944168135230-i3dv0ar7uq7vubv9i03bq5o0nq2deh1j.apps.googleusercontent.com',
+  // Google OAuth (required - must be set in environment)
+  GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || '',
   GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET || '',
+  GOOGLE_ANDROID_CLIENT_ID: process.env.GOOGLE_ANDROID_CLIENT_ID || '',
   
   // Rate limiting
   RATE_LIMIT_WINDOW_MS: 15 * 60 * 1000, // 15 minutes
