@@ -40,10 +40,9 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-image.png",
+          "backgroundColor": "#000000",
           "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#000"
+          "resizeMode": "contain"
         }
       ],
       "expo-web-browser",
