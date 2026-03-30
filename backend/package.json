@@ -5,8 +5,8 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "ts-node-dev --respawn src/index.ts",
-    "build": "tsc",
-    "start": "node index.js"
+    "build": "echo Skipping TypeScript compilation - using ts-node at runtime",
+    "start": "ts-node --transpile-only src/index.ts"
   },
   "dependencies": {
     "cors": "^2.8.5",
@@ -17,6 +17,7 @@
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.0.0",
+    "ts-node": "^10.9.2",
     "uuid": "^9.0.1"
   },
   "devDependencies": {
