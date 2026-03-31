@@ -22,11 +22,14 @@ interface GoogleTokenInfoResponse {
  */
 export const verifyGoogleIdToken = async (idToken: string): Promise<GoogleUserPayload | null> => {
   try {
+    console.log('🔐 Verifying Google ID token...');
+    
     // Verify the token by calling Google's tokeninfo endpoint
     // This is the same approach used by the working project
-    const response = await fetch(
-      `https://oauth2.googleapis.com/tokeninfo?id_token=${idToken}`
-    );
+    const tokenInfoUrl = `https://oauth2.googleapis.com/tokeninfo?id_token=${idToken}`;
+    console.log('📡 Calling Google tokeninfo endpoint...');
+    
+    const response = await fetch(tokenInfoUrl);
     
     if (!response.ok) {
       console.error('Google tokeninfo response not ok:', response.status);
@@ -34,10 +37,11 @@ export const verifyGoogleIdToken = async (idToken: string): Promise<GoogleUserPa
     }
     
     const payload: GoogleTokenInfoResponse = await response.json();
+    console.log('📬 Google tokeninfo response received');
     
     // Check for error in response
     if (payload.error) {
-      console.error('Google tokeninfo error:', payload.error);
+      console.error('Google tokeninfo error:', payload.error, payload.error_description);
       return null;
     }
     
@@ -47,8 +51,11 @@ export const verifyGoogleIdToken = async (idToken: string): Promise<GoogleUserPa
       config.GOOGLE_CLIENT_ID
     ];
     
+    console.log('🔍 Token audience:', payload.aud);
+    console.log('✅ Valid audiences:', validAudience);
+    
     if (!payload.aud || !validAudience.includes(payload.aud)) {
-      console.error('Token audience mismatch:', payload.aud);
+      console.error('Token audience mismatch:', payload.aud, 'Expected one of:', validAudience);
       return null;
     }
     
@@ -56,6 +63,8 @@ export const verifyGoogleIdToken = async (idToken: string): Promise<GoogleUserPa
       console.error('No email in token payload');
       return null;
     }
+    
+    console.log('✅ Google token verified successfully for:', payload.email);
     
     return {
       googleId: payload.sub || '',

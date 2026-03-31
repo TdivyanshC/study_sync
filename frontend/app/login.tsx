@@ -37,6 +37,11 @@ export default function LoginScreen() {
   };
 
   const handleGoogleLogin = async () => {
+    // Prevent multiple clicks
+    if (loading) {
+      return;
+    }
+    
     try {
       await loginWithGoogle();
       // Navigation will be handled automatically by AuthProvider's onAuthStateChange listener
@@ -45,14 +50,8 @@ export default function LoginScreen() {
     }
   };
 
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={Colors.primary} />
-        <Text style={styles.loadingText}>Loading...</Text>
-      </View>
-    );
-  }
+  // Don't show full screen loading - just show loading on the button instead
+  // This prevents the black loading screen issue
 
   return (
     <SafeAreaView style={styles.container}>
@@ -132,12 +131,16 @@ export default function LoginScreen() {
             onPress={handleGoogleLogin}
             disabled={loading}
           >
-            <View style={styles.googleButtonContent}>
-              <View style={styles.googleIcon}>
-                <Text style={styles.googleIconText}>G</Text>
+            {loading ? (
+              <ActivityIndicator size="small" color="#4285f4" />
+            ) : (
+              <View style={styles.googleButtonContent}>
+                <View style={styles.googleIcon}>
+                  <Text style={styles.googleIconText}>G</Text>
+                </View>
+                <Text style={styles.googleButtonText}>Continue with Google</Text>
               </View>
-              <Text style={styles.googleButtonText}>Continue with Google</Text>
-            </View>
+            )}
           </TouchableOpacity>
 
           {/* Sign Up Link */}

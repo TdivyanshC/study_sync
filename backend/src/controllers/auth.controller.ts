@@ -11,22 +11,29 @@ export class AuthController {
    */
   async googleSignIn(req: Request, res: Response): Promise<void> {
     try {
+      console.log('🔔 Google Sign-In request received');
       const { idToken } = req.body;
 
       if (!idToken) {
+        console.warn('⚠️ Missing Google ID token');
         res.status(400).json({ error: 'Missing Google ID token' });
         return;
       }
 
+      console.log('🔐 Verifying Google ID token...');
       // Verify Google ID token
       const googleUser: GoogleUserPayload | null = await verifyGoogleIdToken(idToken);
 
       if (!googleUser) {
+        console.warn('⚠️ Invalid Google ID token');
         res.status(401).json({ error: 'Invalid Google ID token' });
         return;
       }
 
+      console.log('✅ Google token verified for:', googleUser.email);
+
       // Check if user already exists by email
+      console.log('📊 Checking for existing user...');
       let user = await User.findOne({ email: googleUser.email });
 
       let isNewUser = false;
@@ -34,6 +41,7 @@ export class AuthController {
       if (!user) {
         // Create new user
         isNewUser = true;
+        console.log('🆕 Creating new user for:', googleUser.email);
         
         // Generate unique public_user_id with retry
         let publicUserId: string;

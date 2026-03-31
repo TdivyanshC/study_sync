@@ -97,24 +97,66 @@ export const signInWithGoogleNative = async (): Promise<AuthResponse> => {
     
     console.log('✅ Got Google ID token');
 
-    // Send the ID token to our backend
-    const response = await fetch(buildApiUrl(API_ENDPOINTS.AUTH_GOOGLE), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        idToken: idToken,
-      }),
-    });
+    // Send the ID token to our backend with timeout
+    // Increased timeout to 30 seconds to account for cold starts and Google token verification
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+    
+    try {
+      const response = await fetch(buildApiUrl(API_ENDPOINTS.AUTH_GOOGLE), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          idToken: idToken,
+        }),
+        signal: controller.signal,
+      });
+      
+      clearTimeout(timeoutId);
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to authenticate with backend');
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || `Failed to authenticate with backend: ${response.status}`);
+      }
+
+      const data: AuthResponse = await response.json();
+      return data;
+    } catch (fetchError: any) {
+      clearTimeout(timeoutId);
+      if (fetchError.name === 'AbortError') {
+        // Request timed out - this could be due to slow backend cold start or network latency
+        console.warn('⚠️ Request timed out - attempting retry once...');
+        
+        // Retry once after a brief delay
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        try {
+          const retryResponse = await fetch(buildApiUrl(API_ENDPOINTS.AUTH_GOOGLE), {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              idToken: idToken,
+            }),
+          });
+          
+          if (!retryResponse.ok) {
+            const error = await retryResponse.json();
+            throw new Error(error.error || `Failed to authenticate with backend: ${retryResponse.status}`);
+          }
+          
+          const data: AuthResponse = await retryResponse.json();
+          console.log('✅ Retry successful after timeout');
+          return data;
+        } catch (retryError: any) {
+          throw new Error('Request timed out. Please check your connection and try again.');
+        }
+      }
+      throw fetchError;
     }
-
-    const data: AuthResponse = await response.json();
-    return data;
   } catch (error: any) {
     console.error('Native Google Sign-In error:', error);
     console.error('Error type:', error.constructor?.name);

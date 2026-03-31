@@ -11,10 +11,10 @@ export const apiRateLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// Stricter rate limiter for auth endpoints
+// Stricter rate limiter for auth endpoints - increased from 10 to 30 to prevent blocking legitimate users
 export const authRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // 10 attempts per window
+  max: 30, // 30 attempts per window (increased from 10)
   message: { error: 'Too many auth attempts, please try again later' },
   standardHeaders: true,
   legacyHeaders: false,

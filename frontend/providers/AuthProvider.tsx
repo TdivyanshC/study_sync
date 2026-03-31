@@ -73,6 +73,12 @@ export function AuthProvider({ children }: AuthProviderProps): React.ReactNode {
   const handleNavigation = (user: CustomUser, userStatus: { hasUsername: boolean; hasCompletedOnboarding: boolean }) => {
     const now = Date.now();
     
+    console.log('🧭 handleNavigation called:', {
+      user: user?.email,
+      hasUsername: userStatus.hasUsername,
+      onboardingCompleted: userStatus.hasCompletedOnboarding
+    });
+    
     // Debounce: prevent navigation if it happened recently
     if (now - lastNavigationRef.current < NAVIGATION_DEBOUNCE_MS) {
       console.log('⏭️ Navigation debounced, too soon since last navigation');
@@ -83,13 +89,9 @@ export function AuthProvider({ children }: AuthProviderProps): React.ReactNode {
     if (!user && !hasNavigated) {
       console.log('🔄 No user - navigating to login');
       lastNavigationRef.current = now;
-      setTimeout(() => {
-        router.replace('/login');
-        setTimeout(() => {
-          setNavigationLocked(false);
-          setHasNavigated(true);
-        }, 500);
-      }, 100);
+      router.replace('/login');
+      setNavigationLocked(false);
+      setHasNavigated(true);
       return;
     }
 
@@ -100,34 +102,31 @@ export function AuthProvider({ children }: AuthProviderProps): React.ReactNode {
 
     setNavigationLocked(true);
     lastNavigationRef.current = now;
-    console.log('🧭 Starting navigation:', {
-      email: user?.email,
-      hasUsername: userStatus.hasUsername,
-      onboardingCompleted: userStatus.hasCompletedOnboarding
-    });
+    
+    console.log('🧭 Starting navigation to:', 
+      !userStatus.hasUsername ? '/username-selection' :
+      !userStatus.hasCompletedOnboarding ? '/onboarding-step1' :
+      '/(tabs)'
+    );
 
-    // Add a small delay to ensure state is settled
-    setTimeout(() => {
-      if (user && !userStatus.hasUsername) {
-        console.log('🔄 New user - navigating to username selection');
-        router.replace('/username-selection');
-      } else if (user && userStatus.hasUsername && !userStatus.hasCompletedOnboarding) {
-        console.log('🔄 User has username but no onboarding - navigating to onboarding step 1');
-        router.replace('/onboarding-step1');
-      } else if (user && userStatus.hasUsername && userStatus.hasCompletedOnboarding) {
-        console.log('🔄 Returning user - navigating to home');
-        router.replace('/(tabs)');
-      } else {
-        console.log('🔄 No user - navigating to login');
-        router.replace('/login');
-      }
+    // Navigate immediately without delay
+    if (user && !userStatus.hasUsername) {
+      console.log('🔄 New user - navigating to username selection');
+      router.replace('/username-selection');
+    } else if (user && userStatus.hasUsername && !userStatus.hasCompletedOnboarding) {
+      console.log('🔄 User has username but no onboarding - navigating to onboarding step 1');
+      router.replace('/onboarding-step1');
+    } else if (user && userStatus.hasUsername && userStatus.hasCompletedOnboarding) {
+      console.log('🔄 Returning user - navigating to home');
+      router.replace('/(tabs)');
+    } else {
+      console.log('🔄 No user - navigating to login');
+      router.replace('/login');
+    }
 
-      // Reset navigation flags after a delay to allow for any async operations
-      setTimeout(() => {
-        setNavigationLocked(false);
-        setHasNavigated(true);
-      }, 500);
-    }, 100);
+    // Reset navigation flags immediately
+    setNavigationLocked(false);
+    setHasNavigated(true);
   };
 
   // Check user status (username and onboarding)
@@ -313,6 +312,10 @@ export function AuthProvider({ children }: AuthProviderProps): React.ReactNode {
       setUser(authResponse.user);
       setHasUsername(!!authResponse.user.username);
       setHasCompletedOnboarding(authResponse.user.onboardingCompleted);
+      
+      // IMPORTANT: Reset loading state to show the UI
+      setLoading(false);
+      setOauthInProgress(false);
 
       // Handle navigation
       const userStatus = { 
@@ -345,7 +348,7 @@ export function AuthProvider({ children }: AuthProviderProps): React.ReactNode {
       
       throw new Error(errorMessage);
     } finally {
-      // Reset oauth in progress flag
+      // Reset oauth in progress flag (loading is handled in navigation)
       setOauthInProgress(false);
     }
   };
