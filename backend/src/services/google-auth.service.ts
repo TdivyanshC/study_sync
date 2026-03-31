@@ -1,6 +1,10 @@
 import { OAuth2Client } from 'google-auth-library';
 import { config } from '../config/env';
 
+// Default Google Client IDs (must match the frontend configuration)
+const DEFAULT_GOOGLE_CLIENT_ID = '944168135230-d85l1tlunaqumisao3iap07re4ir2gpk.apps.googleusercontent.com';
+const DEFAULT_GOOGLE_ANDROID_CLIENT_ID = '944168135230-d85l1tlunaqumisao3iap07re4ir2gpk.apps.googleusercontent.com';
+
 /**
  * Google tokeninfo response interface
  */
@@ -24,6 +28,14 @@ export const verifyGoogleIdToken = async (idToken: string): Promise<GoogleUserPa
   try {
     console.log('🔐 Verifying Google ID token...');
     
+    // Get valid client IDs (use environment or fall back to defaults)
+    const validAudience = [
+      config.GOOGLE_ANDROID_CLIENT_ID || DEFAULT_GOOGLE_ANDROID_CLIENT_ID,
+      config.GOOGLE_CLIENT_ID || DEFAULT_GOOGLE_CLIENT_ID
+    ];
+    
+    console.log('🔍 Using valid audiences:', validAudience);
+    
     // Verify the token by calling Google's tokeninfo endpoint
     // This is the same approach used by the working project
     const tokenInfoUrl = `https://oauth2.googleapis.com/tokeninfo?id_token=${idToken}`;
@@ -45,17 +57,11 @@ export const verifyGoogleIdToken = async (idToken: string): Promise<GoogleUserPa
       return null;
     }
     
-    // Verify the audience matches our client IDs
-    const validAudience = [
-      config.GOOGLE_ANDROID_CLIENT_ID,
-      config.GOOGLE_CLIENT_ID
-    ];
-    
     console.log('🔍 Token audience:', payload.aud);
     console.log('✅ Valid audiences:', validAudience);
     
     if (!payload.aud || !validAudience.includes(payload.aud)) {
-      console.error('Token audience mismatch:', payload.aud, 'Expected one of:', validAudience);
+      console.error('❌ Token audience mismatch:', payload.aud, 'Expected one of:', validAudience);
       return null;
     }
     

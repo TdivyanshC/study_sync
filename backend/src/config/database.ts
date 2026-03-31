@@ -9,10 +9,13 @@ if (!MONGODB_URI) {
   throw new Error('Missing MongoDB connection string (MONGODB_URI)');
 }
 
-// MongoDB connection
+// MongoDB connection with proper options for cold start reconnection
 export const connectDB = async (): Promise<void> => {
   try {
-    await mongoose.connect(MONGODB_URI);
+    await mongoose.connect(MONGODB_URI, {
+      serverSelectionTimeoutMS: 10000,
+      socketTimeoutMS: 45000,
+    });
     console.log('✅ MongoDB connected successfully');
   } catch (error) {
     console.error('❌ MongoDB connection error:', error);

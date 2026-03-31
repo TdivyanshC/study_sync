@@ -16,6 +16,7 @@ import {
   clearAuthData
 } from '../lib/auth/tokenStorage';
 import { backendApi } from '../src/api/backendApi';
+import { buildApiUrl, API_ENDPOINTS } from '../lib/apiConfig';
 
 // Custom user type for native auth
 interface CustomUser {
@@ -146,6 +147,36 @@ export function AuthProvider({ children }: AuthProviderProps): React.ReactNode {
       return { hasUsername: false, hasCompletedOnboarding: false };
     }
   };
+
+  // Ping health endpoint on app launch to warm the server (prevent cold start)
+  useEffect(() => {
+    const warmServer = async () => {
+      try {
+        console.log('🌡️ Warming server with health check...');
+        const healthUrl = buildApiUrl(API_ENDPOINTS.HEALTH);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+        
+        const response = await fetch(healthUrl, {
+          method: 'GET',
+          signal: controller.signal,
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (response.ok) {
+          console.log('✅ Server warmed up successfully');
+        } else {
+          console.warn('⚠️ Health check returned non-OK status:', response.status);
+        }
+      } catch (error: any) {
+        console.warn('⚠️ Server warm-up failed (non-critical):', error.message);
+        // Don't throw - this is non-critical
+      }
+    };
+    
+    warmServer();
+  }, []);
 
   // Enhanced session initialization with better timing
   useEffect(() => {
@@ -283,10 +314,11 @@ export function AuthProvider({ children }: AuthProviderProps): React.ReactNode {
 
   // Native Google Sign-In function
   const loginWithGoogle = async (): Promise<void> => {
-    // Prevent multiple OAuth flows
+    // Prevent multiple OAuth flows - but reset if stuck
     if (oauthInProgress) {
-      console.log('⏭️ OAuth already in progress, ignoring duplicate call');
-      return;
+      console.log('⏭️ OAuth already in progress, resetting state and trying again');
+      setOauthInProgress(false);
+      setLoading(false);
     }
 
     setOauthInProgress(true);
@@ -331,24 +363,32 @@ export function AuthProvider({ children }: AuthProviderProps): React.ReactNode {
       console.error('❌ Google login error:', error.message, error);
       console.error('❌ Error type:', error.constructor.name);
       console.error('❌ Error cause:', error.cause);
-      // Reset both states on failure so user can try again
-      setOauthInProgress(false);
-      setLoading(false);
-      // Provide more helpful error message
+      
+      // Provide more helpful error message with user-friendly defaults
       let errorMessage = error.message || 'Failed to sign in with Google';
       
-      // Check for specific error types and provide better messages
+      // Map specific errors to user-friendly messages
       if (errorMessage.includes('network') || errorMessage.includes('Network')) {
-        errorMessage = 'Network error. Please check your internet connection and try again.';
+        errorMessage = 'No internet connection.';
+      } else if (errorMessage.includes('timeout') || errorMessage.includes('timed out')) {
+        errorMessage = 'Connection timed out. Please try again.';
       } else if (errorMessage.includes('Play Services') || errorMessage.includes('play services')) {
         errorMessage = 'Google Play Services not available. Please install or update Google Play Services.';
       } else if (errorMessage.includes('idToken') || errorMessage.includes('ID token')) {
         errorMessage = 'Failed to get authentication token from Google. Please try again.';
+      } else if (errorMessage.includes('Sign in failed') || errorMessage.includes('401')) {
+        errorMessage = 'Sign in failed. Please try again.';
+      } else if (errorMessage.includes('Something went wrong') || errorMessage.includes('500')) {
+        errorMessage = 'Something went wrong. Please try again.';
+      } else if (errorMessage.includes('Connection timed out')) {
+        errorMessage = 'Connection timed out. Please try again.';
       }
       
       throw new Error(errorMessage);
     } finally {
-      // Reset oauth in progress flag (loading is handled in navigation)
+      // ALWAYS reset loading state - this is critical to prevent stuck UI
+      console.log('🔄 Resetting loading state in finally block');
+      setLoading(false);
       setOauthInProgress(false);
     }
   };

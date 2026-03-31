@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import mongoose from 'mongoose';
 import User from '../models/User';
 import { generatePublicUserId } from '../utils/ids';
 import { generateToken, verifyToken, extractToken } from '../config/jwt';
@@ -12,6 +13,9 @@ export class AuthController {
   async googleSignIn(req: Request, res: Response): Promise<void> {
     try {
       console.log('🔔 Google Sign-In request received');
+      console.log('📍 Request origin:', req.headers.origin || 'unknown');
+      console.log('⏰ Timestamp:', new Date().toISOString());
+      
       const { idToken } = req.body;
 
       if (!idToken) {
@@ -25,12 +29,36 @@ export class AuthController {
       const googleUser: GoogleUserPayload | null = await verifyGoogleIdToken(idToken);
 
       if (!googleUser) {
-        console.warn('⚠️ Invalid Google ID token');
+        console.warn('⚠️ Invalid Google ID token - token verification failed');
         res.status(401).json({ error: 'Invalid Google ID token' });
         return;
       }
 
       console.log('✅ Google token verified for:', googleUser.email);
+
+      // Check MongoDB connection before querying
+      console.log('🔌 Checking MongoDB connection...');
+      if (mongoose.connection.readyState !== 1) {
+        console.warn('⚠️ MongoDB not connected, readyState:', mongoose.connection.readyState);
+        // Try to reconnect if disconnected
+        if (mongoose.connection.readyState === 0) {
+          console.log('🔄 Attempting to reconnect to MongoDB...');
+          try {
+            await mongoose.connect(process.env.MONGODB_URI || '', {
+              serverSelectionTimeoutMS: 10000,
+              socketTimeoutMS: 45000,
+            });
+            console.log('✅ MongoDB reconnected successfully');
+          } catch (dbError: any) {
+            console.error('❌ MongoDB reconnection failed:', dbError.message);
+            res.status(503).json({ error: 'Database temporarily unavailable. Please try again.' });
+            return;
+          }
+        } else {
+          res.status(503).json({ error: 'Database temporarily unavailable. Please try again.' });
+          return;
+        }
+      }
 
       // Check if user already exists by email
       console.log('📊 Checking for existing user...');
@@ -57,6 +85,7 @@ export class AuthController {
         } while (attempts < maxAttempts);
 
         if (attempts >= maxAttempts) {
+          console.error('❌ Failed to generate unique user ID');
           res.status(500).json({ error: 'Failed to generate unique user ID' });
           return;
         }
@@ -71,8 +100,10 @@ export class AuthController {
           avatarUrl: googleUser.picture,
           displayName: googleUser.name,
         });
+        console.log('✅ New user created with ID:', user._id);
       } else {
         // Update existing user's Google info
+        console.log('📝 Updating existing user:', user.email);
         user = await User.findByIdAndUpdate(
           user._id,
           {
@@ -81,11 +112,16 @@ export class AuthController {
           },
           { new: true }
         );
+        console.log('✅ User updated successfully');
       }
 
       // Generate our own JWT token for the user
+      console.log('🔑 Generating JWT token...');
       const token = generateToken(user._id, user.email);
+      console.log('✅ JWT token generated');
 
+      // Send response
+      console.log('📤 Sending auth response to client');
       res.json({
         token,
         user: {
@@ -99,8 +135,10 @@ export class AuthController {
         },
         isNewUser,
       });
+      console.log('✅ Google Sign-In completed successfully');
     } catch (error: any) {
-      console.error('Google Sign-In error:', error);
+      console.error('❌ Google Sign-In error:', error);
+      console.error('❌ Error stack:', error.stack);
       res.status(500).json({ error: `Internal server error: ${error.message}` });
     }
   }

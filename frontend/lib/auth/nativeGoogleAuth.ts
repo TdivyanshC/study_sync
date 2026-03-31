@@ -145,6 +145,12 @@ export const signInWithGoogleNative = async (): Promise<AuthResponse> => {
           
           if (!retryResponse.ok) {
             const error = await retryResponse.json();
+            // Handle specific error status codes
+            if (retryResponse.status === 401) {
+              throw new Error('Sign in failed. Please try again.');
+            } else if (retryResponse.status >= 500) {
+              throw new Error('Something went wrong. Please try again.');
+            }
             throw new Error(error.error || `Failed to authenticate with backend: ${retryResponse.status}`);
           }
           
@@ -152,8 +158,12 @@ export const signInWithGoogleNative = async (): Promise<AuthResponse> => {
           console.log('✅ Retry successful after timeout');
           return data;
         } catch (retryError: any) {
-          throw new Error('Request timed out. Please check your connection and try again.');
+          throw new Error('Connection timed out. Please try again.');
         }
+      }
+      // Check for other specific errors
+      if (fetchError.message?.includes('Network') || fetchError.message?.includes('network')) {
+        throw new Error('No internet connection.');
       }
       throw fetchError;
     }
@@ -164,7 +174,18 @@ export const signInWithGoogleNative = async (): Promise<AuthResponse> => {
     
     // Check if it's a network error
     if (error.message?.includes('Network') || error.message?.includes('network')) {
-      throw new Error('Network error. Please check your internet connection.');
+      throw new Error('No internet connection.');
+    }
+    
+    // Check for specific error types and provide better messages
+    if (error.message?.includes('Failed to authenticate') || error.message?.includes('401')) {
+      throw new Error('Sign in failed. Please try again.');
+    }
+    if (error.message?.includes('500') || error.message?.includes('Internal server')) {
+      throw new Error('Something went wrong. Please try again.');
+    }
+    if (error.message?.includes('timed out') || error.message?.includes('timeout') || error.message?.includes('timed out')) {
+      throw new Error('Connection timed out. Please try again.');
     }
     
     throw new Error(error.message || 'Failed to sign in with Google');
