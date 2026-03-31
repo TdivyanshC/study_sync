@@ -1,17 +1,24 @@
 import * as Google from '@react-native-google-signin/google-signin';
-import { API_ENDPOINTS, buildApiUrl } from '../lib/apiConfig';
+import { API_ENDPOINTS, buildApiUrl } from '../../lib/apiConfig';
 
-/**
- * Native Google Sign-In Service for React Native
- * Uses React Native Google Sign-In package instead of web OAuth
- */
+// Get Google client IDs from environment
+const getGoogleWebClientId = (): string => {
+  if (process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID) {
+    return process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+  }
+  // Default web client ID
+  return '944168135230-d85l1tlunaqumisao3iap07re4ir2gpk.apps.googleusercontent.com';
+};
 
-// Configure Google Sign-In
+// Configure Google Sign-In - matching working project (Patriot Pulse) configuration
 Google.GoogleSignin.configure({
-  webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-  offlineUseCode: true,
   scopes: ['profile', 'email'],
+  webClientId: getGoogleWebClientId(),
+  offlineAccess: true,
+  forceCodeForRefreshToken: true,
 });
+
+console.log('🔧 Google Sign-In configured with webClientId:', getGoogleWebClientId().substring(0, 30) + '...');
 
 /**
  * Google Sign-In user data interface
@@ -54,12 +61,41 @@ export const signInWithGoogleNative = async (): Promise<AuthResponse> => {
       throw new Error('Google Play Services not available');
     }
 
-    // Trigger Google Sign-In flow
-    const userInfo = await Google.GoogleSignin.signIn();
+    // Trigger Google Sign-In flow and get the response
+    const signInResult = await Google.GoogleSignin.signIn();
     
-    if (!userInfo.idToken) {
+    console.log('📝 Google signIn result:', JSON.stringify(signInResult, null, 2));
+    
+    // Check if we got the idToken directly from signIn (v14.x behavior)
+    let idToken: string | null = null;
+    
+    if (signInResult && typeof signInResult === 'object') {
+      // Try direct idToken property
+      if ('idToken' in signInResult) {
+        idToken = (signInResult as any).idToken || null;
+      }
+      // Try data.idToken property
+      if (!idToken && 'data' in signInResult) {
+        const data = (signInResult as any).data;
+        if (data && typeof data === 'object' && 'idToken' in data) {
+          idToken = data.idToken || null;
+        }
+      }
+    }
+    
+    // Fallback: try getTokens()
+    if (!idToken) {
+      console.log('🔄 Trying getTokens() as fallback...');
+      const tokens = await Google.GoogleSignin.getTokens();
+      idToken = tokens.idToken;
+    }
+    
+    if (!idToken) {
+      console.error('❌ No ID token found in signIn result or tokens');
       throw new Error('No ID token received from Google');
     }
+    
+    console.log('✅ Got Google ID token');
 
     // Send the ID token to our backend
     const response = await fetch(buildApiUrl(API_ENDPOINTS.AUTH_GOOGLE), {
@@ -68,7 +104,7 @@ export const signInWithGoogleNative = async (): Promise<AuthResponse> => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        idToken: userInfo.idToken,
+        idToken: idToken,
       }),
     });
 
@@ -81,6 +117,14 @@ export const signInWithGoogleNative = async (): Promise<AuthResponse> => {
     return data;
   } catch (error: any) {
     console.error('Native Google Sign-In error:', error);
+    console.error('Error type:', error.constructor?.name);
+    console.error('Error cause:', error.cause);
+    
+    // Check if it's a network error
+    if (error.message?.includes('Network') || error.message?.includes('network')) {
+      throw new Error('Network error. Please check your internet connection.');
+    }
+    
     throw new Error(error.message || 'Failed to sign in with Google');
   }
 };
@@ -102,8 +146,8 @@ export const signOutGoogle = async (): Promise<void> => {
  */
 export const isGoogleSignedIn = async (): Promise<boolean> => {
   try {
-    const isSignedIn = await Google.GoogleSignin.isSignedIn();
-    return isSignedIn;
+    const user = await Google.GoogleSignin.getCurrentUser();
+    return !!user;
   } catch (error) {
     return false;
   }
@@ -122,8 +166,8 @@ export const getCurrentGoogleUser = async (): Promise<GoogleUserData | null> => 
 
     return {
       id: userInfo.user.id,
-      email: userInfo.user.email,
-      name: userInfo.user.name,
+      email: userInfo.user.email || '',
+      name: userInfo.user.name || '',
       photo: userInfo.user.photo,
       firstName: userInfo.user.givenName,
       lastName: userInfo.user.familyName,

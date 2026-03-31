@@ -41,8 +41,19 @@
         "expo-splash-screen",
         {
           "backgroundColor": "#000000",
-          "imageWidth": 200,
-          "resizeMode": "contain"
+          "image": "./assets/images/prodify.png",
+          "imageWidth": 300,
+          "resizeMode": "contain",
+          "dark": {
+            "backgroundColor": "#000000",
+            "image": "./assets/images/prodify.png",
+            "imageWidth": 300
+          },
+          "light": {
+            "backgroundColor": "#000000",
+            "image": "./assets/images/prodify.png",
+            "imageWidth": 300
+          }
         }
       ],
       "expo-web-browser",
@@ -50,17 +61,19 @@
       [
         "@react-native-google-signin/google-signin",
         {
-          "iosClientId": "944168135230-i3dv0ar7uq7vubv9i03bq5o0nq2deh1j.apps.googleusercontent.com",
-          "androidClientId": "944168135230-i3dv0ar7uq7vubv9i03bq5o0nq2deh1j.apps.googleusercontent.com",
-          "webClientId": "944168135230-i3dv0ar7uq7vubv9i03bq5o0nq2deh1j.apps.googleusercontent.com",
-          "iosUrlScheme": "com.googleusercontent.apps.944168135230-i3dv0ar7uq7vubv9i03bq5o0nq2deh1j"
+          "iosClientId": "",
+          "androidClientId": "944168135230-i1dg2svf78c42i6ovmddarjvt7skcj9g.apps.googleusercontent.com",
+          "webClientId": "944168135230-d85l1tlunaqumisao3iap07re4ir2gpk.apps.googleusercontent.com",
+          "iosUrlScheme": "com.googleusercontent.apps.944168135230-d85l1tlunaqumisao3iap07re4ir2gpk"
         }
       ]
     ],
     "extra": {
       "eas": {
         "projectId": "your-eas-project-id"
-      }
+      },
+      "googleAndroidClientId": "944168135230-i1dg2svf78c42i6ovmddarjvt7skcj9g.apps.googleusercontent.com",
+      "googleWebClientId": "944168135230-d85l1tlunaqumisao3iap07re4ir2gpk.apps.googleusercontent.com"
     },
     "experiments": {
       "typedRoutes": true

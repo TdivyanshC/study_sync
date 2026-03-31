@@ -2,54 +2,63 @@ import { OAuth2Client } from 'google-auth-library';
 import { config } from '../config/env';
 
 /**
- * Google Web OAuth2 Client instance (for backend token verification)
- * Requires GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET env vars
+ * Google tokeninfo response interface
  */
-export const googleWebOAuth2Client = new OAuth2Client(
-  config.GOOGLE_CLIENT_ID,
-  config.GOOGLE_CLIENT_SECRET,
-  'postmessage'
-);
-
-/**
- * Google Android OAuth2 Client instance (for Android token verification)
- * Requires GOOGLE_ANDROID_CLIENT_ID and GOOGLE_CLIENT_SECRET env vars
- */
-export const googleAndroidOAuth2Client = new OAuth2Client(
-  config.GOOGLE_ANDROID_CLIENT_ID,
-  config.GOOGLE_CLIENT_SECRET,
-  'postmessage'
-);
-
-/**
- * @deprecated Use googleWebOAuth2Client or googleAndroidOAuth2Client instead
- */
-export const googleOAuth2Client = googleWebOAuth2Client;
+interface GoogleTokenInfoResponse {
+  error?: string;
+  error_description?: string;
+  aud?: string;
+  sub?: string;
+  email?: string;
+  name?: string;
+  picture?: string;
+  given_name?: string;
+  family_name?: string;
+}
 
 /**
  * Verify Google ID token from native Google Sign-In
+ * Uses the tokeninfo endpoint approach like the working project (Patriot Pulse)
  */
 export const verifyGoogleIdToken = async (idToken: string): Promise<GoogleUserPayload | null> => {
   try {
-    const ticket = await googleOAuth2Client.verifyIdToken({
-      idToken,
-      audience: [
-        config.GOOGLE_ANDROID_CLIENT_ID, // Android client ID
-        config.GOOGLE_CLIENT_ID, // Web client ID
-      ],
-    });
-
-    const payload = ticket.getPayload();
-    if (!payload) {
+    // Verify the token by calling Google's tokeninfo endpoint
+    // This is the same approach used by the working project
+    const response = await fetch(
+      `https://oauth2.googleapis.com/tokeninfo?id_token=${idToken}`
+    );
+    
+    if (!response.ok) {
+      console.error('Google tokeninfo response not ok:', response.status);
       return null;
     }
-
+    
+    const payload: GoogleTokenInfoResponse = await response.json();
+    
+    // Check for error in response
+    if (payload.error) {
+      console.error('Google tokeninfo error:', payload.error);
+      return null;
+    }
+    
+    // Verify the audience matches our client IDs
+    const validAudience = [
+      config.GOOGLE_ANDROID_CLIENT_ID,
+      config.GOOGLE_CLIENT_ID
+    ];
+    
+    if (!payload.aud || !validAudience.includes(payload.aud)) {
+      console.error('Token audience mismatch:', payload.aud);
+      return null;
+    }
+    
     if (!payload.email) {
+      console.error('No email in token payload');
       return null;
     }
-
+    
     return {
-      googleId: payload.sub,
+      googleId: payload.sub || '',
       email: payload.email,
       name: payload.name || undefined,
       picture: payload.picture || undefined,

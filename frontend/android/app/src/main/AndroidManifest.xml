@@ -26,6 +26,13 @@
         <category android:name="android.intent.category.BROWSABLE"/>
         <data android:scheme="prodify"/>
       </intent-filter>
+      <!-- Google OAuth Redirect URI -->
+      <intent-filter>
+        <action android:name="android.intent.action.VIEW"/>
+        <category android:name="android.intent.category.DEFAULT"/>
+        <category android:name="android.intent.category.BROWSABLE"/>
+        <data android:scheme="com.prodify.app" android:host="oauth2redirect"/>
+      </intent-filter>
     </activity>
   </application>
 </manifest>

@@ -15,8 +15,8 @@ const getBackendUrl = (): string => {
     return process.env.EXPO_PUBLIC_NGROK_URL || 'http://localhost:3000';
   }
   
-  // Production
-  return 'https://api.prodify.app';
+  // Production - use the user's backend URL
+  return 'https://prodify-ap46.onrender.com';
 };
 
 // API endpoints

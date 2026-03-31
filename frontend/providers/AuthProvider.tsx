@@ -325,11 +325,28 @@ export function AuthProvider({ children }: AuthProviderProps): React.ReactNode {
       }
 
     } catch (error: any) {
-      console.error('❌ Google login error:', error.message);
+      console.error('❌ Google login error:', error.message, error);
+      console.error('❌ Error type:', error.constructor.name);
+      console.error('❌ Error cause:', error.cause);
+      // Reset both states on failure so user can try again
       setOauthInProgress(false);
-      throw new Error(error.message || 'Failed to sign in with Google');
+      setLoading(false);
+      // Provide more helpful error message
+      let errorMessage = error.message || 'Failed to sign in with Google';
+      
+      // Check for specific error types and provide better messages
+      if (errorMessage.includes('network') || errorMessage.includes('Network')) {
+        errorMessage = 'Network error. Please check your internet connection and try again.';
+      } else if (errorMessage.includes('Play Services') || errorMessage.includes('play services')) {
+        errorMessage = 'Google Play Services not available. Please install or update Google Play Services.';
+      } else if (errorMessage.includes('idToken') || errorMessage.includes('ID token')) {
+        errorMessage = 'Failed to get authentication token from Google. Please try again.';
+      }
+      
+      throw new Error(errorMessage);
     } finally {
-      // Don't reset loading here - let navigation handle it
+      // Reset oauth in progress flag
+      setOauthInProgress(false);
     }
   };
 
