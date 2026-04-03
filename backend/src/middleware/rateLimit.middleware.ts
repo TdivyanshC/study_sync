@@ -2,6 +2,11 @@ import rateLimit from 'express-rate-limit';
 import { Request, Response } from 'express';
 import { config } from '../config/env';
 
+// Skip function for rate limiter - returns true to skip rate limiting
+const shouldSkipRateLimit = (req: Request): boolean => {
+  return req.path === '/health' || req.path === '/api/health';
+};
+
 // General API rate limiter
 export const apiRateLimiter = rateLimit({
   windowMs: config.RATE_LIMIT_WINDOW_MS,
@@ -9,6 +14,7 @@ export const apiRateLimiter = rateLimit({
   message: { error: 'Too many requests, please try again later' },
   standardHeaders: true,
   legacyHeaders: false,
+  skip: shouldSkipRateLimit,
 });
 
 // Stricter rate limiter for auth endpoints - increased from 10 to 30 to prevent blocking legitimate users
@@ -18,6 +24,7 @@ export const authRateLimiter = rateLimit({
   message: { error: 'Too many auth attempts, please try again later' },
   standardHeaders: true,
   legacyHeaders: false,
+  skip: shouldSkipRateLimit,
 });
 
 // Rate limiter for session creation
@@ -28,8 +35,3 @@ export const sessionRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
-
-// Skip rate limiter for health checks
-export const skipRateLimiter = (req: Request, res: Response): boolean => {
-  return req.path === '/health' || req.path === '/api/health';
-};

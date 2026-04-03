@@ -60,8 +60,7 @@ app.get('/api/health', (req: Request, res: Response) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Apply rate limiters (skip health checks)
-app.use(skipRateLimiter);
+// Apply rate limiters
 app.use('/api/auth', authRateLimiter);
 app.use('/api', apiRateLimiter);
 
