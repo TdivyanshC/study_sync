@@ -13,11 +13,6 @@ export interface ISpace extends Document {
 // Define the Space schema
 const SpaceSchema = new Schema<ISpace>(
   {
-    _id: { 
-      type: String, 
-      required: true, 
-      unique: true 
-    }, // UUID
     createdBy: { 
       type: String, 
       required: true 

@@ -17,11 +17,6 @@ export interface ISessionEvent extends Document {
 // Define the SessionEvent schema
 const SessionEventSchema = new Schema<ISessionEvent>(
   {
-    _id: { 
-      type: String, 
-      required: true, 
-      unique: true 
-    }, // UUID
     userId: { 
       type: String, 
       required: true 

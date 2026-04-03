@@ -12,11 +12,6 @@ export interface ISpaceMember extends Document {
 // Define the SpaceMember schema
 const SpaceMemberSchema = new Schema<ISpaceMember>(
   {
-    _id: { 
-      type: String, 
-      required: true, 
-      unique: true 
-    }, // UUID
     spaceId: { 
       type: String, 
       required: true 

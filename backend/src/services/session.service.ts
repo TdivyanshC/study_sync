@@ -31,7 +31,6 @@ export class SessionService {
    */
   async startSession(input: CreateSessionInput): Promise<SessionEvent> {
     const session = await SessionEvent.create({
-      _id: new Types.ObjectId().toHexString(), // Generate UUID-like ID
       userId: input.user_id,
       sessionTypeId: input.session_type_id,
       spaceId: input.space_id,

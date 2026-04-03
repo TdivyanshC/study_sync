@@ -12,11 +12,6 @@ export interface IFriendship extends Document {
 // Define the Friendship schema
 const FriendshipSchema = new Schema<IFriendship>(
   {
-    _id: { 
-      type: String, 
-      required: true, 
-      unique: true 
-    }, // UUID
     requesterId: { 
       type: String, 
       required: true 

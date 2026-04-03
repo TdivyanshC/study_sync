@@ -22,11 +22,6 @@ export interface IUser extends Document<string, any, IUser> {
 // Define the User schema
 const UserSchema = new Schema<IUser>(
   {
-    _id: { 
-      type: String, 
-      required: true, 
-      unique: true 
-    }, // MongoDB document ID
     email: { 
       type: String, 
       required: true, 

@@ -33,7 +33,6 @@ export class SpaceService {
   async createSpace(input: CreateSpaceInput): Promise<Space> {
     // Create space
     const space = await Space.create({
-      _id: new Types.ObjectId().toHexString(), // Generate UUID-like ID
       name: input.name,
       description: input.description,
       createdBy: input.created_by,
@@ -41,7 +40,6 @@ export class SpaceService {
 
     // Add creator as owner member
     await SpaceMember.create({
-      _id: new Types.ObjectId().toHexString(), // Generate UUID-like ID
       spaceId: space._id,
       userId: input.created_by,
       role: 'owner',
@@ -120,7 +118,6 @@ export class SpaceService {
     }
 
     const spaceMember = await SpaceMember.create({
-      _id: new Types.ObjectId().toHexString(), // Generate UUID-like ID
       spaceId: spaceId,
       userId: userId,
       role: 'member',

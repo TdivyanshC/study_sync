@@ -92,7 +92,6 @@ export class AuthController {
 
         // Create user record
         user = await User.create({
-          _id: googleUser.googleId,
           email: googleUser.email,
           gmailName: googleUser.name,
           username: googleUser.email.split('@')[0],

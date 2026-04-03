@@ -106,7 +106,6 @@ export class FriendshipController {
       }
 
       const friendship = await Friendship.create({
-        _id: new Types.ObjectId().toHexString(), // Generate UUID-like ID
         requesterId: userId,
         receiverId: receiver_id,
         status: 'pending'
