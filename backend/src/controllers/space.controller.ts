@@ -2,9 +2,6 @@ import { Request, Response } from 'express';
 import { spaceService } from '../services/space.service';
 
 export class SpaceController {
-  /**
-   * Create a new space
-   */
   async createSpace(req: Request, res: Response): Promise<void> {
     try {
       const userId = (req as any).user?.id;
@@ -28,9 +25,6 @@ export class SpaceController {
     }
   }
 
-  /**
-   * Get user's spaces
-   */
   async getUserSpaces(req: Request, res: Response): Promise<void> {
     try {
       const userId = (req as any).user?.id;
@@ -48,9 +42,6 @@ export class SpaceController {
     }
   }
 
-  /**
-   * Get space by ID
-   */
   async getSpace(req: Request, res: Response): Promise<void> {
     try {
       const { space_id } = req.params;
@@ -68,9 +59,6 @@ export class SpaceController {
     }
   }
 
-  /**
-   * Join a space
-   */
   async joinSpace(req: Request, res: Response): Promise<void> {
     try {
       const userId = (req as any).user?.id;
@@ -89,9 +77,84 @@ export class SpaceController {
     }
   }
 
-  /**
-   * Get space members
-   */
+  async joinByInviteCode(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = (req as any).user?.id;
+      const { invite_code } = req.body;
+
+      if (!userId) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      if (!invite_code) {
+        res.status(400).json({ error: 'Invite code is required' });
+        return;
+      }
+
+      const member = await spaceService.joinByInviteCode(invite_code, userId);
+      res.json(member);
+    } catch (error: any) {
+      console.error('Join by invite code error:', error);
+      res.status(400).json({ error: error.message || 'Failed to join space' });
+    }
+  }
+
+  async regenerateInviteCode(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = (req as any).user?.id;
+      const { space_id } = req.params;
+
+      if (!userId) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      const newCode = await spaceService.regenerateInviteCode(space_id, userId);
+      res.json({ invite_code: newCode });
+    } catch (error: any) {
+      console.error('Regenerate invite code error:', error);
+      res.status(400).json({ error: error.message || 'Failed to regenerate invite code' });
+    }
+  }
+
+  async leaveSpace(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = (req as any).user?.id;
+      const { space_id } = req.params;
+
+      if (!userId) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      await spaceService.leaveSpace(space_id, userId);
+      res.json({ message: 'Left space successfully' });
+    } catch (error: any) {
+      console.error('Leave space error:', error);
+      res.status(400).json({ error: error.message || 'Failed to leave space' });
+    }
+  }
+
+  async removeMember(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = (req as any).user?.id;
+      const { space_id } = req.params;
+      const { user_id } = req.body;
+
+      if (!userId) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      await spaceService.removeMember(space_id, user_id, userId);
+      res.json({ message: 'Member removed successfully' });
+    } catch (error: any) {
+      console.error('Remove member error:', error);
+      res.status(400).json({ error: error.message || 'Failed to remove member' });
+    }
+  }
+
   async getSpaceMembers(req: Request, res: Response): Promise<void> {
     try {
       const { space_id } = req.params;
@@ -104,9 +167,6 @@ export class SpaceController {
     }
   }
 
-  /**
-   * Get space activity
-   */
   async getSpaceActivity(req: Request, res: Response): Promise<void> {
     try {
       const { space_id } = req.params;
@@ -120,9 +180,6 @@ export class SpaceController {
     }
   }
 
-  /**
-   * Get space stats
-   */
   async getSpaceStats(req: Request, res: Response): Promise<void> {
     try {
       const { space_id } = req.params;
@@ -135,9 +192,6 @@ export class SpaceController {
     }
   }
 
-  /**
-   * Delete space (owner only)
-   */
   async deleteSpace(req: Request, res: Response): Promise<void> {
     try {
       const userId = (req as any).user?.id;

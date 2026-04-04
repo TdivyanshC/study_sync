@@ -9,6 +9,7 @@ export interface Space {
   created_by: string;
   name: string;
   description?: string;
+  invite_code?: string;
   created_at: string;
 }
 
@@ -28,17 +29,32 @@ export interface CreateSpaceInput {
 
 export class SpaceService {
   /**
+   * Generate unique invite code
+   */
+  private generateInviteCode(): string {
+    return Math.random().toString(36).substring(2, 8).toUpperCase();
+  }
+
+  /**
    * Create a new space with creator as owner
    */
   async createSpace(input: CreateSpaceInput): Promise<Space> {
-    // Create space
+    let inviteCode = this.generateInviteCode();
+    let attempts = 0;
+    while (attempts < 5) {
+      const existing = await Space.findOne({ inviteCode });
+      if (!existing) break;
+      inviteCode = this.generateInviteCode();
+      attempts++;
+    }
+
     const space = await Space.create({
       name: input.name,
       description: input.description,
       createdBy: input.created_by,
+      inviteCode,
     });
 
-    // Add creator as owner member
     await SpaceMember.create({
       spaceId: space._id,
       userId: input.created_by,
@@ -50,35 +66,56 @@ export class SpaceService {
       created_by: space.createdBy,
       name: space.name,
       description: space.description,
+      invite_code: space.inviteCode,
       created_at: space.createdAt.toISOString(),
     };
   }
 
-  /**
-   * Get space by ID
-   */
   async getSpace(spaceId: string): Promise<Space | null> {
     const space = await Space.findById(spaceId);
-
-    if (!space) {
-      return null;
-    }
-
+    if (!space) return null;
     return {
       id: space._id,
       created_by: space.createdBy,
       name: space.name,
       description: space.description,
+      invite_code: space.inviteCode,
       created_at: space.createdAt.toISOString(),
     };
   }
 
-  /**
-   * Get all spaces for a user
-   */
+  async getSpaceByInviteCode(inviteCode: string): Promise<Space | null> {
+    const space = await Space.findOne({ inviteCode: inviteCode.toUpperCase() });
+    if (!space) return null;
+    return {
+      id: space._id,
+      created_by: space.createdBy,
+      name: space.name,
+      description: space.description,
+      invite_code: space.inviteCode,
+      created_at: space.createdAt.toISOString(),
+    };
+  }
+
+  async regenerateInviteCode(spaceId: string, userId: string): Promise<string> {
+    const role = await this.getMemberRole(spaceId, userId);
+    if (role !== 'owner') {
+      throw new Error('Only the owner can regenerate invite code');
+    }
+    let newCode = this.generateInviteCode();
+    let attempts = 0;
+    while (attempts < 5) {
+      const existing = await Space.findOne({ inviteCode: newCode });
+      if (!existing) break;
+      newCode = this.generateInviteCode();
+      attempts++;
+    }
+    await Space.findByIdAndUpdate(spaceId, { inviteCode: newCode });
+    return newCode;
+  }
+
   async getUserSpaces(userId: string): Promise<Space[]> {
     const spaceMembers = await SpaceMember.find({ userId: userId }).populate('spaceId');
-
     return spaceMembers
       .map(member => member.spaceId)
       .filter((space): space is ImportType<typeof Space> => space !== null)
@@ -87,42 +124,31 @@ export class SpaceService {
         created_by: space.createdBy,
         name: space.name,
         description: space.description,
+        invite_code: space.inviteCode,
         created_at: space.createdAt.toISOString(),
       }));
   }
 
-  /**
-   * Check if user is a member of space
-   */
   async isMember(spaceId: string, userId: string): Promise<boolean> {
     const member = await SpaceMember.findOne({ spaceId, userId: userId });
     return !!member;
   }
 
-  /**
-   * Get user's role in space
-   */
   async getMemberRole(spaceId: string, userId: string): Promise<string | null> {
     const member = await SpaceMember.findOne({ spaceId, userId: userId });
     return member ? member.role : null;
   }
 
-  /**
-   * Add user to space
-   */
   async joinSpace(spaceId: string, userId: string): Promise<SpaceMember> {
-    // Check if already a member
     const isMember = await this.isMember(spaceId, userId);
     if (isMember) {
       throw new Error('Already a member of this space');
     }
-
     const spaceMember = await SpaceMember.create({
       spaceId: spaceId,
       userId: userId,
       role: 'member',
     });
-
     return {
       id: spaceMember._id,
       space_id: spaceMember.spaceId,
@@ -132,12 +158,16 @@ export class SpaceService {
     };
   }
 
-  /**
-   * Get space members
-   */
+  async joinByInviteCode(inviteCode: string, userId: string): Promise<SpaceMember> {
+    const space = await Space.findOne({ inviteCode: inviteCode.toUpperCase() });
+    if (!space) {
+      throw new Error('Invalid invite code');
+    }
+    return this.joinSpace(space._id, userId);
+  }
+
   async getSpaceMembers(spaceId: string): Promise<any[]> {
     const spaceMembers = await SpaceMember.find({ spaceId: spaceId }).populate('userId', 'id username email avatarUrl');
-
     return spaceMembers.map(member => ({
       id: member._id,
       space_id: member.spaceId,
@@ -153,15 +183,11 @@ export class SpaceService {
     }));
   }
 
-  /**
-   * Get space activity (session events)
-   */
   async getSpaceActivity(spaceId: string, limit: number = 20): Promise<any[]> {
     const sessions = await SessionEvent.find({ spaceId: spaceId, endedAt: { $ne: null } })
       .sort({ endedAt: -1 })
       .limit(limit)
       .populate('userId', 'id username avatarUrl');
-
     return sessions.map(session => ({
       id: session._id,
       user_id: session.userId,
@@ -181,22 +207,17 @@ export class SpaceService {
     }));
   }
 
-  /**
-   * Get space statistics
-   */
   async getSpaceStats(spaceId: string): Promise<{
     member_count: number;
     total_session_seconds: number;
     active_today: number;
+    member_stats: { user_id: string; username: string; total_seconds: number; today_seconds: number }[];
   }> {
-    // Get member count
     const memberCount = await SpaceMember.countDocuments({ spaceId: spaceId });
 
-    // Get total session time for space
     const sessions = await SessionEvent.find({ spaceId: spaceId, durationSeconds: { $exists: true, $ne: null } });
     const totalSeconds = sessions.reduce((sum, session) => sum + (session.durationSeconds || 0), 0);
 
-    // Get active members today
     const today = new Date();
     today.setUTCHours(0, 0, 0, 0);
 
@@ -208,34 +229,70 @@ export class SpaceService {
 
     const activeToday = todaySessions.length;
 
+    const members = await SpaceMember.find({ spaceId }).populate('userId', 'id username');
+    
+    const memberStats = await Promise.all(members.map(async (member) => {
+      const userId = member.userId._id.toString();
+      const totalUserSessions = await SessionEvent.find({ 
+        spaceId, 
+        userId: userId, 
+        durationSeconds: { $exists: true, $ne: null } 
+      });
+      const totalUserSeconds = totalUserSessions.reduce((sum, s) => sum + (s.durationSeconds || 0), 0);
+      
+      const todayUserSessions = await SessionEvent.find({
+        spaceId,
+        userId: userId,
+        startedAt: { $gte: today },
+        endedAt: { $ne: null }
+      });
+      const todayUserSeconds = todayUserSessions.reduce((sum, s) => sum + (s.durationSeconds || 0), 0);
+      
+      return {
+        user_id: userId,
+        username: (member.userId as any).username,
+        total_seconds: totalUserSeconds,
+        today_seconds: todayUserSeconds,
+      };
+    }));
+
     return {
       member_count: memberCount,
       total_session_seconds: totalSeconds,
       active_today: activeToday,
+      member_stats: memberStats,
     };
   }
 
-  /**
-   * Delete space (only owner)
-   */
   async deleteSpace(spaceId: string, userId: string): Promise<void> {
     const role = await this.getMemberRole(spaceId, userId);
     if (role !== 'owner') {
       throw new Error('Only the owner can delete this space');
     }
-
-    // Delete space members first (due to foreign key constraints)
     await SpaceMember.deleteMany({ spaceId: spaceId });
-
-    // Delete the space
     const result = await Space.findByIdAndDelete(spaceId);
     if (!result) {
       throw new Error('Space not found');
     }
   }
+
+  async leaveSpace(spaceId: string, userId: string): Promise<void> {
+    const role = await this.getMemberRole(spaceId, userId);
+    if (role === 'owner') {
+      throw new Error('Owner cannot leave space. Transfer ownership or delete space instead.');
+    }
+    await SpaceMember.findOneAndDelete({ spaceId, userId });
+  }
+
+  async removeMember(spaceId: string, targetUserId: string, requesterId: string): Promise<void> {
+    const role = await this.getMemberRole(spaceId, requesterId);
+    if (role !== 'owner') {
+      throw new Error('Only the owner can remove members');
+    }
+    await SpaceMember.findOneAndDelete({ spaceId, userId: targetUserId });
+  }
 }
 
 export const spaceService = new SpaceService();
 
-// Helper type for conditional mapping
 type ImportType<T> = T extends (...args: any[]) => infer R ? R : T;

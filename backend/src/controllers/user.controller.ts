@@ -284,6 +284,53 @@ export class UserController {
       res.status(500).json({ error: `Failed to delete session type: ${error.message}` });
     }
   }
+
+  /**
+   * Search users by username or publicUserId
+   */
+  async searchUsers(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = (req as any).user?.id;
+      const { q } = req.query;
+
+      if (!userId) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      if (!q || typeof q !== 'string' || q.length < 2) {
+        res.status(400).json({ error: 'Search query must be at least 2 characters' });
+        return;
+      }
+
+      // Search by username or publicUserId (case insensitive)
+      const users = await User.find({
+        $and: [
+          { _id: { $ne: userId } }, // Exclude self
+          {
+            $or: [
+              { username: { $regex: q, $options: 'i' } },
+              { publicUserId: { $regex: q, $options: 'i' } },
+              { displayName: { $regex: q, $options: 'i' } }
+            ]
+          }
+        ]
+      })
+        .select('id username displayName publicUserId avatarUrl')
+        .limit(20);
+
+      res.json(users.map(user => ({
+        id: user._id,
+        username: user.username,
+        display_name: user.displayName,
+        public_user_id: user.publicUserId,
+        avatar_url: user.avatarUrl,
+      })));
+    } catch (error: any) {
+      console.error('Search users error:', error);
+      res.status(500).json({ error: `Failed to search users: ${error.message}` });
+    }
+  }
 }
 
 export const userController = new UserController();

@@ -34,6 +34,7 @@ import statsRoutes from './routes/stats.routes';
 import spaceRoutes from './routes/space.routes';
 import friendshipRoutes from './routes/friendship.routes';
 import streakRoutes from './routes/streak.routes';
+import alarmRoutes from './routes/alarm.routes';
 
 // Load environment variables
 dotenv.config();
@@ -74,6 +75,7 @@ app.use('/api/stats', statsRoutes);
 app.use('/api/spaces', spaceRoutes);
 app.use('/api/friends', friendshipRoutes);
 app.use('/api/streak', streakRoutes);
+app.use('/api/alarms', alarmRoutes);
 
 // Error handling
 app.use(notFoundHandler);

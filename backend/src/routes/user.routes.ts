@@ -10,6 +10,9 @@ router.get('/:user_id', userController.getUser.bind(userController));
 // Get user by public ID
 router.get('/public/:public_id', userController.getUserByPublicId.bind(userController));
 
+// Search users by username, displayName, or publicUserId
+router.get('/search', authMiddleware, userController.searchUsers.bind(userController));
+
 // Complete onboarding (set username)
 router.post('/onboarding', authMiddleware, userController.completeOnboarding.bind(userController));
 

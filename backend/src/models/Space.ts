@@ -7,6 +7,7 @@ export interface ISpace extends Document {
   name: string;
   description?: string;
   isPublic: boolean;
+  inviteCode: string; // Unique invite code
   createdAt: Date;
 }
 
@@ -27,6 +28,10 @@ const SpaceSchema = new Schema<ISpace>(
     isPublic: { 
       type: Boolean, 
       default: false 
+    },
+    inviteCode: { 
+      type: String, 
+      unique: true 
     }
   },
   {
@@ -37,6 +42,7 @@ const SpaceSchema = new Schema<ISpace>(
 // Indexes for fast lookups
 SpaceSchema.index({ createdBy: 1 });
 SpaceSchema.index({ isPublic: 1 });
+SpaceSchema.index({ inviteCode: 1 });
 
 // Create or get the Space model
 const Space = models.Space || model<ISpace>('Space', SpaceSchema);
