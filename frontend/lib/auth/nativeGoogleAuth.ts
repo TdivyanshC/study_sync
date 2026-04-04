@@ -55,6 +55,17 @@ export interface AuthResponse {
  */
 export const signInWithGoogleNative = async (): Promise<AuthResponse> => {
   try {
+    // First, try to sign out to ensure a fresh login flow (forces account selection)
+    try {
+      const currentUser = await Google.GoogleSignin.getCurrentUser();
+      if (currentUser) {
+        console.log('🔄 Signed out cached user to force account selection');
+        await Google.GoogleSignin.signOut();
+      }
+    } catch (e) {
+      // Ignore - user might not be signed in
+    }
+
     // Check if Play Services are available (Android)
     const hasPlayServices = await Google.GoogleSignin.hasPlayServices();
     if (!hasPlayServices) {
@@ -116,12 +127,16 @@ export const signInWithGoogleNative = async (): Promise<AuthResponse> => {
       
       clearTimeout(timeoutId);
 
+      console.log('📡 Backend response status:', response.status);
+
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || `Failed to authenticate with backend: ${response.status}`);
+        const errorData = await response.json();
+        console.error('❌ Backend error response:', errorData);
+        throw new Error(errorData.error || `Failed to authenticate with backend: ${response.status}`);
       }
 
       const data: AuthResponse = await response.json();
+      console.log('✅ Backend auth successful');
       return data;
     } catch (fetchError: any) {
       clearTimeout(timeoutId);

@@ -13,4 +13,13 @@ router.get('/public/:public_id', userController.getUserByPublicId.bind(userContr
 // Complete onboarding (set username)
 router.post('/onboarding', authMiddleware, userController.completeOnboarding.bind(userController));
 
+// Create custom session type
+router.post('/session-types', authMiddleware, userController.createSessionType.bind(userController));
+
+// Get user's session types
+router.get('/session-types', authMiddleware, userController.getSessionTypes.bind(userController));
+
+// Delete session type
+router.delete('/session-types/:session_type_id', authMiddleware, userController.deleteSessionType.bind(userController));
+
 export default router;

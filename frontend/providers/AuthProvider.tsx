@@ -96,11 +96,17 @@ export function AuthProvider({ children }: AuthProviderProps): React.ReactNode {
       return;
     }
 
-    if (navigationLocked) {
-      console.log('🔒 Navigation already in progress, skipping...');
+    // Skip if no user (already handled)
+    if (!user) {
+      console.log('🔄 No user - navigating to login');
+      lastNavigationRef.current = now;
+      router.replace('/login');
+      setNavigationLocked(false);
+      setHasNavigated(true);
       return;
     }
 
+    // Always navigate for logged-in users - no lock check needed
     setNavigationLocked(true);
     lastNavigationRef.current = now;
     
@@ -349,15 +355,16 @@ export function AuthProvider({ children }: AuthProviderProps): React.ReactNode {
       setLoading(false);
       setOauthInProgress(false);
 
-      // Handle navigation
+      console.log('📍 Navigation state before handleNavigation:', { hasNavigated, navigationLocked });
+
+      // Handle navigation - force navigation on successful login
       const userStatus = { 
         hasUsername: !!authResponse.user.username, 
         hasCompletedOnboarding: authResponse.user.onboardingCompleted 
       };
       
-      if (!hasNavigated && !navigationLocked) {
-        handleNavigation(authResponse.user, userStatus);
-      }
+      // Force navigation after login - always navigate regardless of hasNavigated state
+      handleNavigation(authResponse.user, userStatus);
 
     } catch (error: any) {
       console.error('❌ Google login error:', error.message, error);

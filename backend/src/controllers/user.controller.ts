@@ -198,6 +198,92 @@ export class UserController {
       }
     }
   }
+
+  /**
+   * Create a custom session type for a user
+   */
+  async createSessionType(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = (req as any).user?.id;
+      const { name, icon, color } = req.body;
+
+      if (!userId) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      if (!name || !icon || !color) {
+        res.status(400).json({ error: 'Missing required fields: name, icon, color' });
+        return;
+      }
+
+      const sessionType = await SessionType.create({
+        userId,
+        name,
+        icon,
+        color,
+      });
+
+      res.status(201).json(sessionType);
+    } catch (error: any) {
+      console.error('Create session type error:', error);
+      if (error.code === 11000) {
+        res.status(409).json({ error: 'Session type with this name already exists' });
+      } else {
+        res.status(500).json({ error: `Failed to create session type: ${error.message}` });
+      }
+    }
+  }
+
+  /**
+   * Get all session types for a user
+   */
+  async getSessionTypes(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = (req as any).user?.id;
+
+      if (!userId) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      const sessionTypes = await SessionType.find({ userId }).sort({ createdAt: -1 });
+      res.json(sessionTypes);
+    } catch (error: any) {
+      console.error('Get session types error:', error);
+      res.status(500).json({ error: `Failed to get session types: ${error.message}` });
+    }
+  }
+
+  /**
+   * Delete a session type
+   */
+  async deleteSessionType(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = (req as any).user?.id;
+      const { session_type_id } = req.params;
+
+      if (!userId) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      const result = await SessionType.findOneAndDelete({
+        _id: session_type_id,
+        userId,
+      });
+
+      if (!result) {
+        res.status(404).json({ error: 'Session type not found' });
+        return;
+      }
+
+      res.json({ success: true, message: 'Session type deleted' });
+    } catch (error: any) {
+      console.error('Delete session type error:', error);
+      res.status(500).json({ error: `Failed to delete session type: ${error.message}` });
+    }
+  }
 }
 
 export const userController = new UserController();

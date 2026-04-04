@@ -5,7 +5,7 @@ import dotenv from 'dotenv';
 import os from 'os';
 import { config } from './config/env';
 import { connectDB } from './config/database';
-import { apiRateLimiter, authRateLimiter, skipRateLimiter } from './middleware/rateLimit.middleware';
+import { apiRateLimiter, authRateLimiter } from './middleware/rateLimit.middleware';
 import { errorHandler, notFoundHandler } from './middleware/error.middleware';
 
 // Get local IP address for network access

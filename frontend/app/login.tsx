@@ -42,10 +42,15 @@ export default function LoginScreen() {
       return;
     }
     
+    console.log('🔄 handleGoogleLogin called, loading:', loading);
+    
     try {
+      console.log('🔄 Calling loginWithGoogle...');
       await loginWithGoogle();
+      console.log('✅ loginWithGoogle completed');
       // Navigation will be handled automatically by AuthProvider's onAuthStateChange listener
     } catch (error: any) {
+      console.error('❌ loginWithGoogle error:', error.message);
       Alert.alert('Google Login Failed', error.message || 'Failed to sign in with Google');
     }
   };
