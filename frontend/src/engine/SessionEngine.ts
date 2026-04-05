@@ -35,7 +35,11 @@ class SessionEngine {
   async startSession(config: SessionConfig): Promise<SessionResult> {
     try {
       console.log('🚀 SessionEngine: Starting new session...');
-      
+
+      if (this.activeSession) {
+        throw new Error('Session already active');
+      }
+
       this.userId = config.userId;
       this.sessionStartTime = Date.now();
 

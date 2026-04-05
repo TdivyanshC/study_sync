@@ -35,3 +35,12 @@ export const sessionRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+
+// Rate limiter for friendship actions
+export const friendshipRateLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 20, // 20 friendship actions per minute
+  message: { error: 'Too many friendship requests, please try again later' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});

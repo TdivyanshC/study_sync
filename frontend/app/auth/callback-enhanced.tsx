@@ -76,12 +76,9 @@ export default function AuthCallbackEnhanced() {
     const userStatus = await checkUserStatus(session.user.id);
 
     setTimeout(() => {
-      if (!userStatus.hasUsername) {
-        console.log('🔄 New user - navigating to username selection');
-        router.replace('/username-selection');
-      } else if (userStatus.hasUsername && !userStatus.hasCompletedOnboarding) {
-        console.log('🔄 User has username but no onboarding - navigating to onboarding step 1');
-        router.replace('/onboarding-step1');
+      if (!userStatus.hasCompletedOnboarding) {
+        console.log('🔄 User needs onboarding - navigating to onboarding');
+        router.replace('/onboarding-username');
       } else {
         console.log('🔄 Returning user - navigating to home');
         router.replace('/(tabs)');
@@ -199,6 +196,9 @@ export default function AuthCallbackEnhanced() {
     // Get initial URL for debugging
     Linking.getInitialURL().then(url => {
       console.log('📱 Initial URL:', url || 'No URL');
+      checkSessionAndRedirect();
+    }).catch(error => {
+      console.error('Failed to get initial URL:', error);
       checkSessionAndRedirect();
     });
 

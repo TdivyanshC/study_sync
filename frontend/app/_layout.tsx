@@ -144,19 +144,26 @@ export default function RootLayout() {
               <Stack.Screen name="home" options={{ headerShown: false }} />
               
               {/* Onboarding screens */}
-              <Stack.Screen 
-                name="onboarding-step1" 
-                options={{ 
+              <Stack.Screen
+                name="onboarding-username"
+                options={{
                   headerShown: false,
                   presentation: 'modal'
-                }} 
+                }}
               />
-              <Stack.Screen 
-                name="onboarding-step2" 
-                options={{ 
+              <Stack.Screen
+                name="onboarding-step1"
+                options={{
                   headerShown: false,
                   presentation: 'modal'
-                }} 
+                }}
+              />
+              <Stack.Screen
+                name="onboarding-step2"
+                options={{
+                  headerShown: false,
+                  presentation: 'modal'
+                }}
               />
               
               {/* Test screen for debugging */}

@@ -126,6 +126,17 @@ export const API_ENDPOINTS = {
   // Test endpoints (under /api/)
   TEST_SEED: '/test/seed',
   TEST_INSERT_SAMPLE: '/test/insert-sample-data',
+
+  // Auth & Profile endpoints (under /api/auth/)
+  AUTH_PROFILE: '/auth/profile',
+
+  // Onboarding endpoints (under /api/onboarding/)
+  USER_ONBOARDING: '/onboarding/complete',
+
+  // Session utility endpoints (under /api/sessions/)
+  SESSION_ACTIVE: '/sessions/active',
+  SESSIONS: '/sessions',
+  SESSION_TODAY: '/sessions/today',
 };
 
 // Build full API URL helper

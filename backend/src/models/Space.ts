@@ -29,9 +29,10 @@ const SpaceSchema = new Schema<ISpace>(
       type: Boolean, 
       default: false 
     },
-    inviteCode: { 
-      type: String, 
-      unique: true 
+    inviteCode: {
+      type: String,
+      required: true,
+      unique: true
     }
   },
   {

@@ -37,6 +37,8 @@ FriendshipSchema.index({ receiverId: 1 });
 FriendshipSchema.index({ status: 1 });
 FriendshipSchema.index({ requesterId: 1, receiverId: 1 }, { unique: true }); // Prevent duplicate friendships
 FriendshipSchema.index({ requesterId: 1, receiverId: 1, status: 1 });
+FriendshipSchema.index({ receiverId: 1, status: 1 }); // For pending requests query
+FriendshipSchema.index({ createdAt: -1 }); // For recent friendships
 
 // Create or get the Friendship model
 const Friendship = models.Friendship || model<IFriendship>('Friendship', FriendshipSchema);

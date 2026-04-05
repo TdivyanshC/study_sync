@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,7 +8,7 @@ import {
   ScrollView,
   Alert,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Colors } from '../constants/Colors';
 import ProgressBar from '../components/ProgressBar';
 
@@ -37,6 +37,9 @@ const RELATIONSHIP_OPTIONS = [
 ];
 
 export default function OnboardingStep1() {
+  const params = useLocalSearchParams();
+  const username = params.username as string || '';
+
   const [formData, setFormData] = useState<OnboardingData>({
     gender: '',
     age: '',
@@ -45,6 +48,22 @@ export default function OnboardingStep1() {
 
   const [showAgeDropdown, setShowAgeDropdown] = useState(false);
   const [showRelationshipDropdown, setShowRelationshipDropdown] = useState(false);
+
+  // Check if we have username data, if not redirect back
+  useEffect(() => {
+    if (!username) {
+      Alert.alert(
+        'Missing Information',
+        'Please complete username selection first.',
+        [
+          {
+            text: 'Go Back',
+            onPress: () => router.replace('/onboarding-username')
+          }
+        ]
+      );
+    }
+  }, [username]);
 
   const handleGenderSelect = (genderId: string) => {
     setFormData(prev => ({ ...prev, gender: genderId }));
@@ -71,6 +90,7 @@ export default function OnboardingStep1() {
     router.push({
       pathname: '/onboarding-step2',
       params: {
+        username,
         gender: formData.gender,
         age: formData.age,
         relationship: formData.relationship
@@ -85,7 +105,7 @@ export default function OnboardingStep1() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <ProgressBar currentStep={1} totalSteps={2} />
+        <ProgressBar currentStep={2} totalSteps={3} />
         
         <Text style={styles.title}>Let's get to know you</Text>
         <Text style={styles.subtitle}>

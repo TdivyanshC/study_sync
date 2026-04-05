@@ -22,14 +22,22 @@ export interface CreateSessionInput {
 
 export interface EndSessionInput {
   session_id: string;
+  user_id: string;
   ended_at?: string;
 }
 
 export class SessionService {
   /**
-   * Start a new session - insert with started_at timestamp
-   */
+    * Start a new session - insert with started_at timestamp
+    */
   async startSession(input: CreateSessionInput): Promise<SessionEvent> {
+    // Validate user exists
+    const User = (await import('../models/User')).default;
+    const userExists = await User.findById(input.user_id);
+    if (!userExists) {
+      throw new Error('User not found');
+    }
+
     const session = await SessionEvent.create({
       userId: input.user_id,
       sessionTypeId: input.session_type_id,
@@ -58,6 +66,11 @@ export class SessionService {
 
     if (!existing) {
       throw new Error('Session not found');
+    }
+
+    // Validate session ownership
+    if (existing.userId !== input.user_id) {
+      throw new Error('Unauthorized: Session does not belong to user');
     }
 
     if (existing.endedAt) {

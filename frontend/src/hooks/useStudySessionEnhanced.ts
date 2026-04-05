@@ -16,6 +16,7 @@ export interface StudySessionState {
 
 export interface EnhancedStudyStore {
   currentSession: StudySessionState | null;
+  activeSessionId: string | null;
   isTimerRunning: boolean;
   todayMetrics: {
     totalMinutes: number;
@@ -40,6 +41,7 @@ export interface EnhancedStudyStore {
 
 const useEnhancedStudyStore = create<EnhancedStudyStore>((set, get) => ({
   currentSession: null,
+  activeSessionId: null,
   isTimerRunning: false,
   todayMetrics: {
     totalMinutes: 0,
@@ -132,7 +134,8 @@ const useEnhancedStudyStore = create<EnhancedStudyStore>((set, get) => ({
 
     const session = state.currentSession;
     const now = Date.now();
-    const durationMinutes = Math.round((now - session.startTime) / (1000 * 60));
+    let durationMinutes = Math.round((now - session.startTime) / (1000 * 60));
+    durationMinutes = Math.max(1, Math.min(480, durationMinutes)); // Clamp to 1-480 minutes
 
     // Add end event
     const endEvent: SessionEvent = {

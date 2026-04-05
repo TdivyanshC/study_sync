@@ -10,6 +10,10 @@ import { router } from 'expo-router';
 import { Colors } from '../constants/Colors';
 
 export default function TestOnboarding() {
+  const goToUsername = () => {
+    router.push('/onboarding-username');
+  };
+
   const goToStep1 = () => {
     router.push('/onboarding-step1');
   };
@@ -30,6 +34,10 @@ export default function TestOnboarding() {
           Use these buttons to test the onboarding flow manually
         </Text>
 
+        <TouchableOpacity style={styles.testButton} onPress={goToUsername}>
+          <Text style={styles.testButtonText}>Go to Username</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity style={styles.testButton} onPress={goToStep1}>
           <Text style={styles.testButtonText}>Go to Step 1</Text>
         </TouchableOpacity>
@@ -44,9 +52,10 @@ export default function TestOnboarding() {
 
         <View style={styles.infoBox}>
           <Text style={styles.infoTitle}>Flow Test:</Text>
-          <Text style={styles.infoText}>1. Login → Should redirect to Step 1</Text>
-          <Text style={styles.infoText}>2. Fill Step 1 → Should go to Step 2</Text>
-          <Text style={styles.infoText}>3. Select 3+ sessions → Should go to Home</Text>
+          <Text style={styles.infoText}>1. Login → Should redirect to Username</Text>
+          <Text style={styles.infoText}>2. Enter username → Should go to Step 1</Text>
+          <Text style={styles.infoText}>3. Fill Step 1 → Should go to Step 2</Text>
+          <Text style={styles.infoText}>4. Select 3+ sessions → Should go to Home</Text>
         </View>
       </View>
     </SafeAreaView>

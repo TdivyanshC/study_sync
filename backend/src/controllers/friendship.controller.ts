@@ -86,8 +86,20 @@ export class FriendshipController {
         return;
       }
 
+      if (!receiver_id || typeof receiver_id !== 'string') {
+        res.status(400).json({ error: 'Valid receiver_id is required' });
+        return;
+      }
+
       if (userId === receiver_id) {
         res.status(400).json({ error: 'Cannot add yourself as friend' });
+        return;
+      }
+
+      // Validate that receiver exists
+      const receiverExists = await User.findById(receiver_id);
+      if (!receiverExists) {
+        res.status(404).json({ error: 'User not found' });
         return;
       }
 
@@ -138,6 +150,11 @@ export class FriendshipController {
         return;
       }
 
+      if (!request_id || typeof request_id !== 'string') {
+        res.status(400).json({ error: 'Valid request_id is required' });
+        return;
+      }
+
       // Verify request belongs to user
       const friendship = await Friendship.findOne({
         _id: request_id,
@@ -180,6 +197,11 @@ export class FriendshipController {
         return;
       }
 
+      if (!request_id || typeof request_id !== 'string') {
+        res.status(400).json({ error: 'Valid request_id is required' });
+        return;
+      }
+
       const friendship = await Friendship.findOne({
         _id: request_id,
         receiverId: userId,
@@ -218,6 +240,11 @@ export class FriendshipController {
 
       if (!userId) {
         res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      if (!friend_id || typeof friend_id !== 'string') {
+        res.status(400).json({ error: 'Valid friend_id is required' });
         return;
       }
 

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { friendshipController } from '../controllers/friendship.controller';
 import { authMiddleware } from '../middleware/auth.middleware';
+import { friendshipRateLimiter } from '../middleware/rateLimit.middleware';
 
 const router = Router();
 
@@ -11,15 +12,15 @@ router.get('/', authMiddleware, friendshipController.getFriends.bind(friendshipC
 router.get('/pending', authMiddleware, friendshipController.getPendingRequests.bind(friendshipController));
 
 // Send friend request
-router.post('/request', authMiddleware, friendshipController.sendRequest.bind(friendshipController));
+router.post('/request', authMiddleware, friendshipRateLimiter, friendshipController.sendRequest.bind(friendshipController));
 
 // Accept friend request
-router.post('/accept', authMiddleware, friendshipController.acceptRequest.bind(friendshipController));
+router.post('/accept', authMiddleware, friendshipRateLimiter, friendshipController.acceptRequest.bind(friendshipController));
 
 // Reject friend request
-router.post('/reject', authMiddleware, friendshipController.rejectRequest.bind(friendshipController));
+router.post('/reject', authMiddleware, friendshipRateLimiter, friendshipController.rejectRequest.bind(friendshipController));
 
 // Remove friend
-router.delete('/remove', authMiddleware, friendshipController.removeFriend.bind(friendshipController));
+router.delete('/remove', authMiddleware, friendshipRateLimiter, friendshipController.removeFriend.bind(friendshipController));
 
 export default router;

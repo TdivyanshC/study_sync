@@ -1,0 +1,26 @@
+
+> study-sync-backend@1.0.0 dev
+> ts-node-dev --respawn src/index.ts
+
+[INFO] 14:12:13 ts-node-dev ver. 2.0.0 (using ts-node ver. 10.9.2, typescript ver. 5.9.3)
+Compilation error in C:\projects\study-sync\backend\src\controllers\auth.controller.ts
+[ERROR] 14:12:27 ⨯ Unable to compile TypeScript:
+src/controllers/auth.controller.ts(65,29): error TS2349: This expression is not callable.
+  Each member of the union type '{ <ResultDoc = Document<unknown, {}, IUser, {}, {}> & IUser & Required<{ _id: string; }> & { __v: number; }>(filter: ObjectId | Query<any, any, {}, unknown, "find", Record<...>> | FilterQuery<...>, projection: ProjectionType<...>, options: QueryOptions<...> & ... 1 more ... & Abortable): Query<...>; <ResultDoc = Doc...' has signatures, but none of those signatures are compatible with each other.
+src/controllers/auth.controller.ts(81,39): error TS2349: This expression is not callable.
+  Each member of the union type '{ <ResultDoc = Document<unknown, {}, IUser, {}, {}> & IUser & Required<{ _id: string; }> & { __v: number; }>(filter: ObjectId | Query<any, any, {}, unknown, "find", Record<...>> | FilterQuery<...>, projection: ProjectionType<...>, options: QueryOptions<...> & ... 1 more ... & Abortable): Query<...>; <ResultDoc = Doc...' has signatures, but none of those signatures are compatible with each other.
+src/controllers/auth.controller.ts(106,27): error TS2349: This expression is not callable.
+  Each member of the union type '{ <DocContents = AnyKeys<IUser>>(docs: (IUser | DocContents)[], options: CreateOptions & { aggregateErrors: true; }): Promise<((Document<unknown, {}, IUser, {}, {}> & IUser & Required<...> & { ...; }) | Error)[]>; <DocContents = AnyKeys<...>>(docs: (IUser | DocContents)[], options?: CreateOptions): Promise<...>; <Do...' has signatures, but none of those signatures are compatible with each other.
+src/controllers/auth.controller.ts(118,27): error TS2349: This expression is not callable.
+  Each member of the union type '{ <ResultDoc = Document<unknown, {}, IUser, {}, {}> & IUser & Required<{ _id: string; }> & { __v: number; }>(filter: ObjectId | Query<any, any, {}, unknown, "find", Record<...>> | FilterQuery<...>, update: UpdateQuery<...>, options: QueryOptions<...> & { ...; }): Query<...>; <ResultDoc = Document<...> & ... 2 more ....' has signatures, but none of those signatures are compatible with each other.
+src/controllers/auth.controller.ts(171,39): error TS2349: This expression is not callable.
+  Each member of the union type '{ <ResultDoc = Document<unknown, {}, IUser, {}, {}> & IUser & Required<{ _id: string; }> & { __v: number; }>(id: any, projection: ProjectionType<IUser>, options: QueryOptions<...> & { ...; }): Query<...>; <ResultDoc = Document<...> & ... 2 more ... & { ...; }>(id: any, projection?: ProjectionType<...>, options?: Que...' has signatures, but none of those signatures are compatible with each other.
+src/controllers/auth.controller.ts(185,37): error TS2349: This expression is not callable.
+  Each member of the union type '{ <ResultDoc = Document<unknown, {}, IUser, {}, {}> & IUser & Required<{ _id: string; }> & { __v: number; }>(filter: ObjectId | Query<any, any, {}, unknown, "find", Record<...>> | FilterQuery<...>, projection: ProjectionType<...>, options: QueryOptions<...> & ... 1 more ... & Abortable): Query<...>; <ResultDoc = Doc...' has signatures, but none of those signatures are compatible with each other.
+src/controllers/auth.controller.ts(209,34): error TS2349: This expression is not callable.
+  Each member of the union type '{ <DocContents = AnyKeys<IUser>>(docs: (IUser | DocContents)[], options: CreateOptions & { aggregateErrors: true; }): Promise<((Document<unknown, {}, IUser, {}, {}> & IUser & Required<...> & { ...; }) | Error)[]>; <DocContents = AnyKeys<...>>(docs: (IUser | DocContents)[], options?: CreateOptions): Promise<...>; <Do...' has signatures, but none of those signatures are compatible with each other.
+src/controllers/auth.controller.ts(235,31): error TS2349: This expression is not callable.
+  Each member of the union type '{ <ResultDoc = Document<unknown, {}, IUser, {}, {}> & IUser & Required<{ _id: string; }> & { __v: number; }>(id: any, projection: ProjectionType<IUser>, options: QueryOptions<...> & { ...; }): Query<...>; <ResultDoc = Document<...> & ... 2 more ... & { ...; }>(id: any, projection?: ProjectionType<...>, options?: Que...' has signatures, but none of those signatures are compatible with each other.
+src/controllers/auth.controller.ts(267,31): error TS2349: This expression is not callable.
+  Each member of the union type '{ <ResultDoc = Document<unknown, {}, IUser, {}, {}> & IUser & Required<{ _id: string; }> & { __v: number; }>(filter: ObjectId | Query<any, any, {}, unknown, "find", Record<...>> | FilterQuery<...>, update: UpdateQuery<...>, options: QueryOptions<...> & { ...; }): Query<...>; <ResultDoc = Document<...> & ... 2 more ....' has signatures, but none of those signatures are compatible with each other.
+

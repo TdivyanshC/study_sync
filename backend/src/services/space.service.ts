@@ -39,6 +39,13 @@ export class SpaceService {
    * Create a new space with creator as owner
    */
   async createSpace(input: CreateSpaceInput): Promise<Space> {
+    if (!input.name?.trim()) {
+      throw new Error('Space name is required');
+    }
+    if (input.name.length > 100) {
+      throw new Error('Space name must be 100 characters or less');
+    }
+
     let inviteCode = this.generateInviteCode();
     let attempts = 0;
     while (attempts < 5) {
@@ -171,14 +178,14 @@ export class SpaceService {
     return spaceMembers.map(member => ({
       id: member._id,
       space_id: member.spaceId,
-      user_id: member.userId._id,
+      user_id: member.userId?._id,
       role: member.role,
       joined_at: member.joinedAt.toISOString(),
       user: {
-        id: member.userId._id,
-        username: member.userId.username,
-        email: member.userId.email,
-        avatar_url: member.userId.avatarUrl,
+        id: member.userId?._id,
+        username: member.userId?.username || 'Unknown',
+        email: member.userId?.email || 'Unknown',
+        avatar_url: member.userId?.avatarUrl || '',
       }
     }));
   }
@@ -190,7 +197,7 @@ export class SpaceService {
       .populate('userId', 'id username avatarUrl');
     return sessions.map(session => ({
       id: session._id,
-      user_id: session.userId,
+      user_id: session.userId?._id,
       session_type_id: session.sessionTypeId,
       space_id: session.spaceId,
       started_at: session.startedAt.toISOString(),
@@ -200,9 +207,9 @@ export class SpaceService {
       notes: session.notes,
       created_at: session.createdAt.toISOString(),
       user: {
-        id: session.userId._id,
-        username: session.userId.username,
-        avatar_url: session.userId.avatarUrl,
+        id: session.userId?._id,
+        username: session.userId?.username || 'Unknown',
+        avatar_url: session.userId?.avatarUrl || '',
       }
     }));
   }

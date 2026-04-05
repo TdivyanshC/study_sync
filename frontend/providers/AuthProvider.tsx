@@ -110,20 +110,16 @@ export function AuthProvider({ children }: AuthProviderProps): React.ReactNode {
     setNavigationLocked(true);
     lastNavigationRef.current = now;
     
-    console.log('🧭 Starting navigation to:', 
-      !userStatus.hasUsername ? '/username-selection' :
-      !userStatus.hasCompletedOnboarding ? '/onboarding-step1' :
+    console.log('🧭 Starting navigation to:',
+      !userStatus.hasCompletedOnboarding ? '/onboarding-username' :
       '/(tabs)'
     );
 
     // Navigate immediately without delay
-    if (user && !userStatus.hasUsername) {
-      console.log('🔄 New user - navigating to username selection');
-      router.replace('/username-selection');
-    } else if (user && userStatus.hasUsername && !userStatus.hasCompletedOnboarding) {
-      console.log('🔄 User has username but no onboarding - navigating to onboarding step 1');
-      router.replace('/onboarding-step1');
-    } else if (user && userStatus.hasUsername && userStatus.hasCompletedOnboarding) {
+    if (user && !userStatus.hasCompletedOnboarding) {
+      console.log('🔄 New user - navigating to onboarding');
+      router.replace('/onboarding-username');
+    } else if (user && userStatus.hasCompletedOnboarding) {
       console.log('🔄 Returning user - navigating to home');
       router.replace('/(tabs)');
     } else {

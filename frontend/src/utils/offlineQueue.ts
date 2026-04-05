@@ -11,6 +11,7 @@ interface QueuedRequest {
   timestamp: number;
   retries: number;
   maxRetries: number;
+  retryDelay: number;
 }
 
 interface QueueStats {
@@ -86,6 +87,7 @@ class OfflineQueueManager {
         timestamp: Date.now(),
         retries: 0,
         maxRetries: this.MAX_RETRIES,
+        retryDelay: 1000,
       };
 
       queue.push(request);
@@ -131,6 +133,8 @@ class OfflineQueueManager {
             processedRequests.push(request.id);
           } else {
             request.retries++;
+            await new Promise(resolve => setTimeout(resolve, request.retryDelay));
+            request.retryDelay = Math.min(request.retryDelay * 2, 30000);
             console.log(`Retrying request (${request.retries}/${request.maxRetries}): ${request.endpoint}`);
           }
         } catch (error) {
@@ -139,6 +143,8 @@ class OfflineQueueManager {
             processedRequests.push(request.id);
           } else {
             request.retries++;
+            await new Promise(resolve => setTimeout(resolve, request.retryDelay));
+            request.retryDelay = Math.min(request.retryDelay * 2, 30000);
           }
         }
       }

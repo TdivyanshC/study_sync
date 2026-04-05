@@ -1,40 +1,61 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 
 const AUTH_TOKEN_KEY = 'study_sync_auth_token';
 const USER_DATA_KEY = 'study_sync_user_data';
 
 /**
- * Store JWT token in AsyncStorage
+ * Store JWT token securely using SecureStore
  */
 export const setAuthToken = async (token: string): Promise<void> => {
   try {
-    await AsyncStorage.setItem(AUTH_TOKEN_KEY, token);
+    await SecureStore.setItemAsync(AUTH_TOKEN_KEY, token, {
+      keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK,
+    });
   } catch (error) {
     console.error('Failed to store auth token:', error);
-    throw error;
+    // Fallback to AsyncStorage if SecureStore fails
+    try {
+      await AsyncStorage.setItem(AUTH_TOKEN_KEY, token);
+    } catch (fallbackError) {
+      console.error('Fallback storage also failed:', fallbackError);
+      throw fallbackError;
+    }
   }
 };
 
 /**
- * Get JWT token from AsyncStorage
+ * Get JWT token from secure storage
  */
 export const getAuthToken = async (): Promise<string | null> => {
   try {
-    return await AsyncStorage.getItem(AUTH_TOKEN_KEY);
+    return await SecureStore.getItemAsync(AUTH_TOKEN_KEY);
   } catch (error) {
-    console.error('Failed to get auth token:', error);
-    return null;
+    console.error('Failed to get auth token from SecureStore:', error);
+    // Fallback to AsyncStorage
+    try {
+      return await AsyncStorage.getItem(AUTH_TOKEN_KEY);
+    } catch (fallbackError) {
+      console.error('Fallback retrieval also failed:', fallbackError);
+      return null;
+    }
   }
 };
 
 /**
- * Remove JWT token from AsyncStorage
+ * Remove JWT token from secure storage
  */
 export const removeAuthToken = async (): Promise<void> => {
   try {
-    await AsyncStorage.removeItem(AUTH_TOKEN_KEY);
+    await SecureStore.deleteItemAsync(AUTH_TOKEN_KEY);
   } catch (error) {
-    console.error('Failed to remove auth token:', error);
+    console.error('Failed to remove auth token from SecureStore:', error);
+    // Fallback to AsyncStorage
+    try {
+      await AsyncStorage.removeItem(AUTH_TOKEN_KEY);
+    } catch (fallbackError) {
+      console.error('Fallback removal also failed:', fallbackError);
+    }
   }
 };
 

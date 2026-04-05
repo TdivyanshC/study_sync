@@ -90,11 +90,23 @@ export class AuthController {
           return;
         }
 
+        // Validate email
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!googleUser.email || !emailRegex.test(googleUser.email)) {
+          throw new Error('Invalid email format');
+        }
+
+        // Validate and prepare username
+        let username = googleUser.email.split('@')[0];
+        if (username.length < 3 || username.length > 20) {
+          throw new Error('Username must be between 3 and 20 characters');
+        }
+
         // Create user record
         user = await User.create({
           email: googleUser.email,
           gmailName: googleUser.name,
-          username: googleUser.email.split('@')[0],
+          username,
           publicUserId,
           avatarUrl: googleUser.picture,
           displayName: googleUser.name,
@@ -181,11 +193,23 @@ export class AuthController {
         return;
       }
 
+      // Validate email
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!email || !emailRegex.test(email)) {
+        throw new Error('Invalid email format');
+      }
+
+      // Validate and prepare username
+      let username = email.split('@')[0];
+      if (username.length < 3 || username.length > 20) {
+        throw new Error('Username must be between 3 and 20 characters');
+      }
+
       // Create user record
       const newUser = await User.create({
         _id: user_id,
         email,
-        username: email.split('@')[0],
+        username,
         publicUserId,
       });
 
