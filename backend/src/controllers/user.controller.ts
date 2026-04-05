@@ -92,8 +92,25 @@ export class UserController {
           ? onboardingData.display_name.toLowerCase().replace(/[^a-zA-Z0-9_]/g, '_') + '_' + userId.substring(0, 6)
           : 'user_' + userId.substring(0, 8));
 
+      // Check if username already exists (case insensitive)
+      const escapedUsername = username.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const existingUsername = await User.findOne({
+        username: { $regex: `^${escapedUsername}$`, $options: 'i' },
+        _id: { $ne: userId } // Exclude current user
+      });
+
+      if (existingUsername) {
+        res.status(409).json({ error: 'This username is already taken' });
+        return;
+      }
+
       // Generate public_user_id (7 characters starting with U)
-      const publicUserId = 'U' + Math.random().toString(36).substring(2, 8).toUpperCase().slice(0, 6);
+      let publicUserId;
+      let existingPublicId;
+      do {
+        publicUserId = 'U' + Math.random().toString(36).substring(2, 8).toUpperCase().slice(0, 6);
+        existingPublicId = await User.findOne({ publicUserId });
+      } while (existingPublicId);
 
       // Prepare user update/insert data
       const userUpdateData: any = {
@@ -156,7 +173,17 @@ export class UserController {
       });
     } catch (error: any) {
       console.error('❌ Complete onboarding error:', error);
-      res.status(500).json({ error: `Failed to complete onboarding: ${error.message}` });
+      if (error.code === 11000) {
+        if (error.keyPattern?.username) {
+          res.status(409).json({ error: 'This username is already taken' });
+        } else if (error.keyPattern?.publicUserId) {
+          res.status(409).json({ error: 'Public ID conflict, please try again' });
+        } else {
+          res.status(409).json({ error: 'Duplicate entry error' });
+        }
+      } else {
+        res.status(500).json({ error: `Failed to complete onboarding: ${error.message}` });
+      }
     }
   }
 
@@ -310,8 +337,9 @@ export class UserController {
       }
 
       // Check if username already exists (case insensitive)
+      const escapedUsername = username.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const existingUser = await User.findOne({
-        username: { $regex: `^${username}$`, $options: 'i' }
+        username: { $regex: `^${escapedUsername}$`, $options: 'i' }
       });
 
       console.log('📊 Existing user found:', !!existingUser);
