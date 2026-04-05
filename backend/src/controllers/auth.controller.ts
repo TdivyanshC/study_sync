@@ -96,13 +96,19 @@ export class AuthController {
           throw new Error('Invalid email format');
         }
 
-        // Validate and prepare username
-        let username = googleUser.email.split('@')[0];
-        if (username.length < 3 || username.length > 20) {
-          throw new Error('Username must be between 3 and 20 characters');
-        }
+        // Generate temporary unique username - will be replaced during onboarding
+        let username: string;
+        let attempts = 0;
+        do {
+          // Generate unique temporary username
+          username = `user_${Math.random().toString(36).substring(2, 8)}${Date.now().toString(36)}`;
+          const existing = await User.findOne({ username });
+          if (!existing) break;
+          attempts++;
+        } while (attempts < 10);
 
-        // Create user record
+        // Create user record WITHOUT setting final username
+        // Username will be set during onboarding
         user = await User.create({
           email: googleUser.email,
           gmailName: googleUser.name,
@@ -110,6 +116,8 @@ export class AuthController {
           publicUserId,
           avatarUrl: googleUser.picture,
           displayName: googleUser.name,
+          onboardingCompleted: false,
+          preferredSessions: []
         });
         console.log('✅ New user created with ID:', user._id);
       } else {
@@ -121,7 +129,7 @@ export class AuthController {
             gmailName: googleUser.name || user.gmailName,
             avatarUrl: googleUser.picture || user.avatarUrl,
           },
-          { new: true }
+          { new: true, runValidators: true }
         );
         console.log('✅ User updated successfully');
       }
@@ -199,18 +207,25 @@ export class AuthController {
         throw new Error('Invalid email format');
       }
 
-      // Validate and prepare username
-      let username = email.split('@')[0];
-      if (username.length < 3 || username.length > 20) {
-        throw new Error('Username must be between 3 and 20 characters');
-      }
+      // Generate temporary unique username - will be replaced during onboarding
+      let username: string;
+      let attempts = 0;
+      do {
+        // Generate unique temporary username
+        username = `user_${Math.random().toString(36).substring(2, 8)}${Date.now().toString(36)}`;
+        const existing = await User.findOne({ username });
+        if (!existing) break;
+        attempts++;
+      } while (attempts < 10);
 
-      // Create user record
+      // Create user record WITHOUT setting final username
+      // Username will be set during onboarding
       const newUser = await User.create({
         _id: user_id,
         email,
         username,
         publicUserId,
+        onboardingCompleted: false,
       });
 
       res.json({ user: newUser, isNewUser: true });
@@ -278,7 +293,11 @@ export class AuthController {
       res.json(user);
     } catch (error: any) {
       console.error('Update profile error:', error);
-      res.status(500).json({ error: `Internal server error: ${error.message}` });
+      if (error.code === 11000 && error.keyPattern?.username) {
+        res.status(409).json({ error: 'This username is already taken' });
+      } else {
+        res.status(500).json({ error: `Internal server error: ${error.message}` });
+      }
     }
   }
 }

@@ -142,8 +142,8 @@ export default function OnboardingStep2() {
         preferred_sessions: selectedSessions
       };
       
-      const displayName = step1Data.gender && step1Data.age ? 
-        `User (${step1Data.gender}, ${step1Data.age})` : 'User';
+      // Use the username the user entered as their display name
+      const displayName = username;
       
       // Complete onboarding with all collected data
       await markOnboardingCompleted(

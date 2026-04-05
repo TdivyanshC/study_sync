@@ -120,10 +120,8 @@ export class UserController {
         onboardingCompletedAt: new Date(),
       };
 
-      // Add optional fields if provided
-      if (onboardingData.display_name) {
-        userUpdateData.displayName = onboardingData.display_name;
-      }
+      // Set display name - use provided display_name or default to username
+      userUpdateData.displayName = onboardingData.display_name || username;
       if (onboardingData.step1_data.gender) {
         userUpdateData.gender = onboardingData.step1_data.gender;
       }
@@ -133,9 +131,9 @@ export class UserController {
       if (onboardingData.step1_data.relationship) {
         userUpdateData.relationshipStatus = onboardingData.step1_data.relationship;
       }
-      if (onboardingData.step2_data?.preferred_sessions) {
-        userUpdateData.preferredSessions = onboardingData.step2_data.preferred_sessions;
-      }
+      // preferredSessions stores actual SessionType document IDs, not string identifiers
+      // We will populate this after creating the session types
+      delete userUpdateData.preferredSessions;
 
       // First, check if user record exists
       let existingUser = await User.findById(userId);
@@ -163,7 +161,12 @@ export class UserController {
 
       // Create session types for selected sessions
       if (onboardingData.step2_data?.preferred_sessions && onboardingData.step2_data.preferred_sessions.length > 0) {
-        await this.createSessionTypesForUser(userId, onboardingData.step2_data.preferred_sessions);
+        const createdSessionTypeIds = await this.createSessionTypesForUser(userId, onboardingData.step2_data.preferred_sessions);
+        
+        // Update user with actual session type document IDs
+        await User.findByIdAndUpdate(userId, {
+          preferredSessions: createdSessionTypeIds
+        });
       }
 
       res.json({ 
@@ -192,7 +195,7 @@ export class UserController {
    * Time Complexity: O(n) where n = number of session types
    * Space Complexity: O(n) for storing session types
    */
-  private async createSessionTypesForUser(userId: string, sessionIds: string[]): Promise<void> {
+  private async createSessionTypesForUser(userId: string, sessionIds: string[]): Promise<string[]> {
     const sessionTypeMap: Record<string, { name: string; icon: string; color: string }> = {
       'gym': { name: 'Gym Session', icon: '💪', color: '#ff6b35' },
       'meditation': { name: 'Meditation', icon: '🧘', color: '#8b5cf6' },
@@ -217,15 +220,36 @@ export class UserController {
         color: sessionTypeMap[id].color,
       }));
 
+    const createdSessionIds: string[] = [];
+
     if (sessionTypesToInsert.length > 0) {
-      // Use insertMany with ordered: false to continue even if some fail
+      // Use bulkWrite with upsert to avoid duplicate key errors
       try {
-        await SessionType.insertMany(sessionTypesToInsert, { ordered: false });
+        const bulkOperations = sessionTypesToInsert.map(sessionType => ({
+          updateOne: {
+            filter: { userId: sessionType.userId, name: sessionType.name },
+            update: { $setOnInsert: sessionType },
+            upsert: true
+          }
+        }));
+        
+        await SessionType.bulkWrite(bulkOperations, { ordered: false });
+        console.log('✅ Session types created successfully for user:', userId);
+
+        // Fetch all session types for this user to get their IDs
+        const createdSessionTypes = await SessionType.find({ 
+          userId, 
+          name: { $in: sessionTypesToInsert.map(s => s.name) } 
+        });
+        
+        createdSessionTypes.forEach(st => createdSessionIds.push(st._id.toString()));
       } catch (error) {
         // Don't fail onboarding if session types fail
         console.error('Error creating session types:', error);
       }
     }
+
+    return createdSessionIds;
   }
 
   /**

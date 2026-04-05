@@ -62,6 +62,6 @@ const UserSchema = new Schema<IUser>(
 UserSchema.index({ onboardingCompleted: 1 }, { partialFilterExpression: { onboardingCompleted: false } });
 
 // Create or get the User model
-const User = models.User || model<IUser>('User', UserSchema);
+const User = (models.User as ReturnType<typeof model<IUser>>) || model<IUser>('User', UserSchema);
 
 export default User;

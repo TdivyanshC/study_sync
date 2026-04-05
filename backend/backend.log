@@ -24,3 +24,34 @@ src/controllers/auth.controller.ts(235,31): error TS2349: This expression is not
 src/controllers/auth.controller.ts(267,31): error TS2349: This expression is not callable.
   Each member of the union type '{ <ResultDoc = Document<unknown, {}, IUser, {}, {}> & IUser & Required<{ _id: string; }> & { __v: number; }>(filter: ObjectId | Query<any, any, {}, unknown, "find", Record<...>> | FilterQuery<...>, update: UpdateQuery<...>, options: QueryOptions<...> & { ...; }): Query<...>; <ResultDoc = Document<...> & ... 2 more ....' has signatures, but none of those signatures are compatible with each other.
 
+[INFO] 19:46:34 Restarting: C:\projects\study-sync\backend\src\controllers\auth.controller.ts has been modified
+Compilation error in C:\projects\study-sync\backend\src\controllers\auth.controller.ts
+[ERROR] 19:47:02 ⨯ Unable to compile TypeScript:
+src/controllers/auth.controller.ts(76,13): error TS2451: Cannot redeclare block-scoped variable 'attempts'.
+src/controllers/auth.controller.ts(101,13): error TS2451: Cannot redeclare block-scoped variable 'attempts'.
+
+[INFO] 19:47:10 Restarting: C:\projects\study-sync\backend\src\controllers\auth.controller.ts has been modified
+Compilation error in C:\projects\study-sync\backend\src\controllers\auth.controller.ts
+[ERROR] 19:47:22 ⨯ Unable to compile TypeScript:
+src/controllers/auth.controller.ts(76,13): error TS2451: Cannot redeclare block-scoped variable 'attempts'.
+src/controllers/auth.controller.ts(101,13): error TS2451: Cannot redeclare block-scoped variable 'attempts'.
+src/controllers/auth.controller.ts(187,11): error TS2451: Cannot redeclare block-scoped variable 'attempts'.
+src/controllers/auth.controller.ts(211,11): error TS2451: Cannot redeclare block-scoped variable 'attempts'.
+
+[INFO] 19:47:33 Restarting: C:\projects\study-sync\backend\src\controllers\auth.controller.ts has been modified
+Compilation error in C:\projects\study-sync\backend\src\controllers\auth.controller.ts
+[ERROR] 19:47:52 ⨯ Unable to compile TypeScript:
+src/controllers/auth.controller.ts(76,13): error TS2451: Cannot redeclare block-scoped variable 'attempts'.
+src/controllers/auth.controller.ts(101,13): error TS2451: Cannot redeclare block-scoped variable 'attempts'.
+src/controllers/auth.controller.ts(187,11): error TS2451: Cannot redeclare block-scoped variable 'attempts'.
+src/controllers/auth.controller.ts(211,11): error TS2451: Cannot redeclare block-scoped variable 'attempts'.
+
+[INFO] 20:43:48 Restarting: C:\projects\study-sync\backend\src\controllers\auth.controller.ts has been modified
+Compilation error in C:\projects\study-sync\backend\src\controllers\auth.controller.ts
+Compilation error in C:\projects\study-sync\backend\src\controllers\auth.controller.ts
+[ERROR] 20:47:46 ⨯ Unable to compile TypeScript:
+src/controllers/auth.controller.ts(76,13): error TS2451: Cannot redeclare block-scoped variable 'attempts'.
+src/controllers/auth.controller.ts(101,13): error TS2451: Cannot redeclare block-scoped variable 'attempts'.
+src/controllers/auth.controller.ts(188,11): error TS2451: Cannot redeclare block-scoped variable 'attempts'.
+src/controllers/auth.controller.ts(212,11): error TS2451: Cannot redeclare block-scoped variable 'attempts'.
+
