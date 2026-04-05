@@ -149,7 +149,8 @@ export default function OnboardingStep2() {
       await markOnboardingCompleted(
         step1DataFormatted,
         step2DataFormatted,
-        displayName
+        displayName,
+        username
       );
       
       Alert.alert(

@@ -37,19 +37,9 @@ export default function OnboardingUsername() {
 
   const checkUsernameAvailability = async (username: string) => {
     try {
-      const { supabase } = await import('../lib/supabase');
-      const { data, error } = await supabase
-        .from('users')
-        .select('username')
-        .eq('username', username.toLowerCase())
-        .neq('id', user?.id) // Exclude current user if editing
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        throw error;
-      }
-
-      return !data; // Available if no data found
+      const { backendApi } = await import('../src/api/backendApi');
+      const result = await backendApi.checkUsernameAvailability(username.toLowerCase());
+      return result.available;
     } catch (error) {
       console.error('Error checking username availability:', error);
       return false; // Assume unavailable on error
@@ -70,17 +60,6 @@ export default function OnboardingUsername() {
         Alert.alert('Username Taken', 'This username is already taken. Please choose another one.');
         setLoading(false);
         return;
-      }
-
-      // Update username in database
-      const { supabase } = await import('../lib/supabase');
-      const { error } = await supabase
-        .from('users')
-        .update({ username: username.toLowerCase() })
-        .eq('id', user?.id);
-
-      if (error) {
-        throw error;
       }
 
       // Navigate to next step

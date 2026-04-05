@@ -103,6 +103,7 @@ export interface OnboardingData {
     preferred_sessions?: string[];
   };
   display_name?: string;
+  username?: string;
 }
 
 // ============================================
@@ -244,6 +245,11 @@ class BackendApi {
       method: 'PATCH',
       body: JSON.stringify(data),
     });
+  }
+
+  async checkUsernameAvailability(username: string): Promise<{ available: boolean }> {
+    const params = new URLSearchParams({ username });
+    return this.request<{ available: boolean }>(`${API_ENDPOINTS.USER_USERNAME_CHECK}?${params}`);
   }
 
   async completeOnboarding(data: OnboardingData): Promise<{ success: boolean; user: any; message: string }> {

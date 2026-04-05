@@ -31,6 +31,7 @@ export const API_ENDPOINTS = {
   
   // Users
   USER_PROFILE: (userId: string) => `/api/users/${userId}`,
+  USER_USERNAME_CHECK: '/api/users/username/check',
   USER_ONBOARDING: '/api/users/onboarding',
   
   // Sessions

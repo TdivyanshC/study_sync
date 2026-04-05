@@ -10,6 +10,9 @@ router.get('/:user_id', userController.getUser.bind(userController));
 // Get user by public ID
 router.get('/public/:public_id', userController.getUserByPublicId.bind(userController));
 
+// Check username availability
+router.get('/username/check', userController.checkUsernameAvailability.bind(userController));
+
 // Search users by username, displayName, or publicUserId
 router.get('/search', authMiddleware, userController.searchUsers.bind(userController));
 

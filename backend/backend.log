@@ -2,9 +2,9 @@
 > study-sync-backend@1.0.0 dev
 > ts-node-dev --respawn src/index.ts
 
-[INFO] 14:12:13 ts-node-dev ver. 2.0.0 (using ts-node ver. 10.9.2, typescript ver. 5.9.3)
+[INFO] 17:00:14 ts-node-dev ver. 2.0.0 (using ts-node ver. 10.9.2, typescript ver. 5.9.3)
 Compilation error in C:\projects\study-sync\backend\src\controllers\auth.controller.ts
-[ERROR] 14:12:27 ⨯ Unable to compile TypeScript:
+[ERROR] 17:00:46 ⨯ Unable to compile TypeScript:
 src/controllers/auth.controller.ts(65,29): error TS2349: This expression is not callable.
   Each member of the union type '{ <ResultDoc = Document<unknown, {}, IUser, {}, {}> & IUser & Required<{ _id: string; }> & { __v: number; }>(filter: ObjectId | Query<any, any, {}, unknown, "find", Record<...>> | FilterQuery<...>, projection: ProjectionType<...>, options: QueryOptions<...> & ... 1 more ... & Abortable): Query<...>; <ResultDoc = Doc...' has signatures, but none of those signatures are compatible with each other.
 src/controllers/auth.controller.ts(81,39): error TS2349: This expression is not callable.

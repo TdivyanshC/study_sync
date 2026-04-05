@@ -400,7 +400,8 @@ export function AuthProvider({ children }: AuthProviderProps): React.ReactNode {
   const markOnboardingCompleted = async (
     step1Data?: { gender?: string; age?: string; relationship?: string },
     step2Data?: { preferred_sessions?: string[] },
-    displayName?: string
+    displayName?: string,
+    username?: string
   ) => {
     try {
       if (!user) {
@@ -413,7 +414,8 @@ export function AuthProvider({ children }: AuthProviderProps): React.ReactNode {
       const result = await backendApi.completeOnboarding({
         step1_data: step1Data || {},
         step2_data: step2Data || {},
-        display_name: displayName
+        display_name: displayName,
+        username: username
       });
 
       if (!result.success) {
@@ -422,16 +424,28 @@ export function AuthProvider({ children }: AuthProviderProps): React.ReactNode {
 
       console.log('✅ Onboarding completed via backend:', result.message);
 
+      // Update Supabase to mark onboarding as completed
+      try {
+        const { supabase } = await import('../lib/supabase');
+        await supabase
+          .from('users')
+          .update({ onboarding_completed: true })
+          .eq('id', user.id);
+        console.log('✅ Supabase onboarding status updated');
+      } catch (supabaseError) {
+        console.warn('⚠️ Failed to update Supabase onboarding status:', supabaseError);
+      }
+
       // Update local state
       setHasUsername(true);
       setHasCompletedOnboarding(true);
-      
+
       // Update stored user data
-      const updatedUser = { 
-        ...user, 
+      const updatedUser = {
+        ...user,
         username: result.user?.username || user.username,
         displayName: displayName || user.displayName,
-        onboardingCompleted: true 
+        onboardingCompleted: true
       };
       await AsyncStorage.setItem(USER_DATA_KEY, JSON.stringify(updatedUser));
       setUser(updatedUser);

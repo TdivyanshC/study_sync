@@ -12,6 +12,7 @@ interface OnboardingData {
     preferred_sessions?: string[];
   };
   display_name?: string;
+  username?: string;
 }
 
 interface SessionTypeData {
@@ -85,10 +86,11 @@ export class UserController {
 
       console.log('📝 Completing onboarding for user:', userId);
 
-      // Generate username from display_name or email, or use fallback
-      const username = onboardingData.display_name 
-        ? onboardingData.display_name.toLowerCase().replace(/[^a-zA-Z0-9_]/g, '_') + '_' + userId.substring(0, 6)
-        : 'user_' + userId.substring(0, 8);
+      // Use provided username or generate from display_name or email, or use fallback
+      const username = onboardingData.username ||
+        (onboardingData.display_name
+          ? onboardingData.display_name.toLowerCase().replace(/[^a-zA-Z0-9_]/g, '_') + '_' + userId.substring(0, 6)
+          : 'user_' + userId.substring(0, 8));
 
       // Generate public_user_id (7 characters starting with U)
       const publicUserId = 'U' + Math.random().toString(36).substring(2, 8).toUpperCase().slice(0, 6);
@@ -282,6 +284,36 @@ export class UserController {
     } catch (error: any) {
       console.error('Delete session type error:', error);
       res.status(500).json({ error: `Failed to delete session type: ${error.message}` });
+    }
+  }
+
+  /**
+   * Check if username is available
+   */
+  async checkUsernameAvailability(req: Request, res: Response): Promise<void> {
+    try {
+      const { username } = req.query;
+
+      if (!username || typeof username !== 'string' || username.length < 3 || username.length > 20) {
+        res.status(400).json({ error: 'Username must be between 3 and 20 characters' });
+        return;
+      }
+
+      // Check if username matches allowed pattern
+      if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+        res.status(400).json({ error: 'Username can only contain letters, numbers, and underscores' });
+        return;
+      }
+
+      // Check if username already exists (case insensitive)
+      const existingUser = await User.findOne({
+        username: { $regex: `^${username}$`, $options: 'i' }
+      });
+
+      res.json({ available: !existingUser });
+    } catch (error: any) {
+      console.error('Check username availability error:', error);
+      res.status(500).json({ error: `Failed to check username availability: ${error.message}` });
     }
   }
 
