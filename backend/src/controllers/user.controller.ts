@@ -294,13 +294,17 @@ export class UserController {
     try {
       const { username } = req.query;
 
+      console.log('🔍 Checking username availability for:', username);
+
       if (!username || typeof username !== 'string' || username.length < 3 || username.length > 20) {
+        console.log('❌ Invalid username length');
         res.status(400).json({ error: 'Username must be between 3 and 20 characters' });
         return;
       }
 
       // Check if username matches allowed pattern
       if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+        console.log('❌ Invalid username pattern');
         res.status(400).json({ error: 'Username can only contain letters, numbers, and underscores' });
         return;
       }
@@ -309,6 +313,8 @@ export class UserController {
       const existingUser = await User.findOne({
         username: { $regex: `^${username}$`, $options: 'i' }
       });
+
+      console.log('📊 Existing user found:', !!existingUser);
 
       res.json({ available: !existingUser });
     } catch (error: any) {

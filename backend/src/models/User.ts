@@ -59,9 +59,6 @@ const UserSchema = new Schema<IUser>(
 );
 
 // Indexes for fast lookups
-UserSchema.index({ username: 1 });
-UserSchema.index({ publicUserId: 1 });
-UserSchema.index({ email: 1 });
 UserSchema.index({ onboardingCompleted: 1 }, { partialFilterExpression: { onboardingCompleted: false } });
 
 // Create or get the User model
