@@ -98,14 +98,14 @@ export class AuthController {
 
         // Generate temporary unique username - will be replaced during onboarding
         let username: string;
-        let attempts = 0;
+        let usernameAttempts = 0;
         do {
           // Generate unique temporary username
           username = `user_${Math.random().toString(36).substring(2, 8)}${Date.now().toString(36)}`;
           const existing = await User.findOne({ username });
           if (!existing) break;
-          attempts++;
-        } while (attempts < 10);
+          usernameAttempts++;
+        } while (usernameAttempts < 10);
 
         // Create user record WITHOUT setting final username
         // Username will be set during onboarding
