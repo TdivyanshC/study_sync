@@ -85,50 +85,21 @@ export function AuthProvider({ children }: AuthProviderProps): React.ReactNode {
       console.log('⏭️ Navigation debounced, too soon since last navigation');
       return;
     }
-    
-    // Always allow login navigation, even if navigation is locked
-    if (!user && !hasNavigated) {
-      console.log('🔄 No user - navigating to login');
-      lastNavigationRef.current = now;
-      router.replace('/login');
-      setNavigationLocked(false);
-      setHasNavigated(true);
-      return;
-    }
 
-    // Skip if no user (already handled)
-    if (!user) {
-      console.log('🔄 No user - navigating to login');
-      lastNavigationRef.current = now;
-      router.replace('/login');
-      setNavigationLocked(false);
-      setHasNavigated(true);
-      return;
-    }
-
-    // Always navigate for logged-in users - no lock check needed
-    setNavigationLocked(true);
     lastNavigationRef.current = now;
     
-    console.log('🧭 Starting navigation to:',
-      !userStatus.hasCompletedOnboarding ? '/onboarding-username' :
-      '/(tabs)'
-    );
-
-    // Navigate immediately without delay
-    if (user && !userStatus.hasCompletedOnboarding) {
-      console.log('🔄 New user - navigating to onboarding');
-      router.replace('/onboarding-username');
-    } else if (user && userStatus.hasCompletedOnboarding) {
-      console.log('🔄 Returning user - navigating to home');
-      router.replace('/(tabs)');
-    } else {
+    // Always navigate regardless of lock status
+    if (!user) {
       console.log('🔄 No user - navigating to login');
       router.replace('/login');
+    } else if (!userStatus.hasCompletedOnboarding) {
+      console.log('🔄 New user - navigating to onboarding');
+      router.replace('/onboarding-username');
+    } else {
+      console.log('🔄 Returning user - navigating to home');
+      router.replace('/(tabs)');
     }
 
-    // Reset navigation flags immediately
-    setNavigationLocked(false);
     setHasNavigated(true);
   };
 
@@ -198,8 +169,8 @@ export function AuthProvider({ children }: AuthProviderProps): React.ReactNode {
         }
         
         // Check for stored token (native auth)
-        const token = await AsyncStorage.getItem(AUTH_TOKEN_KEY);
-        const storedUserData = await AsyncStorage.getItem(USER_DATA_KEY);
+        const token = await getAuthToken();
+        const storedUserData = await getUserData();
 
         if (!isMounted) return;
 
@@ -232,28 +203,26 @@ export function AuthProvider({ children }: AuthProviderProps): React.ReactNode {
           setHasUsername(userStatus.hasUsername);
           setHasCompletedOnboarding(userStatus.hasCompletedOnboarding);
 
-          // Handle navigation for session restoration
-          if (!hasNavigated && !navigationLocked) {
-            handleNavigation(userData, userStatus);
-          }
+          // Always mark as initialized FIRST before attempting navigation
+          setLoading(false);
+          setIsInitialized(true);
+
+          // Handle navigation for session restoration - always attempt navigation
+          handleNavigation(userData, userStatus);
         } else {
           console.log('ℹ️ No existing session found - user needs to authenticate');
           
+          // Always mark as initialized FIRST
+          setLoading(false);
+          setIsInitialized(true);
+          
           // Navigate to login when no session exists
-          if (!hasNavigated && !navigationLocked) {
-            console.log('🔄 No session - navigating to login');
-            setTimeout(() => {
-              router.replace('/login');
-              setTimeout(() => {
-                setNavigationLocked(false);
-                setHasNavigated(true);
-              }, 500);
-            }, 100);
-          }
+          console.log('🔄 No session - navigating to login');
+          setTimeout(() => {
+            router.replace('/login');
+            setHasNavigated(true);
+          }, 100);
         }
-        
-        setLoading(false);
-        setIsInitialized(true);
       } catch (error) {
         console.error('❌ Error initializing auth:', error);
         if (isMounted) {
@@ -282,8 +251,25 @@ export function AuthProvider({ children }: AuthProviderProps): React.ReactNode {
     // Start initialization
     initializeAuth();
 
+    // SAFETY FALLBACK: Force initialization after maximum 8 seconds no matter what
+    // This ensures app never gets stuck on splash screen forever
+    const safetyTimeout = setTimeout(() => {
+      if (isMounted && !isInitialized) {
+        console.warn('⚠️ SAFETY FALLBACK: Forcing auth initialization after timeout');
+        setLoading(false);
+        setIsInitialized(true);
+        
+        // Navigate to login as final fallback
+        setTimeout(() => {
+          router.replace('/login');
+          setHasNavigated(true);
+        }, 100);
+      }
+    }, 8000);
+
     return () => {
       isMounted = false;
+      clearTimeout(safetyTimeout);
     };
   }, []);
 

@@ -67,7 +67,7 @@ export interface FriendActivityFeedItem {
 
 class FriendsService {
   private async makeRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    const url = buildApiUrl(`/friends${endpoint}`);
+    const url = buildApiUrl(`/api/friends${endpoint}`);
     
     const config: RequestInit = {
       headers: {
@@ -147,6 +147,24 @@ class FriendsService {
         current_user_id: currentUserId,
         friend_user_id: friendUserId
       }),
+    });
+  }
+
+  /**
+   * Discover suggested users to add as friends
+   */
+  async discoverUsers(limit: number = 20): Promise<{
+    success: boolean;
+    results: UserSearchResult[];
+    total_found: number;
+    message: string;
+  }> {
+    const params = new URLSearchParams({
+      limit: limit.toString()
+    });
+
+    return this.makeRequest(`/discover?${params.toString()}`, {
+      method: 'GET',
     });
   }
 

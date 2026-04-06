@@ -1,7 +1,7 @@
 import { Schema, model, models, Document } from 'mongoose';
 
 // Define the User interface
-export interface IUser extends Document<string, any, IUser> {
+export interface IUser extends Document {
   _id: string; // MongoDB document ID (auto-generated)
   email: string;
   gmailName?: string;
@@ -62,6 +62,6 @@ const UserSchema = new Schema<IUser>(
 UserSchema.index({ onboardingCompleted: 1 }, { partialFilterExpression: { onboardingCompleted: false } });
 
 // Create or get the User model
-const User = models.User || model<IUser>('User', UserSchema);
+const User = models.User || model('User', UserSchema);
 
 export default User;

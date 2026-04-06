@@ -6,7 +6,7 @@ import { config } from './env';
  */
 export const generateToken = (userId: string, email: string): string => {
   const options: SignOptions = {
-    expiresIn: config.JWT_EXPIRES_IN as string
+    expiresIn: config.JWT_EXPIRES_IN as any
   };
   return jwt.sign(
     { userId, email },

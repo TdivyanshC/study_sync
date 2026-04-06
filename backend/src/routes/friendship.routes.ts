@@ -23,4 +23,10 @@ router.post('/reject', authMiddleware, friendshipRateLimiter, friendshipControll
 // Remove friend
 router.delete('/remove', authMiddleware, friendshipRateLimiter, friendshipController.removeFriend.bind(friendshipController));
 
+// Search users
+router.get('/search', authMiddleware, friendshipController.searchUsers.bind(friendshipController));
+
+// Discover suggested users
+router.get('/discover', authMiddleware, friendshipController.discoverUsers.bind(friendshipController));
+
 export default router;

@@ -131,9 +131,8 @@ export class UserController {
       if (onboardingData.step1_data.relationship) {
         userUpdateData.relationshipStatus = onboardingData.step1_data.relationship;
       }
-      // preferredSessions stores actual SessionType document IDs, not string identifiers
-      // We will populate this after creating the session types
-      delete userUpdateData.preferredSessions;
+      // preferredSessions will be populated after creating actual SessionType documents
+      // Do NOT delete it from userUpdateData - we keep it initially and update it later with real IDs
 
       // First, check if user record exists
       let existingUser = await User.findById(userId);
@@ -163,14 +162,14 @@ export class UserController {
       if (onboardingData.step2_data?.preferred_sessions && onboardingData.step2_data.preferred_sessions.length > 0) {
         const createdSessionTypeIds = await this.createSessionTypesForUser(userId, onboardingData.step2_data.preferred_sessions);
         
-        // Update user with actual session type document IDs
-        await User.findByIdAndUpdate(userId, {
+        // Update user with actual session type document IDs AND get the final complete document
+        updatedUser = await User.findByIdAndUpdate(userId, {
           preferredSessions: createdSessionTypeIds
-        });
+        }, { new: true, runValidators: true });
       }
 
-      res.json({ 
-        success: true, 
+      res.json({
+        success: true,
         user: updatedUser,
         message: 'Onboarding completed successfully'
       });

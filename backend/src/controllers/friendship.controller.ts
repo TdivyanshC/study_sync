@@ -74,6 +74,131 @@ export class FriendshipController {
   }
 
   /**
+   * Discover suggested users (real users to add as friends)
+   */
+  async discoverUsers(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = (req as any).user?.id;
+      const { limit = 20 } = req.query;
+
+      if (!userId) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      // Get existing friendships to exclude
+      const friendships = await Friendship.find({
+        $or: [{ requesterId: userId }, { receiverId: userId }]
+      });
+
+      const excludeIds = new Set([userId]);
+      friendships.forEach(f => {
+        excludeIds.add(f.requesterId.toString());
+        excludeIds.add(f.receiverId.toString());
+      });
+
+      // Find random active users that are not already friends
+      const users = await User.aggregate([
+        { $match: { _id: { $nin: Array.from(excludeIds).map(id => new Types.ObjectId(id as string)) } } },
+        { $sample: { size: Number(limit) } },
+        { $project: { username: 1, displayName: 1, avatarUrl: 1, xp: 1, level: 1 } }
+      ]);
+
+      const results = users.map(user => ({
+        user_id: user._id,
+        username: user.username,
+        display_name: user.displayName,
+        avatar_url: user.avatarUrl,
+        xp: user.xp || 0,
+        level: user.level || 1,
+        is_friend: false
+      }));
+
+      res.json({
+        success: true,
+        results,
+        total_found: users.length,
+        message: `Found ${users.length} suggested users`
+      });
+
+    } catch (error: any) {
+      console.error('Discover users error:', error);
+      res.status(500).json({ error: `Failed to discover users: ${error.message}` });
+    }
+  }
+
+  /**
+   * Search users by username
+   */
+  async searchUsers(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = (req as any).user?.id;
+      const { query, limit = 10 } = req.query;
+
+      if (!userId) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      if (!query || typeof query !== 'string' || query.trim().length < 2) {
+        res.status(400).json({ error: 'Search query must be at least 2 characters' });
+        return;
+      }
+
+      const searchRegex = new RegExp(query.trim(), 'i');
+      
+      // Find users matching username or display name
+      const users = await User.find({
+        $and: [
+          { _id: { $ne: userId } },
+          {
+            $or: [
+              { username: searchRegex },
+              { displayName: searchRegex }
+            ]
+          }
+        ]
+      })
+      .select('id username displayName avatarUrl xp level publicUserId')
+      .limit(Number(limit));
+
+      // Get existing friendships for current user
+      const friendships = await Friendship.find({
+        $or: [{ requesterId: userId }, { receiverId: userId }]
+      });
+
+      // Mark which users are already friends
+      const friendIds = new Set();
+      friendships.forEach(f => {
+        friendIds.add(f.requesterId.toString());
+        friendIds.add(f.receiverId.toString());
+      });
+
+      const results = users.map(user => ({
+        user_id: user._id,
+        username: user.username,
+        display_name: user.displayName,
+        avatar_url: user.avatarUrl,
+        xp: user.xp || 0,
+        level: user.level || 1,
+        is_friend: friendIds.has(user._id.toString())
+      }));
+
+      res.json({
+        success: true,
+        query: query,
+        results,
+        total_found: users.length,
+        message: `Found ${users.length} users`
+      });
+
+    } catch (error: any) {
+      console.error('Search users error:', error);
+      res.status(500).json({ error: `Failed to search users: ${error.message}` });
+    }
+  }
+
+  /**
    * Send friend request
    */
   async sendRequest(req: Request, res: Response): Promise<void> {
