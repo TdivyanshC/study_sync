@@ -315,8 +315,18 @@ export function AuthProvider({ children }: AuthProviderProps): React.ReactNode {
     try {
       console.log('🔄 Starting Native Google Sign-In...');
 
-      // Use native Google Sign-In
-      const authResponse: AuthResponse = await signInWithGoogleNative();
+      // Use native Google Sign-In with proper error handling
+      let authResponse: AuthResponse;
+      try {
+        authResponse = await signInWithGoogleNative();
+      } catch (moduleError: any) {
+        // Handle native module missing case gracefully
+        if (moduleError.message?.includes('not available') || moduleError.message?.includes('RNGoogleSignin')) {
+          console.error('❌ Native Google Sign-In module not found. This requires a native build.');
+          throw new Error('Google Sign-In requires the native app build. Please run "expo run:android" or install the full app.');
+        }
+        throw moduleError;
+      }
       
       console.log('✅ Google Sign-In successful:', {
         email: authResponse.user.email,

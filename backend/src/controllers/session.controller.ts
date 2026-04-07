@@ -44,6 +44,7 @@ export class SessionController {
       }
 
       const session = await sessionService.endSession({
+        user_id: userId,
         session_id,
         ended_at,
       });

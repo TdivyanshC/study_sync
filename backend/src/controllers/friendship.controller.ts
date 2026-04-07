@@ -26,10 +26,30 @@ export class FriendshipController {
       // Transform to flat friend list
       const friends = friendships.map(friendship => {
         const isRequester = friendship.requesterId._id.toString() === userId;
-        return isRequester ? friendship.receiverId : friendship.requesterId;
+        const friendUser = isRequester ? friendship.receiverId : friendship.requesterId;
+        
+        // Return format matching frontend expected FriendListItem
+        return {
+          user_id: friendUser._id,
+          username: friendUser.username,
+          display_name: friendUser.displayName,
+          avatar_url: friendUser.avatarUrl,
+          xp: friendUser.xp || 0,
+          level: friendUser.level || 1,
+          current_activity: friendUser.currentActivity,
+          activity_started_at: friendUser.activityStartedAt,
+          total_hours_today: friendUser.totalHoursToday || 0,
+          friend_since: friendship.createdAt
+        };
       });
 
-      res.json(friends);
+      // Return properly formatted response for frontend
+      res.json({
+        success: true,
+        friends,
+        total_friends: friends.length,
+        message: "Friends loaded successfully"
+      });
     } catch (error: any) {
       console.error('Get friends error:', error);
       res.status(500).json({ error: `Failed to get friends: ${error.message}` });

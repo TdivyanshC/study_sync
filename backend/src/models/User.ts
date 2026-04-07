@@ -1,8 +1,8 @@
-import { Schema, model, models, Document } from 'mongoose';
+import { Schema, model, models, Document, Types } from 'mongoose';
 
 // Define the User interface
-export interface IUser extends Document {
-  _id: string; // MongoDB document ID (auto-generated)
+export interface IUser {
+  _id: Types.ObjectId; // MongoDB document ID (auto-generated)
   email: string;
   gmailName?: string;
   username: string;

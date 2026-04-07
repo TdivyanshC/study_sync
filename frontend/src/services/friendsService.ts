@@ -69,9 +69,19 @@ class FriendsService {
   private async makeRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = buildApiUrl(`/api/friends${endpoint}`);
     
+    // Get auth token from storage
+    let authToken = null;
+    try {
+      const { getToken } = await import('../../lib/auth/tokenStorage');
+      authToken = await getToken();
+    } catch (e) {
+      // Token not available, proceed without
+    }
+    
     const config: RequestInit = {
       headers: {
         'Content-Type': 'application/json',
+        ...(authToken && { 'Authorization': `Bearer ${authToken}` }),
         ...options.headers,
       },
       ...options,
@@ -177,9 +187,9 @@ class FriendsService {
     total_friends: number;
     message: string;
   }> {
-    const params = new URLSearchParams({ user_id: userId });
-
-    return this.makeRequest(`/list?${params.toString()}`, {
+    // Backend uses root GET /api/friends/ endpoint (no /list suffix)
+    // User ID is automatically extracted from auth token
+    return this.makeRequest('/', {
       method: 'GET',
     });
   }

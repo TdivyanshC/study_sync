@@ -1,14 +1,15 @@
-import { Schema, model, models, Document } from 'mongoose';
+import { Schema, model, models, Types } from 'mongoose';
 
 // Define the Space interface
-export interface ISpace extends Document {
-  _id: string; // UUID
+export interface ISpace {
+  _id: Types.ObjectId; // MongoDB ObjectId
   createdBy: string; // Reference to User
   name: string;
   description?: string;
   isPublic: boolean;
   inviteCode: string; // Unique invite code
   createdAt: Date;
+  updatedAt: Date;
 }
 
 // Define the Space schema

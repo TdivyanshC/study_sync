@@ -1,5 +1,8 @@
-import * as Google from '@react-native-google-signin/google-signin';
 import { API_ENDPOINTS, buildApiUrl } from '../../lib/apiConfig';
+
+// Lazy loaded Google Sign-In module - only loaded when actually needed
+let GoogleSignInModule: typeof import('@react-native-google-signin/google-signin') | null = null;
+let isConfigured = false;
 
 // Get Google client IDs from environment
 const getGoogleWebClientId = (): string => {
@@ -10,15 +13,58 @@ const getGoogleWebClientId = (): string => {
   return '944168135230-d85l1tlunaqumisao3iap07re4ir2gpk.apps.googleusercontent.com';
 };
 
-// Configure Google Sign-In - matching working project (Patriot Pulse) configuration
-Google.GoogleSignin.configure({
-  scopes: ['profile', 'email'],
-  webClientId: getGoogleWebClientId(),
-  offlineAccess: true,
-  forceCodeForRefreshToken: true,
-});
+/**
+ * Safely load and initialize Google Sign-In module
+ * Returns null if native module is not available
+ */
+const getGoogleSignIn = async (): Promise<typeof import('@react-native-google-signin/google-signin') | null> => {
+  if (GoogleSignInModule) {
+    if (!isConfigured) {
+      try {
+        GoogleSignInModule.GoogleSignin.configure({
+          scopes: ['profile', 'email'],
+          webClientId: getGoogleWebClientId(),
+          offlineAccess: true,
+          forceCodeForRefreshToken: true,
+        });
+        isConfigured = true;
+        console.log('🔧 Google Sign-In configured successfully');
+      } catch (configureError) {
+        console.warn('⚠️ Failed to configure Google Sign-In:', configureError);
+      }
+    }
+    return GoogleSignInModule;
+  }
 
-console.log('🔧 Google Sign-In configured with webClientId:', getGoogleWebClientId().substring(0, 30) + '...');
+  try {
+    // Dynamically import only when needed - avoids crash at app startup
+    const module = await import('@react-native-google-signin/google-signin');
+    
+    // Verify native module actually exists
+    if (!module.GoogleSignin) {
+      console.warn('⚠️ GoogleSignin native module not available');
+      return null;
+    }
+
+    GoogleSignInModule = module;
+
+    // Configure after successful load
+    GoogleSignInModule.GoogleSignin.configure({
+      scopes: ['profile', 'email'],
+      webClientId: getGoogleWebClientId(),
+      offlineAccess: true,
+      forceCodeForRefreshToken: true,
+    });
+    
+    isConfigured = true;
+    console.log('✅ Google Sign-In module loaded and configured');
+    
+    return GoogleSignInModule;
+  } catch (importError) {
+    console.error('❌ Failed to load Google Sign-In module:', importError);
+    return null;
+  }
+};
 
 /**
  * Google Sign-In user data interface
@@ -55,6 +101,12 @@ export interface AuthResponse {
  */
 export const signInWithGoogleNative = async (): Promise<AuthResponse> => {
   try {
+    const Google = await getGoogleSignIn();
+    
+    if (!Google) {
+      throw new Error('Google Sign-In is not available on this device. Please use an alternative login method.');
+    }
+
     // First, try to sign out to ensure a fresh login flow (forces account selection)
     try {
       const currentUser = await Google.GoogleSignin.getCurrentUser();
@@ -212,7 +264,10 @@ export const signInWithGoogleNative = async (): Promise<AuthResponse> => {
  */
 export const signOutGoogle = async (): Promise<void> => {
   try {
-    await Google.GoogleSignin.signOut();
+    const Google = await getGoogleSignIn();
+    if (Google) {
+      await Google.GoogleSignin.signOut();
+    }
   } catch (error) {
     console.error('Google Sign-Out error:', error);
     // Ignore sign-out errors
@@ -224,6 +279,9 @@ export const signOutGoogle = async (): Promise<void> => {
  */
 export const isGoogleSignedIn = async (): Promise<boolean> => {
   try {
+    const Google = await getGoogleSignIn();
+    if (!Google) return false;
+    
     const user = await Google.GoogleSignin.getCurrentUser();
     return !!user;
   } catch (error) {
@@ -236,6 +294,9 @@ export const isGoogleSignedIn = async (): Promise<boolean> => {
  */
 export const getCurrentGoogleUser = async (): Promise<GoogleUserData | null> => {
   try {
+    const Google = await getGoogleSignIn();
+    if (!Google) return null;
+    
     const userInfo = await Google.GoogleSignin.getCurrentUser();
     
     if (!userInfo?.user) {
@@ -255,5 +316,5 @@ export const getCurrentGoogleUser = async (): Promise<GoogleUserData | null> => 
   }
 };
 
-// Export Google Sign-In module for advanced use cases
-export { Google };
+// Export safe getter instead of direct module reference
+export const getGoogleModule = getGoogleSignIn;

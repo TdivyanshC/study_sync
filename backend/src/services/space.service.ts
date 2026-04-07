@@ -121,19 +121,22 @@ export class SpaceService {
     return newCode;
   }
 
-  async getUserSpaces(userId: string): Promise<Space[]> {
+  async getUserSpaces(userId: string): Promise<any[]> {
     const spaceMembers = await SpaceMember.find({ userId: userId }).populate('spaceId');
     return spaceMembers
       .map(member => member.spaceId)
-      .filter((space): space is ImportType<typeof Space> => space !== null)
-      .map(space => ({
-        id: space._id,
-        created_by: space.createdBy,
-        name: space.name,
-        description: space.description,
-        invite_code: space.inviteCode,
-        created_at: space.createdAt.toISOString(),
-      }));
+      .filter(space => space !== null)
+      .map(space => {
+        const spaceDoc = space as any;
+        return {
+          id: spaceDoc._id,
+          created_by: spaceDoc.createdBy,
+          name: spaceDoc.name,
+          description: spaceDoc.description,
+          invite_code: spaceDoc.inviteCode,
+          created_at: spaceDoc.createdAt.toISOString(),
+        };
+      });
   }
 
   async isMember(spaceId: string, userId: string): Promise<boolean> {

@@ -7,6 +7,7 @@ const router = Router();
 
 // Get user's friends
 router.get('/', authMiddleware, friendshipController.getFriends.bind(friendshipController));
+router.get('/list', authMiddleware, friendshipController.getFriends.bind(friendshipController));
 
 // Get pending friend requests
 router.get('/pending', authMiddleware, friendshipController.getPendingRequests.bind(friendshipController));
