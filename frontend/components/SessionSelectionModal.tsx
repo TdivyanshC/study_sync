@@ -107,8 +107,11 @@ export default function SessionSelectionModal({
 
       onClose();
     } catch (error: any) {
-      console.error('❌ Error saving sessions:', error);
-      Alert.alert('Error', 'Failed to save sessions. Please try again.');
+      console.error('❌ Error saving sessions full details:', JSON.stringify(error, null, 2));
+      console.error('❌ Error message:', error?.message);
+      console.error('❌ Error code:', error?.code);
+      console.error('❌ Error details:', error?.details);
+      Alert.alert('Error', `Failed to save sessions: ${error?.message || 'Unknown error'}. Please try again.`);
     } finally {
       setSaving(false);
     }

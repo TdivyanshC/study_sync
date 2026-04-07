@@ -66,7 +66,7 @@ class MetricsService {
       return xpStats;
     } catch (error) {
       console.error('❌ Failed to fetch XP stats:', error);
-      console.error(`🔗 Full URL attempted: https://nominatively-semirealistic-darryl.ngrok-free.dev/api/xp/stats/${userId}`);
+      console.error(`🔗 Full URL attempted: https://prodify-ap46.onrender.com/api/xp/stats/${userId}`);
       throw error;
     }
   }

@@ -135,7 +135,7 @@ class FriendsService {
     message: string;
     status: string;
   }> {
-    return this.makeRequest('/add', {
+    return this.makeRequest('/request', {
       method: 'POST',
       body: JSON.stringify({
         current_user_id: currentUserId,

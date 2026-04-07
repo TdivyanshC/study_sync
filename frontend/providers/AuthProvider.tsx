@@ -334,9 +334,9 @@ export function AuthProvider({ children }: AuthProviderProps): React.ReactNode {
         isNewUser: authResponse.isNewUser
       });
 
-      // Store token and user data
-      await AsyncStorage.setItem(AUTH_TOKEN_KEY, authResponse.token);
-      await AsyncStorage.setItem(USER_DATA_KEY, JSON.stringify(authResponse.user));
+      // Store token and user data using proper storage functions
+      await setAuthToken(authResponse.token);
+      await setUserData(authResponse.user);
 
       setSession(authResponse.token);
       setUser(authResponse.user);

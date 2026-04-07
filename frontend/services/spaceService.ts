@@ -39,7 +39,7 @@ class SpaceService {
       };
     } catch (error) {
       console.error('❌ Failed to fetch user spaces:', error);
-      console.error(`🔗 Full URL attempted: https://nominatively-semirealistic-darryl.ngrok-free.dev/api/spaces/${userId}`);
+      console.error(`🔗 Full URL attempted: https://prodify-ap46.onrender.com/api/spaces/${userId}`);
       throw error;
     }
   }

@@ -3,7 +3,7 @@
  * Integrates with the Game Engine backend pipeline
  */
 
-import { supabase } from '../../lib/supabase';
+import { getAuthToken } from '../../lib/auth/tokenStorage';
 import { buildSessionApiUrl, API_ENDPOINTS } from '../lib/apiConfig';
 
 interface SessionSummary {
@@ -76,14 +76,14 @@ class SessionApi {
    */
   async processSession(sessionId: string, userId?: string): Promise<SessionSummary> {
     try {
-      // Get current user session
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error('No active session');
+      // Get valid auth token
+      const token = await getAuthToken();
+      if (!token) {
+        throw new Error('No active authentication token');
       }
 
-      // Use provided userId or get from session
-      const actualUserId = userId || session.user?.id;
+      // Use provided userId
+      const actualUserId = userId;
       if (!actualUserId) {
         throw new Error('No user ID available');
       }
@@ -99,7 +99,7 @@ class SessionApi {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
+          'Authorization': `Bearer ${token}`
         }
       });
 

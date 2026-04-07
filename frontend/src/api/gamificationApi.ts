@@ -3,6 +3,7 @@ import * as SecureStore from 'expo-secure-store';
 import NetInfo from '@react-native-community/netinfo';
 import { buildApiUrl, API_ENDPOINTS } from '../lib/apiConfig';
 import { findWorkingBackendUrl, getManualConnectionInstructions } from '../../lib/networkDetector';
+import { getAuthToken, removeAuthToken } from '../../lib/auth/tokenStorage';
 
 // Enhanced error classes for better error handling
 export class ApiError extends Error {
@@ -270,11 +271,7 @@ class GamificationApi {
    */
   private async getAuthToken(): Promise<string | null> {
     try {
-      // SecureStore is not available on web
-      if (Platform.OS === 'web') {
-        return localStorage.getItem('auth_token');
-      }
-      return await SecureStore.getItemAsync('auth_token');
+      return await getAuthToken();
     } catch (error) {
       console.warn('Failed to get auth token:', error);
       return null;
@@ -472,8 +469,18 @@ class GamificationApi {
         
         // Handle authentication errors with retry
         if (response.status === 401 && retryCount < this.maxRetries) {
-          console.log('🔑 Token expired, retrying...');
-          // In a real app, you might want to refresh the token here
+          console.log('🔑 Token expired, clearing cached token and retrying...');
+          
+          // Clear potentially invalid token from storage to force re-fetch on next attempt
+          try {
+            await removeAuthToken();
+          } catch (clearError) {
+            console.warn('Failed to clear invalid token:', clearError);
+          }
+          
+          // Wait briefly before retry
+          await new Promise(resolve => setTimeout(resolve, 300));
+          
           return this.makeRequest(endpoint, options, retryCount + 1);
         }
         

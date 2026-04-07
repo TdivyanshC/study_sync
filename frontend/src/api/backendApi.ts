@@ -141,21 +141,11 @@ class BackendApi {
   }
 
   /**
-   * Get auth token - try custom JWT first, then fallback to Supabase
+   * Get auth token from secure storage
    */
   private async getAuthToken(): Promise<string | null> {
     try {
-      // First try to get our custom JWT token
-      const customToken = await getAuthToken();
-      if (customToken) {
-        return customToken;
-      }
-      
-      // Fallback to Supabase token
-      if (Platform.OS === 'web') {
-        return localStorage.getItem('supabase.auth.token');
-      }
-      return await SecureStore.getItemAsync('supabase.auth.token');
+      return await getAuthToken();
     } catch {
       return null;
     }

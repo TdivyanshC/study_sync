@@ -144,8 +144,8 @@ export default function Index() {
       setTodayMetrics({
         hoursStudied: minutes,
         streak: streakData.data?.current_streak || 0,
-        xp: xpStats.total_xp || 0,
-        level: xpStats.level || 0,
+        xp: xpStats?.data?.total_xp || xpStats?.total_xp || 0,
+        level: xpStats?.data?.level || xpStats?.level || 0,
         hoursDisplay,
         loading: false,
         error: null,
