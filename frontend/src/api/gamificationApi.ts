@@ -624,12 +624,9 @@ class GamificationApi {
    */
   async getUserXPStats(userId: string): Promise<UserXPStats> {
     try {
-      const response = await this.makeRequest<{
-        success: boolean;
-        data: UserXPStats;
-      }>(`${API_ENDPOINTS.XP_STATS}/${userId}`);
+      const response = await this.makeRequest<UserXPStats>(`${API_ENDPOINTS.XP_STATS}/${userId}`);
 
-      return response.data;
+      return response;
     } catch (error) {
       // Return fallback stats when backend is unavailable
       if (error instanceof NetworkConnectionError || error instanceof ServerUnavailableError) {

@@ -375,6 +375,39 @@ export class UserController {
   }
 
   /**
+   * Update user preferred sessions
+   */
+  async updatePreferredSessions(req: Request, res: Response): Promise<void> {
+    try {
+      const { user_id } = req.params;
+      const { preferred_sessions } = req.body;
+
+      if (!Array.isArray(preferred_sessions)) {
+        res.status(400).json({
+          success: false,
+          message: 'preferred_sessions must be an array'
+        });
+        return;
+      }
+
+      await User.findByIdAndUpdate(user_id, {
+        $set: { preferredSessions: preferred_sessions }
+      }, { new: true });
+
+      res.json({
+        success: true,
+        message: 'Preferred sessions updated successfully'
+      });
+    } catch (error: any) {
+      console.error('Error updating preferred sessions:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to update preferred sessions'
+      });
+    }
+  }
+
+  /**
    * Search users by username or publicUserId
    */
   async searchUsers(req: Request, res: Response): Promise<void> {

@@ -11,7 +11,6 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
 import { GlobalStyles } from '../constants/Theme';
-import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 
 interface SessionType {
@@ -85,13 +84,17 @@ export default function SessionSelectionModal({
     try {
       console.log('💾 Saving sessions:', selectedSessions);
 
-      const { error } = await supabase
-        .from('users')
-        .update({ preferred_sessions: selectedSessions })
-        .eq('id', user.id);
+      const response = await fetch(`https://prodify-ap46.onrender.com/api/users/${user.id}/preferred-sessions`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ preferred_sessions: selectedSessions })
+      });
 
-      if (error) {
-        console.error('❌ Error updating sessions:', error);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('❌ Error updating sessions:', JSON.stringify(errorData) || errorData?.message || String(response.statusText));
         Alert.alert('Error', 'Failed to save sessions. Please try again.');
         return;
       }

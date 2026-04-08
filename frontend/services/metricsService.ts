@@ -67,7 +67,8 @@ class MetricsService {
     } catch (error) {
       console.error('❌ Failed to fetch XP stats:', error);
       console.error(`🔗 Full URL attempted: https://prodify-ap46.onrender.com/api/xp/stats/${userId}`);
-      throw error;
+      // Return safe fallback instead of throwing
+      return { total_xp: 0, level: 1 };
     }
   }
 
