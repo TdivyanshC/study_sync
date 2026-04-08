@@ -56,7 +56,7 @@ export default function SessionSelectionModal({
   onSessionAdded,
   currentSessions,
 }: SessionSelectionModalProps) {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const [selectedSessions, setSelectedSessions] = useState<string[]>(currentSessions);
   const [saving, setSaving] = useState(false);
 
@@ -88,6 +88,7 @@ export default function SessionSelectionModal({
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session}`
         },
         body: JSON.stringify({ preferred_sessions: selectedSessions })
       });
