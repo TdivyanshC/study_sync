@@ -31,4 +31,7 @@ router.delete('/session-types/:session_type_id', authMiddleware, userController.
 // Update user preferred sessions
 router.put('/:user_id/preferred-sessions', authMiddleware, userController.updatePreferredSessions.bind(userController));
 
+// Get user preferred sessions
+router.get('/:user_id/preferred-sessions', authMiddleware, userController.getPreferredSessions.bind(userController));
+
 export default router;

@@ -9,6 +9,12 @@ const USER_DATA_KEY = 'study_sync_user_data';
  */
 export const setAuthToken = async (token: string): Promise<void> => {
   try {
+    // Guard against storing invalid/empty values
+    if (!token || token === 'undefined' || token === 'null' || token.trim() === '') {
+      console.warn('Attempted to store invalid auth token, skipping');
+      return;
+    }
+    
     await SecureStore.setItemAsync(AUTH_TOKEN_KEY, token, {
       keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK,
     });
@@ -16,7 +22,9 @@ export const setAuthToken = async (token: string): Promise<void> => {
     console.error('Failed to store auth token:', error);
     // Fallback to AsyncStorage if SecureStore fails
     try {
-      await AsyncStorage.setItem(AUTH_TOKEN_KEY, token);
+      if (token && token !== 'undefined' && token !== 'null' && token.trim() !== '') {
+        await AsyncStorage.setItem(AUTH_TOKEN_KEY, token);
+      }
     } catch (fallbackError) {
       console.error('Fallback storage also failed:', fallbackError);
       throw fallbackError;
@@ -29,12 +37,21 @@ export const setAuthToken = async (token: string): Promise<void> => {
  */
 export const getAuthToken = async (): Promise<string | null> => {
   try {
-    return await SecureStore.getItemAsync(AUTH_TOKEN_KEY);
+    const token = await SecureStore.getItemAsync(AUTH_TOKEN_KEY);
+    // Guard against invalid stored values
+    if (!token || token === 'undefined' || token === 'null' || token.trim() === '') {
+      return null;
+    }
+    return token;
   } catch (error) {
     console.error('Failed to get auth token from SecureStore:', error);
     // Fallback to AsyncStorage
     try {
-      return await AsyncStorage.getItem(AUTH_TOKEN_KEY);
+      const token = await AsyncStorage.getItem(AUTH_TOKEN_KEY);
+      if (!token || token === 'undefined' || token === 'null' || token.trim() === '') {
+        return null;
+      }
+      return token;
     } catch (fallbackError) {
       console.error('Fallback retrieval also failed:', fallbackError);
       return null;
@@ -64,6 +81,12 @@ export const removeAuthToken = async (): Promise<void> => {
  */
 export const setUserData = async (userData: object): Promise<void> => {
   try {
+    // Guard against storing invalid/empty values
+    if (!userData || typeof userData !== 'object') {
+      console.warn('Attempted to store invalid user data, skipping');
+      return;
+    }
+    
     await AsyncStorage.setItem(USER_DATA_KEY, JSON.stringify(userData));
   } catch (error) {
     console.error('Failed to store user data:', error);
@@ -77,9 +100,19 @@ export const setUserData = async (userData: object): Promise<void> => {
 export const getUserData = async (): Promise<any | null> => {
   try {
     const data = await AsyncStorage.getItem(USER_DATA_KEY);
-    return data ? JSON.parse(data) : null;
+    // Guard against invalid stored values before parsing
+    if (!data || data === 'undefined' || data === 'null' || data.trim() === '') {
+      return null;
+    }
+    return JSON.parse(data);
   } catch (error) {
     console.error('Failed to get user data:', error);
+    // Clean up invalid data when parse fails
+    try {
+      await AsyncStorage.removeItem(USER_DATA_KEY);
+    } catch (cleanupError) {
+      console.warn('Could not clean up invalid user data:', cleanupError);
+    }
     return null;
   }
 };

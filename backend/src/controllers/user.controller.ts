@@ -158,13 +158,18 @@ export class UserController {
 
       console.log('✅ User record saved:', updatedUser?._id);
 
-      // Create session types for selected sessions
+      // Store session slugs directly instead of object IDs - frontend expects string names for rendering
+      // We still create the SessionType documents for backward compatibility and actual session usage
       if (onboardingData.step2_data?.preferred_sessions && onboardingData.step2_data.preferred_sessions.length > 0) {
-        const createdSessionTypeIds = await this.createSessionTypesForUser(userId, onboardingData.step2_data.preferred_sessions);
+        // Create session types in background (don't wait for it to complete to avoid blocking onboarding)
+        this.createSessionTypesForUser(userId, onboardingData.step2_data.preferred_sessions).catch(err => {
+          console.error('Failed to create session types during onboarding:', err);
+        });
         
-        // Update user with actual session type document IDs AND get the final complete document
+        // Store the actual session slugs directly so frontend can render them immediately
+        // This matches the behavior when adding sessions from the home page
         updatedUser = await User.findByIdAndUpdate(userId, {
-          preferredSessions: createdSessionTypeIds
+          preferredSessions: onboardingData.step2_data.preferred_sessions
         }, { new: true, runValidators: true });
       }
 
@@ -390,6 +395,16 @@ export class UserController {
         return;
       }
 
+      // Validate that values are slug strings, not MongoDB ObjectIds
+      const isValidSlug = (s: string) => typeof s === 'string' && !/^[a-f0-9]{24}$/.test(s);
+      if (!preferred_sessions.every(isValidSlug)) {
+        res.status(400).json({
+          success: false,
+          error: 'Sessions must be slug strings, not IDs'
+        });
+        return;
+      }
+
       await User.findByIdAndUpdate(user_id, {
         $set: { preferredSessions: preferred_sessions }
       }, { new: true });
@@ -403,6 +418,33 @@ export class UserController {
       res.status(500).json({
         success: false,
         message: 'Failed to update preferred sessions'
+      });
+    }
+  }
+
+  /**
+   * Get user preferred sessions
+   */
+  async getPreferredSessions(req: Request, res: Response): Promise<void> {
+    try {
+      const { user_id } = req.params;
+
+      const user = await User.findById(user_id).select('preferredSessions');
+
+      if (!user) {
+        res.status(404).json({ error: 'User not found' });
+        return;
+      }
+
+      res.json({
+        success: true,
+        preferred_sessions: user.preferredSessions || []
+      });
+    } catch (error: any) {
+      console.error('Error getting preferred sessions:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get preferred sessions'
       });
     }
   }
