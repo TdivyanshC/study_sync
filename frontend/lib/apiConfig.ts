@@ -12,7 +12,8 @@ const getBackendUrl = (): string => {
   
   // Development fallback to localhost with ngrok support
   if (__DEV__ || process.env.NODE_ENV === 'development') {
-    return process.env.EXPO_PUBLIC_NGROK_URL || 'http://localhost:3000';
+    // Always use production backend for now until local dev is working
+    return 'https://prodify-ap46.onrender.com';
   }
   
   // Production - use the user's backend URL

@@ -19,6 +19,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { getRandomJoke } from '../../data/jokes';
 import { metricsService } from '../../services/metricsService';
 import { supabase } from '../../lib/supabase';
+import { getAuthToken } from '../../lib/auth/tokenStorage';
 import SessionSelectionModal from '../../components/SessionSelectionModal';
 
 // Helper function to get user's display name
@@ -237,19 +238,21 @@ export default function Index() {
       setSessionsLoading(true);
       console.log('🔍 Fetching preferred sessions for user:', user.id);
 
-      const { data, error } = await supabase
-        .from('users')
-        .select('preferred_sessions')
-        .eq('id', user.id)
-        .single();
+      const response = await fetch(`https://prodify-ap46.onrender.com/api/users/${user.id}/preferred-sessions`, {
+        headers: {
+          'Authorization': `Bearer ${await getAuthToken()}`,
+          'Content-Type': 'application/json'
+        }
+      });
 
-      if (error) {
-        console.warn('⚠️ Error fetching preferred sessions:', error.message);
+      if (!response.ok) {
+        console.warn('⚠️ Error fetching preferred sessions:', response.statusText);
         setPreferredSessions([]);
         return;
       }
 
-      const sessions = data?.preferred_sessions || [];
+      const result = await response.json();
+      const sessions = result.preferred_sessions || [];
       console.log('✅ Preferred sessions fetched:', sessions);
 
       // Transform sessions into display format

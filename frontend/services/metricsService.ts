@@ -88,7 +88,7 @@ class MetricsService {
       return streakData;
     } catch (error) {
       console.error('❌ Failed to fetch streak data:', error);
-      console.error(`🔗 Full URL attempted: https://nominatively-semirealistic-darryl.ngrok-free.dev/api/streaks/${userId}`);
+      console.error(`🔗 Full URL attempted: https://prodify-ap46.onrender.com/api/streaks/${userId}`);
       throw error;
     }
   }
@@ -109,7 +109,7 @@ class MetricsService {
       return sessions;
     } catch (error) {
       console.error('❌ Failed to fetch today sessions:', error);
-      console.error(`🔗 Full URL attempted: https://nominatively-semirealistic-darryl.ngrok-free.dev/api/sessions/today/${userId}`);
+      console.error(`🔗 Full URL attempted: https://prodify-ap46.onrender.com/api/sessions/today/${userId}`);
       throw error;
     }
   }
@@ -131,7 +131,7 @@ class MetricsService {
       return spaces;
     } catch (error) {
       console.error('❌ Failed to fetch user spaces:', error);
-      console.error(`🔗 Full URL attempted: https://nominatively-semirealistic-darryl.ngrok-free.dev/api/spaces/${userId}`);
+      console.error(`🔗 Full URL attempted: https://prodify-ap46.onrender.com/api/spaces/${userId}`);
       throw error;
     }
   }

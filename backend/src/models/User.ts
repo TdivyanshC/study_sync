@@ -13,6 +13,8 @@ export interface IUser {
   age?: number;
   relationshipStatus?: string;
   preferredSessions: string[]; // Array of session type IDs
+  xp: number;
+  level: number;
   onboardingCompleted: boolean;
   onboardingCompletedAt?: Date;
   createdAt: Date;
@@ -47,11 +49,19 @@ const UserSchema = new Schema<IUser>(
       type: [String], 
       default: [] 
     },
-    onboardingCompleted: { 
-      type: Boolean, 
-      default: false 
+    onboardingCompleted: {
+      type: Boolean,
+      default: false
     },
-    onboardingCompletedAt: { type: Date }
+    onboardingCompletedAt: { type: Date },
+    xp: {
+      type: Number,
+      default: 0
+    },
+    level: {
+      type: Number,
+      default: 1
+    }
   },
   {
     timestamps: true, // Creates createdAt and updatedAt automatically
