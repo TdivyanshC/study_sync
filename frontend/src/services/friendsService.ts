@@ -3,6 +3,7 @@
  */
 
 import { buildApiUrl } from '../lib/apiConfig';
+import { getAuthToken } from '../../lib/auth/tokenStorage';
 
 export interface UserSearchResult {
   id: string;
@@ -67,13 +68,14 @@ export interface FriendActivityFeedItem {
 
 class FriendsService {
   private async makeRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    const url = buildApiUrl(`/api/friends${endpoint}`);
+    const basePath = '/api/friends';
+    const fullPath = endpoint ? `${basePath}${endpoint}` : basePath;
+    const url = buildApiUrl(fullPath);
     
     // Get auth token from storage
     let authToken = null;
     try {
-      const tokenStorage = await import('../../lib/auth/tokenStorage');
-      authToken = await tokenStorage.default.getToken();
+      authToken = await getAuthToken();
     } catch (e) {
       console.warn('Could not load auth token:', e);
       // Token not available, proceed without
@@ -195,9 +197,9 @@ class FriendsService {
     total_friends: number;
     message: string;
   }> {
-    // Backend uses root GET /api/friends/ endpoint (no /list suffix)
+    // Backend uses root GET /api/friends endpoint (no /list suffix)
     // User ID is automatically extracted from auth token
-    return this.makeRequest('/', {
+    return this.makeRequest('', {
       method: 'GET',
     });
   }

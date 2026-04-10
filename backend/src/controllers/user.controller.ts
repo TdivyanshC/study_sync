@@ -480,21 +480,29 @@ export class UserController {
           }
         ]
       })
-        .select('id username displayName publicUserId avatarUrl')
+        .select('id username displayName publicUserId avatarUrl xp level')
         .limit(20);
 
-      res.json(users.map(user => ({
-        id: user._id,
-        username: user.username,
-        display_name: user.displayName,
-        public_user_id: user.publicUserId,
-        avatar_url: user.avatarUrl,
-      })));
+      res.json({
+        success: true,
+        query: q,
+        results: users.map(user => ({
+          id: user._id,
+          username: user.username,
+          display_name: user.displayName,
+          public_user_id: user.publicUserId,
+          avatar_url: user.avatarUrl,
+          xp: user.xp || 0,
+          level: user.level || 1
+        })),
+        total_found: users.length
+      });
     } catch (error: any) {
       console.error('Search users error:', error);
       res.status(500).json({ error: `Failed to search users: ${error.message}` });
     }
   }
+
 }
 
 export const userController = new UserController();

@@ -34,4 +34,7 @@ router.put('/:user_id/preferred-sessions', authMiddleware, userController.update
 // Get user preferred sessions
 router.get('/:user_id/preferred-sessions', authMiddleware, userController.getPreferredSessions.bind(userController));
 
+// Search users
+router.get('/search', authMiddleware, userController.searchUsers.bind(userController));
+
 export default router;

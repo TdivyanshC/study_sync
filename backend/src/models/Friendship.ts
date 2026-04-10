@@ -1,29 +1,35 @@
 import { Schema, model, models, Document } from 'mongoose';
 
 // Define the Friendship interface
+import { Types } from 'mongoose';
+
 export interface IFriendship extends Document {
-  _id: string; // UUID
-  requesterId: string; // Reference to User
-  receiverId: string; // Reference to User
+  _id: Types.ObjectId;
+  requesterId: Types.ObjectId; // Reference to User
+  receiverId: Types.ObjectId; // Reference to User
   status: 'pending' | 'accepted' | 'rejected';
   createdAt: Date;
 }
 
 // Define the Friendship schema
+import { Types } from 'mongoose';
+
 const FriendshipSchema = new Schema<IFriendship>(
   {
-    requesterId: { 
-      type: String, 
-      required: true 
+    requesterId: {
+      type: Types.ObjectId,
+      ref: 'User',
+      required: true
     },
-    receiverId: { 
-      type: String, 
-      required: true 
+    receiverId: {
+      type: Types.ObjectId,
+      ref: 'User',
+      required: true
     },
-    status: { 
-      type: String, 
-      enum: ['pending', 'accepted', 'rejected'], 
-      default: 'pending' 
+    status: {
+      type: String,
+      enum: ['pending', 'accepted', 'rejected'],
+      default: 'pending'
     }
   },
   {
