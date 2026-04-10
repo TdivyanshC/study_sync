@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { View, ActivityIndicator, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { supabase } from '../../lib/supabase';
 import { Colors } from '../../constants/Colors';
 
 /**
@@ -27,110 +26,10 @@ export default function AuthCallback() {
   };
 
   useEffect(() => {
-    if (hasProcessed.current) return;
-    hasProcessed.current = true;
-
-    const handleCallback = async () => {
-      try {
-        console.log('🔔 OAuth callback received');
-        console.log('URL params:', JSON.stringify(params, null, 2));
-
-        // Check if we have a code in the URL
-        const codeFromParams = params.code as string;
-        const hasCode = codeFromParams && codeFromParams.trim().length > 0;
-
-        if (hasCode) {
-          console.log('✅ Authorization code found in URL');
-          console.log('🔄 Manually exchanging code for session...');
-          
-          setStatus('loading');
-
-          try {
-            // Manually exchange the authorization code for a session
-            // This is required for PKCE flow in Expo/React Native
-            const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(codeFromParams);
-
-            if (exchangeError) {
-              console.error('❌ Code exchange error:', exchangeError.message);
-              
-              // If exchange fails, try to get existing session anyway
-              const { data: sessionData } = await supabase.auth.getSession();
-              if (sessionData.session) {
-                console.log('✅ Found existing session after exchange failure');
-                setStatus('success');
-              } else {
-                setError(`Failed to establish session: ${exchangeError.message}`);
-                setStatus('error');
-              }
-            } else if (data.session) {
-              console.log('✅ Session established successfully via code exchange');
-              console.log('📧 User email:', data.session.user.email);
-              setStatus('success');
-            } else {
-              console.warn('⚠️ No session returned from code exchange');
-              setError('Session establishment returned no session');
-              setStatus('error');
-            }
-          } catch (exchangeCatchError: any) {
-            console.error('❌ Code exchange exception:', exchangeCatchError);
-            
-            // Try to get existing session as fallback
-            const { data: sessionData } = await supabase.auth.getSession();
-            if (sessionData.session) {
-              console.log('✅ Found existing session after exchange exception');
-              setStatus('success');
-            } else {
-              setError(`Failed to establish session: ${exchangeCatchError.message}`);
-              setStatus('error');
-            }
-          }
-          
-          // Add a safety timeout - if we don't navigate within 5 seconds, check status
-          const safetyTimeout = setTimeout(async () => {
-            console.log('⏰ Safety timeout reached, verifying session...');
-            const { data: sessionData } = await supabase.auth.getSession();
-            if (!sessionData.session && status !== 'error') {
-              console.log('⚠️ Still no session after timeout, showing error');
-              setError('Session establishment timed out. Please try again.');
-              setStatus('error');
-            }
-          }, 5000);
-
-          return () => {
-            clearTimeout(safetyTimeout);
-          };
-        } else {
-          console.log('⚠️ No code found in URL params');
-          console.log('🔄 Checking for existing session...');
-          
-          // Try to get existing session
-          const { data: sessionData } = await supabase.auth.getSession();
-          if (sessionData.session) {
-            console.log('✅ Found existing session');
-            setStatus('success');
-          } else {
-            console.log('❌ No session found');
-            setError('No authentication code or session found');
-            setStatus('error');
-          }
-        }
-
-      } catch (err: any) {
-        console.error('❌ Callback error:', err.message);
-        setError(err.message);
-        setStatus('error');
-      }
-    };
-
-    // Small delay to ensure params are loaded
-    const initTimeout = setTimeout(() => {
-      handleCallback();
-    }, 100);
-
-    return () => {
-      clearTimeout(initTimeout);
-    };
-  }, [params]);
+    // Supabase removed - redirect to login
+    console.log('🔔 OAuth callback - redirecting to login (Supabase removed)');
+    router.replace('/login');
+  }, []);
 
   // If there's an error, show retry option
   if (status === 'error') {

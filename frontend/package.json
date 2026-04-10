@@ -22,7 +22,6 @@
     "@react-navigation/elements": "^2.3.8",
     "@react-navigation/native": "^7.1.6",
     "@shopify/flash-list": "2.0.2",
-    "@supabase/supabase-js": "^2.80.0",
     "@tanstack/react-query": "^5.90.8",
     "@types/socket.io-client": "^1.4.36",
     "buffer": "^6.0.3",

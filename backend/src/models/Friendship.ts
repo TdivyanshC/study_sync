@@ -1,8 +1,6 @@
-import { Schema, model, models, Document } from 'mongoose';
+import { Schema, model, models, Document, Types } from 'mongoose';
 
 // Define the Friendship interface
-import { Types } from 'mongoose';
-
 export interface IFriendship extends Document {
   _id: Types.ObjectId;
   requesterId: Types.ObjectId; // Reference to User
@@ -12,17 +10,16 @@ export interface IFriendship extends Document {
 }
 
 // Define the Friendship schema
-import { Types } from 'mongoose';
 
 const FriendshipSchema = new Schema<IFriendship>(
   {
     requesterId: {
-      type: Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: 'User',
       required: true
     },
     receiverId: {
-      type: Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: 'User',
       required: true
     },

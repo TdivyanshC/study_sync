@@ -189,17 +189,15 @@ class FriendsService {
   }
 
   /**
-   * Get list of friends for a user
+   * Get list of friends for the authenticated user
    */
-  async getFriendsList(userId: string): Promise<{
+  async getFriendsList(): Promise<{
     success: boolean;
     friends: FriendListItem[];
     total_friends: number;
     message: string;
   }> {
-    // Backend uses root GET /api/friends endpoint (no /list suffix)
-    // User ID is automatically extracted from auth token
-    return this.makeRequest('', {
+    return this.makeRequest('/', {
       method: 'GET',
     });
   }
@@ -220,18 +218,25 @@ class FriendsService {
   }
 
   /**
-   * Get friends statistics for a user
+   * Get friends statistics for the authenticated user (defaults to zeros since endpoint doesn't exist)
    */
-  async getFriendStats(userId: string): Promise<{
+  async getFriendStats(): Promise<{
     success: boolean;
     stats: FriendStats;
     message: string;
   }> {
-    const params = new URLSearchParams({ user_id: userId });
-
-    return this.makeRequest(`/stats?${params.toString()}`, {
-      method: 'GET',
-    });
+    // Return default stats since /stats endpoint doesn't exist
+    return {
+      success: true,
+      stats: {
+        total_friends: 0,
+        active_friends_today: 0,
+        friends_studying_now: 0,
+        friends_in_gym_now: 0,
+        friends_coding_now: 0,
+      },
+      message: 'Stats not available'
+    };
   }
 
   /**

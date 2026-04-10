@@ -230,24 +230,26 @@ export default function FriendsScreen() {
   const [isSearching, setIsSearching] = useState(false);
   const [activeTab, setActiveTab] = useState<'friends' | 'search'>('friends');
 
-  // Mock current user ID - in real app, get from auth context
-  const currentUserId = '22fe63d2-9488-44e0-829a-c616ba7432fe';
+  // Get current user ID from store - uses MongoDB ObjectId
+  const { userId } = useStudyStore();
+  const currentUserId = userId;
 
   useEffect(() => {
+    if (!currentUserId) return;
     loadFriendsData();
-  }, []);
+  }, [currentUserId]);
 
   const loadFriendsData = async () => {
     setIsLoading(true);
     try {
       // Load friends list
-      const friendsResponse = await friendsService.getFriendsList(currentUserId);
+      const friendsResponse = await friendsService.getFriendsList();
       if (friendsResponse.success) {
         setFriendsList(friendsResponse.friends);
       }
 
-      // Load friend stats
-      const statsResponse = await friendsService.getFriendStats(currentUserId);
+      // Load friend stats (defaults to zeros)
+      const statsResponse = await friendsService.getFriendStats();
       if (statsResponse.success) {
         setFriendStats(statsResponse.stats);
       }
