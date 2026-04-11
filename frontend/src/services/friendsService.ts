@@ -197,7 +197,7 @@ class FriendsService {
     total_friends: number;
     message: string;
   }> {
-    return this.makeRequest('/', {
+    return this.makeRequest('/list', {
       method: 'GET',
     });
   }

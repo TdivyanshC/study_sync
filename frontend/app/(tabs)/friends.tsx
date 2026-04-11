@@ -16,7 +16,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
 import { GlobalStyles } from '../../constants/Theme';
-import { useStudyStore } from '../../hooks/useStudySession';
+import { useAuth } from '../../hooks/useAuth';
 import { router } from 'expo-router';
 import { friendsService, UserSearchResult, FriendListItem, FriendStats } from '../../src/services/friendsService';
 
@@ -221,7 +221,6 @@ const SearchResultCard: React.FC<SearchResultCardProps> = ({ user, onAddFriend }
 };
 
 export default function FriendsScreen() {
-  const { stats } = useStudyStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<UserSearchResult[]>([]);
   const [friendsList, setFriendsList] = useState<FriendListItem[]>([]);
@@ -230,9 +229,21 @@ export default function FriendsScreen() {
   const [isSearching, setIsSearching] = useState(false);
   const [activeTab, setActiveTab] = useState<'friends' | 'search'>('friends');
 
-  // Get current user ID from store - uses MongoDB ObjectId
-  const { userId } = useStudyStore();
-  const currentUserId = userId;
+  // Get current user from auth - uses MongoDB ObjectId
+  const { user } = useAuth();
+  const currentUserId = user?.id;
+  console.log('🔍 Friends page userId:', currentUserId);
+  console.log('🔍 Is MongoDB ObjectId?', /^[a-f0-9]{24}$/.test(currentUserId || ''));
+  console.log('🔍 Is UUID (Supabase)?', /^[0-9a-f]{8}-/.test(currentUserId || ''));
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!user) {
+      console.log('No authenticated user, redirecting to login');
+      router.replace('/login');
+      return;
+    }
+  }, [user]);
 
   useEffect(() => {
     if (!currentUserId) return;
@@ -262,7 +273,7 @@ export default function FriendsScreen() {
   };
 
   const handleSearch = async () => {
-    if (!searchQuery.trim()) return;
+    if (!searchQuery.trim() || !currentUserId) return;
 
     setIsSearching(true);
     try {
@@ -279,6 +290,7 @@ export default function FriendsScreen() {
   };
 
   const handleAddFriend = async (friendUserId: string) => {
+    if (!currentUserId) return;
     try {
       const response = await friendsService.addFriend(currentUserId, friendUserId);
       if (response.success) {
@@ -307,6 +319,7 @@ export default function FriendsScreen() {
           text: 'Remove',
           style: 'destructive',
           onPress: async () => {
+            if (!currentUserId) return;
             try {
               const response = await friendsService.removeFriend(currentUserId, friendUserId);
               if (response.success) {
