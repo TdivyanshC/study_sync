@@ -251,22 +251,15 @@ export default function FriendsScreen() {
   }, [currentUserId]);
 
   const loadFriendsData = async () => {
+    if (!currentUserId) return;
     setIsLoading(true);
     try {
-      // Load friends list
-      const friendsResponse = await friendsService.getFriendsList();
-      if (friendsResponse.success) {
-        setFriendsList(friendsResponse.friends);
-      }
-
-      // Load friend stats (defaults to zeros)
-      const statsResponse = await friendsService.getFriendStats();
-      if (statsResponse.success) {
-        setFriendStats(statsResponse.stats);
+      const response = await friendsService.getAllUsers(currentUserId);
+      if (response.success) {
+        setFriendsList(response.users);
       }
     } catch (error) {
-      console.error('Error loading friends data:', error);
-      Alert.alert('Error', 'Failed to load friends data');
+      console.error('Error loading users:', error);
     } finally {
       setIsLoading(false);
     }

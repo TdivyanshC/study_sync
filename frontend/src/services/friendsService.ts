@@ -69,7 +69,7 @@ export interface FriendActivityFeedItem {
 class FriendsService {
   private async makeRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     let fullPath;
-    if (endpoint.startsWith('/')) {
+    if (endpoint.startsWith('/api/')) {
       fullPath = endpoint;
     } else {
       const basePath = '/api/friends';
@@ -192,6 +192,11 @@ class FriendsService {
     return this.makeRequest(`/discover?${params.toString()}`, {
       method: 'GET',
     });
+  }
+
+  async getAllUsers(excludeUserId: string) {
+    const params = new URLSearchParams({ exclude: excludeUserId });
+    return this.makeRequest(`/api/users?${params}`, { method: 'GET' });
   }
 
   /**
