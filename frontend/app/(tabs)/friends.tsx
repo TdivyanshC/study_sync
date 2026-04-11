@@ -256,7 +256,7 @@ export default function FriendsScreen() {
     try {
       const response = await friendsService.getAllUsers(currentUserId);
       if (response.success) {
-        setFriendsList(response.users);
+        setFriendsList(response.users || []);
       }
     } catch (error) {
       console.error('Error loading users:', error);

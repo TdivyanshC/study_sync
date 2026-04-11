@@ -105,8 +105,12 @@ class FriendsService {
         if (endpoint.startsWith('/stats') || endpoint.startsWith('/profile') || endpoint.startsWith('/activity')) {
           return { success: true, stats: {}, friends: [], activities: [], message: 'Data temporarily unavailable' } as unknown as T;
         }
+        // Handle /users endpoint specifically
+        if (endpoint.startsWith('/users')) {
+          return { success: true, users: [], message: 'Users data temporarily unavailable' } as unknown as T;
+        }
         // Return empty safe response for all other endpoints
-        return { success: true, results: [], friends: [], message: 'API endpoint not available' } as unknown as T;
+        return { success: true, results: [], friends: [], users: [], message: 'API endpoint not available' } as unknown as T;
       }
       
       return await response.json();
@@ -196,7 +200,10 @@ class FriendsService {
 
   async getAllUsers(excludeUserId: string) {
     const params = new URLSearchParams({ exclude: excludeUserId });
-    return this.makeRequest(`/api/users?${params}`, { method: 'GET' });
+    const endpoint = `/users?${params}`;
+    const url = buildApiUrl(endpoint.startsWith('/api/') ? endpoint : `/api${endpoint}`);
+    console.log('👥 Fetching all users from:', url);
+    return this.makeRequest(endpoint, { method: 'GET' });
   }
 
   /**
