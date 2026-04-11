@@ -76,6 +76,7 @@ class FriendsService {
     let authToken = null;
     try {
       authToken = await getAuthToken();
+      console.log('🔑 Friends auth token:', authToken ? `EXISTS (${authToken.substring(0, 20)}...)` : 'NULL/UNDEFINED');
     } catch (e) {
       console.warn('Could not load auth token:', e);
       // Token not available, proceed without
@@ -197,7 +198,7 @@ class FriendsService {
     total_friends: number;
     message: string;
   }> {
-    return this.makeRequest('/list', {
+    return this.makeRequest('', {
       method: 'GET',
     });
   }
