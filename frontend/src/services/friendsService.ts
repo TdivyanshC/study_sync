@@ -68,8 +68,13 @@ export interface FriendActivityFeedItem {
 
 class FriendsService {
   private async makeRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    const basePath = '/api/friends';
-    const fullPath = endpoint ? `${basePath}${endpoint}` : basePath;
+    let fullPath;
+    if (endpoint.startsWith('/')) {
+      fullPath = endpoint;
+    } else {
+      const basePath = '/api/friends';
+      fullPath = endpoint ? `${basePath}${endpoint}` : basePath;
+    }
     const url = buildApiUrl(fullPath);
     
     // Get auth token from storage

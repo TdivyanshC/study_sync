@@ -503,6 +503,46 @@ export class UserController {
     }
   }
 
+  /**
+   * Get all users except the excluded user
+   */
+  async getAllUsers(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = (req as any).user?.id;
+      const { exclude } = req.query;
+
+      if (!userId) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      if (!exclude || typeof exclude !== 'string') {
+        res.status(400).json({ error: 'exclude parameter is required' });
+        return;
+      }
+
+      const users = await User.find(
+        { _id: { $ne: exclude } },
+        { _id: 1, username: 1, displayName: 1, avatarUrl: 1, xp: 1, level: 1 }
+      ).limit(50);
+
+      res.json({
+        success: true,
+        users: users.map(user => ({
+          id: user._id,
+          username: user.username,
+          displayName: user.displayName,
+          avatarUrl: user.avatarUrl,
+          xp: user.xp || 0,
+          level: user.level || 1
+        }))
+      });
+    } catch (error: any) {
+      console.error('Get all users error:', error);
+      res.status(500).json({ error: `Failed to get users: ${error.message}` });
+    }
+  }
+
 }
 
 export const userController = new UserController();

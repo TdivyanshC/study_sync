@@ -37,4 +37,7 @@ router.get('/:user_id/preferred-sessions', authMiddleware, userController.getPre
 // Search users
 router.get('/search', authMiddleware, userController.searchUsers.bind(userController));
 
+// Get all users
+router.get('/', authMiddleware, userController.getAllUsers.bind(userController));
+
 export default router;
