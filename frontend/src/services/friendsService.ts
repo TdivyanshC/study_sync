@@ -198,12 +198,23 @@ class FriendsService {
     });
   }
 
-  async getAllUsers(excludeUserId: string) {
-    const params = new URLSearchParams({ exclude: excludeUserId });
-    const endpoint = `/users?${params}`;
-    const url = buildApiUrl(endpoint.startsWith('/api/') ? endpoint : `/api${endpoint}`);
-    console.log('👥 Fetching all users from:', url);
-    return this.makeRequest(endpoint, { method: 'GET' });
+  async getAllUsers(excludeUserId: string): Promise<{
+    success: boolean;
+    users: any[];
+  }> {
+    const token = await getAuthToken();
+    const url = `https://prodify-ap46.onrender.com/api/users?exclude=${excludeUserId}`;
+    console.log('👥 Fetching users from:', url);
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    const data = await response.json();
+    console.log('👥 Users response:', JSON.stringify(data));
+    return data;
   }
 
   /**
