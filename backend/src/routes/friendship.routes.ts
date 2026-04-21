@@ -7,10 +7,21 @@ const router = Router();
 
 // Get user's friends
 router.get('/', authMiddleware, friendshipController.getFriends.bind(friendshipController));
-router.get('/list', authMiddleware, friendshipController.getFriends.bind(friendshipController));
 
 // Get pending friend requests
 router.get('/pending', authMiddleware, friendshipController.getPendingRequests.bind(friendshipController));
+
+// Get friend statistics
+router.get('/stats', authMiddleware, friendshipController.getFriendStats.bind(friendshipController));
+
+// Get friend profile
+router.get('/profile/:friendUserId', authMiddleware, friendshipController.getFriendProfile.bind(friendshipController));
+
+// Update user activity
+router.post('/activity', authMiddleware, friendshipController.updateUserActivity.bind(friendshipController));
+
+// Get friend activity feed
+router.get('/activity/feed', authMiddleware, friendshipController.getFriendActivityFeed.bind(friendshipController));
 
 // Send friend request
 router.post('/request', authMiddleware, friendshipRateLimiter, friendshipController.sendRequest.bind(friendshipController));

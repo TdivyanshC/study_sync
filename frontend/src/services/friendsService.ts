@@ -66,6 +66,40 @@ export interface FriendActivityFeedItem {
   timestamp: string;
 }
 
+// New interfaces for public profile and pending requests
+export interface UserProfile {
+  id: string;
+  user_id: string;
+  username: string;
+  display_name?: string;
+  avatar_url?: string;
+  xp: number;
+  level: number;
+  streak_count: number;
+  current_activity?: string;
+  activity_started_at?: string;
+  total_hours_today: number;
+  is_friend: boolean;
+  relationship_status: 'none' | 'friend' | 'pending_sent' | 'pending_received' | 'own_profile';
+  friend_since?: string;
+  friendship_id?: string; // For pending requests (sent or received)
+}
+
+export interface PendingRequest {
+  id: string;
+  requesterId: string;
+  receiverId: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  requester: {
+    id: string;
+    username: string;
+    avatar_url?: string;
+    public_user_id: string;
+  };
+}
+
 class FriendsService {
   private async makeRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     let fullPath;
@@ -76,7 +110,7 @@ class FriendsService {
       fullPath = endpoint ? `${basePath}${endpoint}` : basePath;
     }
     const url = buildApiUrl(fullPath);
-    
+
     // Get auth token from storage
     let authToken = null;
     try {
@@ -86,7 +120,7 @@ class FriendsService {
       console.warn('Could not load auth token:', e);
       // Token not available, proceed without
     }
-    
+
     const config: RequestInit = {
       headers: {
         'Content-Type': 'application/json',
@@ -98,7 +132,7 @@ class FriendsService {
 
     try {
       const response = await fetch(url, config);
-      
+
       if (!response.ok) {
         console.error(`Friends API failed for ${endpoint}:`, response.status, response.statusText);
         // Gracefully handle 404 and other errors with safe fallback responses
@@ -112,7 +146,7 @@ class FriendsService {
         // Return empty safe response for all other endpoints
         return { success: true, results: [], friends: [], users: [], message: 'API endpoint not available' } as unknown as T;
       }
-      
+
       return await response.json();
     } catch (error) {
       console.error('Friends API request failed:', error);
@@ -125,8 +159,8 @@ class FriendsService {
    * Search for users by username or user_id
    */
   async searchUsers(
-    query: string, 
-    currentUserId: string, 
+    query: string,
+    currentUserId: string,
     limit: number = 10
   ): Promise<{
     success: boolean;
@@ -158,8 +192,7 @@ class FriendsService {
     return this.makeRequest('/request', {
       method: 'POST',
       body: JSON.stringify({
-        current_user_id: currentUserId,
-        friend_user_id: friendUserId
+        receiver_id: friendUserId
       }),
     });
   }
@@ -174,8 +207,7 @@ class FriendsService {
     return this.makeRequest('/remove', {
       method: 'DELETE',
       body: JSON.stringify({
-        current_user_id: currentUserId,
-        friend_user_id: friendUserId
+        friend_id: friendUserId
       }),
     });
   }
@@ -232,82 +264,123 @@ class FriendsService {
   }
 
   /**
-   * Get detailed profile of a friend
+    * Get detailed profile of a friend
+    */
+   async getFriendProfile(currentUserId: string, friendUserId: string): Promise<{
+     success: boolean;
+     friend: FriendProfile;
+     message: string;
+   }> {
+     return this.makeRequest(`/profile/${friendUserId}`, {
+       method: 'GET',
+     });
+   }
+
+  /**
+    * Get friends statistics for the authenticated user
+    */
+   async getFriendStats(): Promise<{
+     success: boolean;
+     stats: FriendStats;
+     message: string;
+   }> {
+     return this.makeRequest('/stats', {
+       method: 'GET',
+     });
+   }
+
+  /**
+    * Update user's current activity
+    */
+   async updateUserActivity(userId: string, activity: string): Promise<{
+     success: boolean;
+     user_id: string;
+     activity: {
+       current_activity: string;
+       activity_started_at: string;
+     };
+     message: string;
+   }> {
+     return this.makeRequest('/activity', {
+       method: 'POST',
+       body: JSON.stringify({
+         activity: activity
+       }),
+     });
+   }
+
+  /**
+    * Get activity feed of friends
+    */
+   async getFriendActivityFeed(
+     userId: string,
+     limit: number = 20
+   ): Promise<{
+     success: boolean;
+     activities: FriendActivityFeedItem[];
+     total_activities: number;
+     message: string;
+   }> {
+     const params = new URLSearchParams({
+       limit: limit.toString()
+     });
+
+     return this.makeRequest(`/activity/feed?${params.toString()}`, {
+       method: 'GET',
+     });
+   }
+
+  /**
+   * Get public profile of any user (not necessarily a friend)
    */
-  async getFriendProfile(currentUserId: string, friendUserId: string): Promise<{
+  async getUserProfile(userId: string): Promise<{
     success: boolean;
-    friend: FriendProfile;
+    user: UserProfile;
     message: string;
   }> {
-    const params = new URLSearchParams({ current_user_id: currentUserId });
-
-    return this.makeRequest(`/profile/${friendUserId}?${params.toString()}`, {
+    return this.makeRequest(`/api/users/${userId}/public`, {
       method: 'GET',
     });
   }
 
   /**
-   * Get friends statistics for the authenticated user (defaults to zeros since endpoint doesn't exist)
+   * Get pending friend requests (received)
    */
-  async getFriendStats(): Promise<{
+  async getPendingRequests(): Promise<{
     success: boolean;
-    stats: FriendStats;
+    requests: PendingRequest[];
     message: string;
   }> {
-    // Return default stats since /stats endpoint doesn't exist
-    return {
-      success: true,
-      stats: {
-        total_friends: 0,
-        active_friends_today: 0,
-        friends_studying_now: 0,
-        friends_in_gym_now: 0,
-        friends_coding_now: 0,
-      },
-      message: 'Stats not available'
-    };
+    return this.makeRequest('/pending', { method: 'GET' });
   }
 
   /**
-   * Update user's current activity
+   * Accept a friend request
    */
-  async updateUserActivity(userId: string, activity: string): Promise<{
+  async acceptRequest(requestId: string): Promise<{
     success: boolean;
-    user_id: string;
-    activity: {
-      current_activity: string;
-      activity_started_at: string;
-    };
+    id: string;
+    status: string;
     message: string;
   }> {
-    return this.makeRequest('/activity', {
+    return this.makeRequest('/accept', {
       method: 'POST',
-      body: JSON.stringify({
-        user_id: userId,
-        activity: activity
-      }),
+      body: JSON.stringify({ request_id: requestId }),
     });
   }
 
   /**
-   * Get activity feed of friends
+   * Reject a friend request
    */
-  async getFriendActivityFeed(
-    userId: string, 
-    limit: number = 20
-  ): Promise<{
+  async rejectRequest(requestId: string): Promise<{
     success: boolean;
-    activities: FriendActivityFeedItem[];
-    total_activities: number;
+    id: string;
+    status: string;
     message: string;
   }> {
-    const params = new URLSearchParams({
-      user_id: userId,
-      limit: limit.toString()
-    });
-
-    return this.makeRequest(`/activity/feed?${params.toString()}`, {
-      method: 'GET',
+    return this.makeRequest('/reject', {
+      method: 'POST',
+      body: JSON.stringify({ request_id: requestId }),
     });
   }
 
@@ -316,7 +389,7 @@ class FriendsService {
    */
   getActivityIcon(activity?: string): string {
     if (!activity) return 'person';
-    
+
     const lowerActivity = activity.toLowerCase();
     if (lowerActivity.includes('gym') || lowerActivity.includes('workout')) return 'fitness';
     if (lowerActivity.includes('study') || lowerActivity.includes('study_session')) return 'book';
@@ -331,7 +404,7 @@ class FriendsService {
    */
   getActivityColor(activity?: string): string {
     if (!activity) return '#6366f1';
-    
+
     const lowerActivity = activity.toLowerCase();
     if (lowerActivity.includes('gym') || lowerActivity.includes('workout')) return '#FF6B6B';
     if (lowerActivity.includes('study') || lowerActivity.includes('study_session')) return '#4ECDC4';
@@ -356,7 +429,7 @@ class FriendsService {
    */
   getActivityDescription(activity?: string): string {
     if (!activity) return 'Available';
-    
+
     const lowerActivity = activity.toLowerCase();
     if (lowerActivity.includes('gym') || lowerActivity.includes('workout')) return 'Gym Session';
     if (lowerActivity.includes('study') || lowerActivity.includes('study_session')) return 'Study Session';

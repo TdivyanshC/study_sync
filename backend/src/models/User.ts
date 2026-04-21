@@ -17,6 +17,9 @@ export interface IUser {
   level: number;
   onboardingCompleted: boolean;
   onboardingCompletedAt?: Date;
+  currentActivity?: string; // Current activity type (e.g., 'study_session', 'gym')
+  activityStartedAt?: Date; // When current activity started
+  totalHoursToday: number; // Total hours studied today
   createdAt: Date;
   updatedAt: Date;
 }
@@ -61,6 +64,12 @@ const UserSchema = new Schema<IUser>(
     level: {
       type: Number,
       default: 1
+    },
+    currentActivity: { type: String },
+    activityStartedAt: { type: Date },
+    totalHoursToday: {
+      type: Number,
+      default: 0
     }
   },
   {
@@ -70,6 +79,12 @@ const UserSchema = new Schema<IUser>(
 
 // Indexes for fast lookups
 UserSchema.index({ onboardingCompleted: 1 }, { partialFilterExpression: { onboardingCompleted: false } });
+UserSchema.index({ username: 1 }, { unique: true });
+UserSchema.index({ publicUserId: 1 }, { unique: true });
+UserSchema.index({ email: 1 }, { unique: true });
+UserSchema.index({ username: 'text', displayName: 'text' }); // Text index for search
+UserSchema.index({ currentActivity: 1, activityStartedAt: 1 }); // For activity queries
+UserSchema.index({ totalHoursToday: -1 }); // For leaderboard/ranking
 
 // Create or get the User model
 const User = models.User || model('User', UserSchema);

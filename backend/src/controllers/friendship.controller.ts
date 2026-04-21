@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import Friendship from '../models/Friendship';
 import User from '../models/User';
 import { Types } from 'mongoose';
+import { statsService } from '../services/stats.service';
 
 export class FriendshipController {
   /**
@@ -79,20 +80,24 @@ export class FriendshipController {
         status: 'pending'
       }).populate('requesterId', 'id username avatarUrl publicUserId');
 
-      res.json(friendships.map(friendship => ({
-        id: friendship._id,
-        requesterId: friendship.requesterId._id,
-        receiverId: friendship.receiverId._id,
-        status: friendship.status,
-        createdAt: friendship.createdAt,
-        updatedAt: friendship.updatedAt,
-        requester: {
-          id: friendship.requesterId._id,
-          username: friendship.requesterId.username,
-          avatar_url: friendship.requesterId.avatarUrl,
-          public_user_id: friendship.requesterId.publicUserId
-        }
-      })));
+      res.json({
+        success: true,
+        requests: friendships.map(friendship => ({
+          id: friendship._id,
+          requesterId: friendship.requesterId._id,
+          receiverId: friendship.receiverId._id,
+          status: friendship.status,
+          createdAt: friendship.createdAt,
+          updatedAt: friendship.updatedAt,
+          requester: {
+            id: friendship.requesterId._id,
+            username: friendship.requesterId.username,
+            avatar_url: friendship.requesterId.avatarUrl,
+            public_user_id: friendship.requesterId.publicUserId
+          }
+        })),
+        message: 'Pending requests loaded'
+      });
     } catch (error: any) {
       console.error('Get pending requests error:', error);
       res.status(500).json({ error: `Failed to get pending requests: ${error.message}` });
@@ -275,12 +280,10 @@ export class FriendshipController {
       });
 
       res.status(201).json({
-        id: friendship._id,
-        requesterId: friendship.requesterId,
-        receiverId: friendship.receiverId,
+        success: true,
+        friend_id: friendship._id,
         status: friendship.status,
-        createdAt: friendship.createdAt,
-        updatedAt: friendship.updatedAt
+        message: 'Friend request sent successfully'
       });
     } catch (error: any) {
       console.error('Send request error:', error);
@@ -322,12 +325,10 @@ export class FriendshipController {
       await friendship.save();
 
       res.json({
+        success: true,
         id: friendship._id,
-        requesterId: friendship.requesterId,
-        receiverId: friendship.receiverId,
         status: friendship.status,
-        createdAt: friendship.createdAt,
-        updatedAt: friendship.updatedAt
+        message: 'Friend request accepted'
       });
     } catch (error: any) {
       console.error('Accept request error:', error);
@@ -368,12 +369,10 @@ export class FriendshipController {
       await friendship.save();
 
       res.json({
+        success: true,
         id: friendship._id,
-        requesterId: friendship.requesterId,
-        receiverId: friendship.receiverId,
         status: friendship.status,
-        createdAt: friendship.createdAt,
-        updatedAt: friendship.updatedAt
+        message: 'Friend request rejected'
       });
     } catch (error: any) {
       console.error('Reject request error:', error);
@@ -384,35 +383,272 @@ export class FriendshipController {
   /**
    * Remove friend
    */
-  async removeFriend(req: Request, res: Response): Promise<void> {
-    try {
-      const userId = (req as any).user?.id;
-      const { friend_id } = req.body;
+   async removeFriend(req: Request, res: Response): Promise<void> {
+     try {
+       const userId = (req as any).user?.id;
+       const { friend_id } = req.body;
 
-      if (!userId) {
-        res.status(401).json({ error: 'Unauthorized' });
-        return;
-      }
+       if (!userId) {
+         res.status(401).json({ error: 'Unauthorized' });
+         return;
+       }
 
-      if (!friend_id || typeof friend_id !== 'string') {
-        res.status(400).json({ error: 'Valid friend_id is required' });
-        return;
-      }
+       if (!friend_id || typeof friend_id !== 'string') {
+         res.status(400).json({ error: 'Valid friend_id is required' });
+         return;
+       }
 
-      await Friendship.deleteOne({
-        status: 'accepted',
-        $or: [
-          { requesterId: userId, receiverId: friend_id },
-          { requesterId: friend_id, receiverId: userId }
-        ]
-      });
+       await Friendship.deleteOne({
+         status: 'accepted',
+         $or: [
+           { requesterId: userId, receiverId: friend_id },
+           { requesterId: friend_id, receiverId: userId }
+         ]
+       });
 
-      res.json({ message: 'Friend removed successfully' });
-    } catch (error: any) {
-      console.error('Remove friend error:', error);
-      res.status(500).json({ error: `Failed to remove friend: ${error.message}` });
-    }
-  }
-}
+       res.json({ message: 'Friend removed successfully' });
+     } catch (error: any) {
+       console.error('Remove friend error:', error);
+       res.status(500).json({ error: `Failed to remove friend: ${error.message}` });
+     }
+   }
+
+   /**
+    * Get friend statistics for the authenticated user
+    */
+   async getFriendStats(req: Request, res: Response): Promise<void> {
+     try {
+       const userId = (req as any).user?.id;
+
+       if (!userId) {
+         res.status(401).json({ error: 'Unauthorized' });
+         return;
+       }
+
+       // Get all accepted friendships
+       const friendships = await Friendship.find({
+         $or: [{ requesterId: userId }, { receiverId: userId }],
+         status: 'accepted'
+       });
+
+       const friendIds = friendships.map(f => 
+         f.requesterId.toString() === userId ? f.receiverId : f.requesterId
+       );
+
+       // Get friend user data to check activity
+       const friends = await User.find({
+         _id: { $in: friendIds }
+       }).select('currentActivity activityStartedAt totalHoursToday');
+
+       const now = new Date();
+       const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+       // Calculate stats
+       const totalFriends = friendIds.length;
+       const activeFriendsToday = friends.filter(f => 
+         f.totalHoursToday > 0
+       ).length;
+       const friendsStudyingNow = friends.filter(f => 
+         f.currentActivity && f.currentActivity.includes('study')
+       ).length;
+       const friendsInGymNow = friends.filter(f => 
+         f.currentActivity && (f.currentActivity.includes('gym') || f.currentActivity.includes('workout'))
+       ).length;
+       const friendsCodingNow = friends.filter(f => 
+         f.currentActivity && f.currentActivity.includes('code')
+       ).length;
+
+       res.json({
+         success: true,
+         stats: {
+           total_friends: totalFriends,
+           active_friends_today: activeFriendsToday,
+           friends_studying_now: friendsStudyingNow,
+           friends_in_gym_now: friendsInGymNow,
+           friends_coding_now: friendsCodingNow
+         }
+       });
+     } catch (error: any) {
+       console.error('Get friend stats error:', error);
+       res.status(500).json({ error: `Failed to get friend stats: ${error.message}` });
+     }
+   }
+
+   /**
+    * Get detailed profile of a friend
+    */
+   async getFriendProfile(req: Request, res: Response): Promise<void> {
+     try {
+       const userId = (req as any).user?.id;
+       const { friendUserId } = req.params;
+
+       if (!userId) {
+         res.status(401).json({ error: 'Unauthorized' });
+         return;
+       }
+
+       if (!friendUserId || typeof friendUserId !== 'string') {
+         res.status(400).json({ error: 'Valid friendUserId is required' });
+         return;
+       }
+
+       // Verify they are actually friends
+       const friendship = await Friendship.findOne({
+         $or: [
+           { requesterId: userId, receiverId: friendUserId },
+           { requesterId: friendUserId, receiverId: userId }
+         ],
+         status: 'accepted'
+       });
+
+       if (!friendship) {
+         res.status(404).json({ error: 'Friend not found or not accepted' });
+         return;
+       }
+
+       // Get friend's full profile
+       const friend = await User.findById(friendUserId)
+         .select('id username displayName avatarUrl xp level currentActivity activityStartedAt totalHoursToday publicUserId onboardingCompleted onboardingCompletedAt createdAt');
+
+       if (!friend) {
+         res.status(404).json({ error: 'User not found' });
+         return;
+       }
+
+       // Get friend's streak data
+       const streakData = await statsService.getStreakData(friendUserId);
+
+       res.json({
+         success: true,
+         friend: {
+           id: friend._id,
+           user_id: friend._id,
+           username: friend.username,
+           display_name: friend.displayName,
+           avatar_url: friend.avatarUrl,
+           xp: friend.xp || 0,
+           level: friend.level || 1,
+           streak_count: streakData.current_streak,
+           current_activity: friend.currentActivity,
+           activity_started_at: friend.activityStartedAt,
+           total_hours_today: friend.totalHoursToday || 0,
+           friend_since: friendship.createdAt,
+           status: friendship.status
+         }
+       });
+     } catch (error: any) {
+       console.error('Get friend profile error:', error);
+       res.status(500).json({ error: `Failed to get friend profile: ${error.message}` });
+     }
+   }
+
+   /**
+    * Update user's current activity
+    */
+   async updateUserActivity(req: Request, res: Response): Promise<void> {
+     try {
+       const userId = (req as any).user?.id;
+       const { activity } = req.body;
+
+       if (!userId) {
+         res.status(401).json({ error: 'Unauthorized' });
+         return;
+       }
+
+       if (!activity || typeof activity !== 'string') {
+         res.status(400).json({ error: 'Valid activity is required' });
+         return;
+       }
+
+       // Update user's activity
+       const updateData: any = { currentActivity: activity };
+       
+       // If activity is empty/neutral, clear started_at
+       if (activity === 'available' || activity === '' || !activity) {
+         updateData.activityStartedAt = null;
+       } else {
+         updateData.activityStartedAt = new Date();
+       }
+
+       const user = await User.findByIdAndUpdate(
+         userId,
+         updateData,
+         { new: true }
+       ).select('currentActivity activityStartedAt');
+
+       if (!user) {
+         res.status(404).json({ error: 'User not found' });
+         return;
+       }
+
+       res.json({
+         success: true,
+         user_id: userId,
+         activity: {
+           current_activity: user.currentActivity,
+           activity_started_at: user.activityStartedAt
+         }
+       });
+     } catch (error: any) {
+       console.error('Update user activity error:', error);
+       res.status(500).json({ error: `Failed to update activity: ${error.message}` });
+     }
+   }
+
+   /**
+    * Get activity feed of friends
+    */
+   async getFriendActivityFeed(req: Request, res: Response): Promise<void> {
+     try {
+       const userId = (req as any).user?.id;
+       const { limit = 20 } = req.query;
+
+       if (!userId) {
+         res.status(401).json({ error: 'Unauthorized' });
+         return;
+       }
+
+       // Get user's accepted friendships
+       const friendships = await Friendship.find({
+         $or: [{ requesterId: userId }, { receiverId: userId }],
+         status: 'accepted'
+       });
+
+       const friendIds = friendships.map(f => 
+         f.requesterId.toString() === userId ? f.receiverId : f.requesterId
+       );
+
+       // Get recent session events from friends
+       // This would typically come from a SessionEvent collection
+       // For now, return friend activity based on their current status
+       const friends = await User.find({
+         _id: { $in: friendIds },
+         currentActivity: { $exists: true, $ne: null }
+       })
+       .select('username displayName avatarUrl currentActivity activityStartedAt totalHoursToday')
+       .sort({ activityStartedAt: -1 })
+       .limit(Number(limit));
+
+       const activities = friends.map(friend => ({
+         friend_user_id: friend._id,
+         friend_name: friend.displayName || friend.username,
+         activity_type: friend.currentActivity || 'unknown',
+         activity_description: friend.currentActivity ? 
+           friend.currentActivity.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Unknown',
+         hours_spent: friend.totalHoursToday || 0,
+         timestamp: friend.activityStartedAt || new Date()
+       }));
+
+       res.json({
+         success: true,
+         activities,
+         total_activities: activities.length
+       });
+     } catch (error: any) {
+       console.error('Get friend activity feed error:', error);
+       res.status(500).json({ error: `Failed to get activity feed: ${error.message}` });
+     }
+   }
+ }
 
 export const friendshipController = new FriendshipController();

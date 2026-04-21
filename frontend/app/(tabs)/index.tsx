@@ -7,6 +7,7 @@ import {
   ScrollView,
   Alert,
   RefreshControl,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,23 +19,23 @@ import { usePopup } from '../../providers/PopupProvider';
 import { useAuth } from '../../hooks/useAuth';
 import { getRandomJoke } from '../../data/jokes';
 import { metricsService } from '../../services/metricsService';
-import { supabase } from '../../lib/supabase';
 import { getAuthToken } from '../../lib/auth/tokenStorage';
 import SessionSelectionModal from '../../components/SessionSelectionModal';
+import { friendsService } from '../../src/services/friendsService';
 
 // Helper function to get user's display name
 const getUserDisplayName = (user: any): string => {
   if (!user) return 'there';
-  
+
   // Try to get name from user metadata first
   if (user.user_metadata?.full_name) {
     return user.user_metadata.full_name;
   }
-  
+
   if (user.user_metadata?.name) {
     return user.user_metadata.name;
   }
-  
+
   // Fallback to email username (part before @)
   if (user.email) {
     const emailUsername = user.email.split('@')[0];
@@ -44,7 +45,7 @@ const getUserDisplayName = (user: any): string => {
       .map((part: string) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
       .join(' ');
   }
-  
+
   // Final fallback
   return 'there';
 };
@@ -53,7 +54,7 @@ export default function Index() {
   const { startSession } = useStudyStore();
   const { openPopup, closePopup } = usePopup();
   const { user } = useAuth();
-  
+
   // State for today's metrics
   const [todayMetrics, setTodayMetrics] = useState({
     hoursStudied: 0,
@@ -68,6 +69,14 @@ export default function Index() {
   // State for pull-to-refresh
   const [refreshing, setRefreshing] = useState(false);
 
+  // State for pending friend requests
+  const [pendingRequests, setPendingRequests] = useState<any[]>([]);
+  const [loadingRequests, setLoadingRequests] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
+
+  // Track if initial load is complete
+  const metricsLoadedRef = React.useRef(false);
+
   // Redirect to login if not authenticated
   useEffect(() => {
     if (!user) {
@@ -78,13 +87,18 @@ export default function Index() {
   }, [user]);
 
   // Fetch today's metrics on component mount
-  // Removed interval-based refresh to avoid excessive API calls and bundling
   useEffect(() => {
     if (!user) return;
     loadTodayMetrics();
   }, [user]);
 
-  // Optional: Manual refresh trigger - can be called from UI
+  // Load pending friend requests
+  useEffect(() => {
+    if (!user) return;
+    loadPendingRequests();
+  }, [user]);
+
+  // Optional: Manual refresh trigger
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
@@ -94,9 +108,6 @@ export default function Index() {
     }
   }, [user]);
 
-  // Track if initial load is complete
-  const metricsLoadedRef = React.useRef(false);
-
   const loadTodayMetrics = async (isRefresh = false) => {
     if (!user) {
       console.log('No user available for metrics loading');
@@ -104,14 +115,12 @@ export default function Index() {
     }
 
     try {
-      // Only show loading state on initial load, not on refreshes
       if (!isRefresh) {
         setTodayMetrics(prev => ({ ...prev, loading: true, error: null }));
       }
-      
+
       console.log(`📊 Loading today's metrics for user: ${user.id}${isRefresh ? ' (refresh)' : ''}`);
-      
-      // Use our service layer to get authenticated user data
+
       const [todayData, xpStats, streakData] = await Promise.all([
         metricsService.getTodayMetrics(user.id).catch(err => {
           console.error('Failed to get today metrics:', err);
@@ -127,10 +136,9 @@ export default function Index() {
         })
       ]);
 
-      // Format hours according to user requirements
       const minutes = todayData.total_focus_time || 0;
       let hoursDisplay: string;
-      
+
       if (minutes === 0) {
         hoursDisplay = "0h";
       } else if (minutes < 1) {
@@ -138,10 +146,10 @@ export default function Index() {
       } else if (minutes < 60) {
         hoursDisplay = `${Math.round(minutes)} min`;
       } else {
-        const hours = Math.round((minutes / 60) * 10) / 10; // 1 decimal place
+        const hours = Math.round((minutes / 60) * 10) / 10;
         hoursDisplay = `${hours}h`;
       }
-      
+
       setTodayMetrics({
         hoursStudied: minutes,
         streak: streakData?.current_streak || streakData?.data?.current_streak || 0,
@@ -161,27 +169,74 @@ export default function Index() {
 
     } catch (error: any) {
       console.error('❌ Failed to load today metrics:', error);
-      
-      // Show user-friendly error
+
       let errorMessage = 'Failed to load today\'s progress';
       if (error.message?.includes('Network')) {
         errorMessage = 'Network error - check your connection';
       } else if (error.message?.includes('Authentication')) {
         errorMessage = 'Authentication error - please login again';
-        // Redirect to login if auth error
         router.replace('/login');
       }
-      
+
       setTodayMetrics(prev => ({
         ...prev,
         loading: false,
         error: errorMessage,
       }));
-      
-      // Show alert for non-auth errors
+
       if (!error.message?.includes('Authentication')) {
         Alert.alert('Error', errorMessage);
       }
+    }
+  };
+
+  const loadPendingRequests = async () => {
+    setLoadingRequests(true);
+    try {
+      const response = await friendsService.getPendingRequests();
+      if (response.success) {
+        setPendingRequests(response.requests || []);
+      }
+    } catch (error) {
+      console.error('Error loading pending requests:', error);
+    } finally {
+      setLoadingRequests(false);
+    }
+  };
+
+  const handleAcceptRequest = async (requestId: string) => {
+    setActionLoading(true);
+    try {
+      const response = await friendsService.acceptRequest(requestId);
+      if (response.success) {
+        Alert.alert('Success', 'Friend request accepted!');
+        await loadPendingRequests();
+      } else {
+        Alert.alert('Error', response.message || 'Failed to accept request');
+      }
+    } catch (err: any) {
+      console.error('Error accepting request:', err);
+      Alert.alert('Error', 'Failed to accept request');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleRejectRequest = async (requestId: string) => {
+    setActionLoading(true);
+    try {
+      const response = await friendsService.rejectRequest(requestId);
+      if (response.success) {
+        Alert.alert('Success', 'Friend request rejected');
+        await loadPendingRequests();
+      } else {
+        Alert.alert('Error', response.message || 'Failed to reject request');
+      }
+    } catch (err: any) {
+      console.error('Error rejecting request:', err);
+      Alert.alert('Error', 'Failed to reject request');
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -210,7 +265,7 @@ export default function Index() {
   // State for user's preferred sessions
   const [preferredSessions, setPreferredSessions] = useState<any[]>([]);
   const [sessionsLoading, setSessionsLoading] = useState(true);
-  
+
   // State for session selection modal
   const [sessionModalVisible, setSessionModalVisible] = useState(false);
 
@@ -329,154 +384,211 @@ export default function Index() {
   return (
     <View style={{ flex: 1 }}>
       <SafeAreaView style={GlobalStyles.safeArea}>
-      <ScrollView 
-        style={GlobalStyles.container} 
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-      >
+        <ScrollView
+          style={GlobalStyles.container}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+        >
 
-
-        {/* Personalized Greeting */}
-        <View style={styles.greetingCard}>
-          <Text style={styles.greetingText}>
-            What's up, {getUserDisplayName(user).split(' ')[0]}! 👋
-          </Text>
-          <Text style={styles.greetingSubtext}>
-            Ready to crush your study goals today?
-          </Text>
-        </View>
-
-        {/* Error Banner */}
-        {todayMetrics.error && (
-          <View style={styles.errorBanner}>
-            <Ionicons name="warning" size={20} color={Colors.error} />
-            <Text style={styles.errorText}>{todayMetrics.error}</Text>
+          {/* Personalized Greeting */}
+          <View style={styles.greetingCard}>
+            <Text style={styles.greetingText}>
+              What's up, {getUserDisplayName(user).split(' ')[0]}! 👋
+            </Text>
+            <Text style={styles.greetingSubtext}>
+              Ready to crush your study goals today?
+            </Text>
           </View>
-        )}
 
-        {/* Welcome Card */}
-        <View style={[GlobalStyles.glassCard, styles.welcomeCard]}>
-          <Ionicons name="school" size={48} color={Colors.primary} />
-          <Text style={styles.welcomeTitle}>Welcome Back!</Text>
-          <Text style={GlobalStyles.textSecondary}>
-            Ready to start your study session? Let's make today productive.
-          </Text>
-        </View>
-
-        {/* Quick Stats */}
-        <View style={[GlobalStyles.glassCard, styles.statsCard]}>
-          <Text style={GlobalStyles.subtitle}>Today's Progress</Text>
-          <View style={styles.statsRow}>
-            <View style={styles.statItem}>
-              <Ionicons name="time" size={24} color={Colors.accent} />
-              <Text style={styles.statNumber}>
-                {todayMetrics.loading ? '...' : todayMetrics.hoursDisplay}
-              </Text>
-              <Text style={GlobalStyles.textMuted}>Studied</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Ionicons name="flame" size={24} color={Colors.fire} />
-              <Text style={styles.statNumber}>
-                {todayMetrics.loading ? '...' : todayMetrics.streak}
-              </Text>
-              <Text style={GlobalStyles.textMuted}>Streak</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Ionicons name="trophy" size={24} color={Colors.streak} />
-              <Text style={styles.statNumber}>
-                {todayMetrics.loading ? '...' : todayMetrics.xp}
-              </Text>
-              <Text style={GlobalStyles.textMuted}>XP</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Let's Roll Section */}
-        <View style={[GlobalStyles.glassCard, styles.sessionsCard]}>
-          <Text style={GlobalStyles.subtitle}>Let's Roll</Text>
-          <Text style={GlobalStyles.textSecondary}>
-            Choose your activity and get started
-          </Text>
-
-          {sessionsLoading ? (
-            <View style={styles.loadingContainer}>
-              <Text style={GlobalStyles.textMuted}>Loading your sessions...</Text>
-            </View>
-          ) : preferredSessions.length > 0 ? (
-            <View style={styles.sessionsList}>
-              {preferredSessions.map((session) => (
-                <TouchableOpacity
-                  key={session.id}
-                  style={styles.sessionCard}
-                  onPress={() => handleSessionStart(session.id)}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.sessionContent}>
-                    <View style={[styles.sessionIcon, { backgroundColor: session.color + '20' }]}>
-                      <Text style={styles.sessionEmoji}>{session.emoji}</Text>
-                    </View>
-                    <View style={styles.sessionInfo}>
-                      <Text style={styles.sessionName}>{session.name}</Text>
-                    </View>
-                    <TouchableOpacity
-                      style={[styles.startButton, { backgroundColor: '#3b82f6' }]}
-                      onPress={() => handleSessionStart(session.id)}
-                    >
-                      <Text style={styles.startButtonText}>Start</Text>
-                    </TouchableOpacity>
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </View>
-          ) : (
-            <View style={styles.emptyState}>
-              <Ionicons name="time" size={48} color={Colors.textMuted} />
-              <Text style={GlobalStyles.textMuted}>No preferred sessions set</Text>
-              <Text style={GlobalStyles.textMuted}>Complete onboarding to see your activities</Text>
+          {/* Error Banner */}
+          {todayMetrics.error && (
+            <View style={styles.errorBanner}>
+              <Ionicons name="warning" size={20} color={Colors.error} />
+              <Text style={styles.errorText}>{todayMetrics.error}</Text>
             </View>
           )}
 
-          {/* Add More Sessions Card */}
-          <TouchableOpacity
-            style={styles.addSessionsCard}
-            onPress={handleAddSessions}
-            activeOpacity={0.7}
-          >
-            <View style={styles.addSessionsContent}>
-              <View style={styles.addSessionsIcon}>
-                <Ionicons name="add-circle" size={32} color={Colors.primary} />
+          {/* Welcome Card */}
+          <View style={[GlobalStyles.glassCard, styles.welcomeCard]}>
+            <Ionicons name="school" size={48} color={Colors.primary} />
+            <Text style={styles.welcomeTitle}>Welcome Back!</Text>
+            <Text style={GlobalStyles.textSecondary}>
+              Ready to start your study session? Let's make today productive.
+            </Text>
+          </View>
+
+          {/* Quick Stats */}
+          <View style={[GlobalStyles.glassCard, styles.statsCard]}>
+            <Text style={GlobalStyles.subtitle}>Today's Progress</Text>
+            <View style={styles.statsRow}>
+              <View style={styles.statItem}>
+                <Ionicons name="time" size={24} color={Colors.accent} />
+                <Text style={styles.statNumber}>
+                  {todayMetrics.loading ? '...' : todayMetrics.hoursDisplay}
+                </Text>
+                <Text style={GlobalStyles.textMuted}>Studied</Text>
               </View>
-              <View style={styles.addSessionsInfo}>
-                <Text style={styles.addSessionsTitle}>Add More Sessions</Text>
-                <Text style={styles.addSessionsSubtitle}>Discover new activities to track</Text>
+              <View style={styles.statItem}>
+                <Ionicons name="flame" size={24} color={Colors.fire} />
+                <Text style={styles.statNumber}>
+                  {todayMetrics.loading ? '...' : todayMetrics.streak}
+                </Text>
+                <Text style={GlobalStyles.textMuted}>Streak</Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color={Colors.textMuted} />
+              <View style={styles.statItem}>
+                <Ionicons name="trophy" size={24} color={Colors.streak} />
+                <Text style={styles.statNumber}>
+                  {todayMetrics.loading ? '...' : todayMetrics.xp}
+                </Text>
+                <Text style={GlobalStyles.textMuted}>XP</Text>
+              </View>
             </View>
-          </TouchableOpacity>
-        </View>
+          </View>
 
+          {/* Friend Requests Section */}
+          {pendingRequests.length > 0 && (
+            <View style={styles.requestsSection}>
+              <Text style={styles.sectionTitle}>Friend Requests ({pendingRequests.length})</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.requestsList}>
+                {pendingRequests.map((request) => (
+                  <View key={request.id} style={styles.requestCard}>
+                    <TouchableOpacity
+                      onPress={() => router.push({ pathname: '/user-profile', params: { userId: request.requester.id } })}
+                      style={styles.requestContent}
+                    >
+                      <View style={styles.requestAvatarContainer}>
+                        {request.requester.avatar_url ? (
+                          <Image source={{ uri: request.requester.avatar_url }} style={styles.requestAvatar} />
+                        ) : (
+                          <View style={[styles.requestAvatarPlaceholder, { backgroundColor: Colors.primary }]}>
+                            <Text style={styles.requestAvatarText}>
+                              {request.requester.username.charAt(0).toUpperCase()}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                      <View style={styles.requestInfo}>
+                        <Text style={styles.requestUsername}>@{request.requester.username}</Text>
+                        <Text style={styles.requestMeta}>Wants to be your friend</Text>
+                      </View>
+                    </TouchableOpacity>
+                    <View style={styles.requestActions}>
+                      <TouchableOpacity
+                        style={[styles.requestBtn, styles.acceptBtn]}
+                        onPress={() => handleAcceptRequest(request.id)}
+                        disabled={actionLoading}
+                      >
+                        <Ionicons name="checkmark" size={16} color="#fff" />
+                        <Text style={styles.requestBtnText}>Accept</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.requestBtn, styles.rejectBtn]}
+                        onPress={() => {
+                          Alert.alert(
+                            'Reject Request',
+                            'Are you sure you want to reject this friend request?',
+                            [
+                              { text: 'Cancel', style: 'cancel' },
+                              { text: 'Reject', style: 'destructive', onPress: () => handleRejectRequest(request.id) }
+                            ]
+                          );
+                        }}
+                        disabled={actionLoading}
+                      >
+                        <Ionicons name="close" size={16} color={Colors.text} />
+                        <Text style={[styles.requestBtnText, { color: Colors.text }]}>Reject</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ))}
+              </ScrollView>
+            </View>
+          )}
 
+          {/* Let's Roll Section */}
+          <View style={[GlobalStyles.glassCard, styles.sessionsCard]}>
+            <Text style={GlobalStyles.subtitle}>Let's Roll</Text>
+            <Text style={GlobalStyles.textSecondary}>
+              Choose your activity and get started
+            </Text>
 
-        {/* Motivational Quote */}
-        <View style={[GlobalStyles.glassCard, styles.quoteCard]}>
-          <Ionicons name="bulb" size={32} color={Colors.accent} />
-          <Text style={styles.quoteText}>
-            "The beautiful thing about learning is that no one can take it away from you."
-          </Text>
-          <Text style={GlobalStyles.textMuted}>- B.B. King</Text>
-        </View>
+            {sessionsLoading ? (
+              <View style={styles.loadingContainer}>
+                <Text style={GlobalStyles.textMuted}>Loading your sessions...</Text>
+              </View>
+            ) : preferredSessions.length > 0 ? (
+              <View style={styles.sessionsList}>
+                {preferredSessions.map((session) => (
+                  <TouchableOpacity
+                    key={session.id}
+                    style={styles.sessionCard}
+                    onPress={() => handleSessionStart(session.id)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.sessionContent}>
+                      <View style={[styles.sessionIcon, { backgroundColor: session.color + '20' }]}>
+                        <Text style={styles.sessionEmoji}>{session.emoji}</Text>
+                      </View>
+                      <View style={styles.sessionInfo}>
+                        <Text style={styles.sessionName}>{session.name}</Text>
+                      </View>
+                      <TouchableOpacity
+                        style={[styles.startButton, { backgroundColor: '#3b82f6' }]}
+                        onPress={() => handleSessionStart(session.id)}
+                      >
+                        <Text style={styles.startButtonText}>Start</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ) : (
+              <View style={styles.emptyState}>
+                <Ionicons name="time" size={48} color={Colors.textMuted} />
+                <Text style={GlobalStyles.textMuted}>No preferred sessions set</Text>
+                <Text style={GlobalStyles.textMuted}>Complete onboarding to see your activities</Text>
+              </View>
+            )}
 
-        {/* Session Selection Modal */}
-        <SessionSelectionModal
-          visible={sessionModalVisible}
-          onClose={() => setSessionModalVisible(false)}
-          onSessionAdded={handleSessionAdded}
-          currentSessions={preferredSessions.map(s => s.id)}
-        />
-      </ScrollView>
-    </SafeAreaView>
+            {/* Add More Sessions Card */}
+            <TouchableOpacity
+              style={styles.addSessionsCard}
+              onPress={handleAddSessions}
+              activeOpacity={0.7}
+            >
+              <View style={styles.addSessionsContent}>
+                <View style={styles.addSessionsIcon}>
+                  <Ionicons name="add-circle" size={32} color={Colors.primary} />
+                </View>
+                <View style={styles.addSessionsInfo}>
+                  <Text style={styles.addSessionsTitle}>Add More Sessions</Text>
+                  <Text style={styles.addSessionsSubtitle}>Discover new activities to track</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={Colors.textMuted} />
+              </View>
+            </TouchableOpacity>
+          </View>
+
+          {/* Motivational Quote */}
+          <View style={[GlobalStyles.glassCard, styles.quoteCard]}>
+            <Ionicons name="bulb" size={32} color={Colors.accent} />
+            <Text style={styles.quoteText}>
+              "The beautiful thing about learning is that no one can take it away from you."
+            </Text>
+            <Text style={GlobalStyles.textMuted}>- B.B. King</Text>
+          </View>
+
+          {/* Session Selection Modal */}
+          <SessionSelectionModal
+            visible={sessionModalVisible}
+            onClose={() => setSessionModalVisible(false)}
+            onSessionAdded={handleSessionAdded}
+            currentSessions={preferredSessions.map(s => s.id)}
+          />
+        </ScrollView>
+      </SafeAreaView>
     </View>
   );
 }
@@ -648,22 +760,16 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     color: Colors.textSecondary,
     textAlign: 'center',
-    marginTop: 16,
-    marginBottom: 8,
-    lineHeight: 24,
+    marginTop: 12,
+    marginHorizontal: 20,
   },
   addSessionsCard: {
     backgroundColor: Colors.surface,
     borderRadius: 16,
-    borderWidth: 2,
-    borderColor: Colors.primary + '40',
-    borderStyle: 'dashed',
-    shadowColor: Colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    borderWidth: 1,
+    borderColor: Colors.cardBorder,
     marginTop: 16,
+    overflow: 'hidden',
   },
   addSessionsContent: {
     flexDirection: 'row',
@@ -685,5 +791,95 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.textSecondary,
     marginTop: 2,
+  },
+  // New styles for friend requests
+  requestsSection: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: Colors.text,
+    marginBottom: 12,
+  },
+  requestsList: {
+    gap: 12,
+  },
+  requestCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.cardBorder,
+    padding: 12,
+    width: 280,
+  },
+  requestContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  requestAvatarContainer: {
+    marginRight: 12,
+  },
+  requestAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: Colors.primary,
+  },
+  requestAvatarPlaceholder: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  requestAvatarText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  requestInfo: {
+    flex: 1,
+  },
+  requestUsername: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.text,
+  },
+  requestMeta: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    marginTop: 2,
+  },
+  requestActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  requestBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    flex: 1,
+  },
+  acceptBtn: {
+    backgroundColor: Colors.success,
+  },
+  rejectBtn: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: Colors.error,
+  },
+  requestBtnText: {
+    marginLeft: 4,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#fff',
   },
 });

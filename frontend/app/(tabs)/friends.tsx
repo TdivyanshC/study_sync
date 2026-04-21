@@ -229,6 +229,19 @@ export default function FriendsScreen() {
   const [isSearching, setIsSearching] = useState(false);
   const [activeTab, setActiveTab] = useState<'friends' | 'search'>('friends');
 
+  // Load friend statistics
+  const loadFriendStats = async () => {
+    if (!currentUserId) return;
+    try {
+      const response = await friendsService.getFriendStats();
+      if (response.success) {
+        setFriendStats(response.stats);
+      }
+    } catch (error) {
+      console.error('Error loading friend stats:', error);
+    }
+  };
+
   // Get current user from auth - uses MongoDB ObjectId
   const { user } = useAuth();
   const currentUserId = user?.id;
@@ -248,18 +261,19 @@ export default function FriendsScreen() {
   useEffect(() => {
     if (!currentUserId) return;
     loadFriendsData();
+    loadFriendStats();
   }, [currentUserId]);
 
   const loadFriendsData = async () => {
     if (!currentUserId) return;
     setIsLoading(true);
     try {
-      const response = await friendsService.getAllUsers(currentUserId);
+      const response = await friendsService.getFriendsList();
       if (response.success) {
-        setFriendsList(response.users || response.results || response.data || []);
+        setFriendsList(response.friends || []);
       }
     } catch (error) {
-      console.error('Error loading users:', error);
+      console.error('Error loading friends:', error);
     } finally {
       setIsLoading(false);
     }
@@ -288,8 +302,9 @@ export default function FriendsScreen() {
       const response = await friendsService.addFriend(currentUserId, friendUserId);
       if (response.success) {
         Alert.alert('Success', response.message);
-        // Refresh search results and friends list
+        // Refresh search results, friends list, and stats
         await loadFriendsData();
+        await loadFriendStats();
         if (searchQuery) {
           await handleSearch();
         }
@@ -318,6 +333,7 @@ export default function FriendsScreen() {
               if (response.success) {
                 Alert.alert('Success', response.message);
                 await loadFriendsData();
+                await loadFriendStats();
               } else {
                 Alert.alert('Error', response.message);
               }
@@ -334,7 +350,7 @@ export default function FriendsScreen() {
   const handleViewProfile = (friendUserId: string) => {
     // Navigate to friend profile screen
     router.push({
-      pathname: '/profile',
+      pathname: '/user-profile',
       params: { userId: friendUserId, isFriendProfile: 'true' }
     });
   };

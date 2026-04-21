@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { userController } from '../controllers/user.controller';
+import { publicProfileController } from '../controllers/publicProfile.controller';
 import { authMiddleware } from '../middleware/auth.middleware';
 
 const router = Router();
@@ -9,6 +10,9 @@ router.get('/:user_id', userController.getUser.bind(userController));
 
 // Get user by public ID
 router.get('/public/:public_id', userController.getUserByPublicId.bind(userController));
+
+// Get public profile of any user (dynamic profile)
+router.get('/:user_id/public', publicProfileController.getPublicProfile.bind(publicProfileController));
 
 // Check username availability
 router.get('/username/check', userController.checkUsernameAvailability.bind(userController));
@@ -34,7 +38,7 @@ router.put('/:user_id/preferred-sessions', authMiddleware, userController.update
 // Get user preferred sessions
 router.get('/:user_id/preferred-sessions', authMiddleware, userController.getPreferredSessions.bind(userController));
 
-// Search users
+// Search users (duplicate? already above)
 router.get('/search', authMiddleware, userController.searchUsers.bind(userController));
 
 // Get all users
