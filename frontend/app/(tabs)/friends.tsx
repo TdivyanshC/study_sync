@@ -223,10 +223,12 @@ const SearchResultCard: React.FC<SearchResultCardProps> = ({ user, onAddFriend }
 export default function FriendsScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<UserSearchResult[]>([]);
+  const [allUsers, setAllUsers] = useState<UserSearchResult[]>([]);
   const [friendsList, setFriendsList] = useState<FriendListItem[]>([]);
   const [friendStats, setFriendStats] = useState<FriendStats | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [activeTab, setActiveTab] = useState<'friends' | 'search'>('friends');
 
   // Load friend statistics
@@ -258,94 +260,189 @@ export default function FriendsScreen() {
     }
   }, [user]);
 
-  useEffect(() => {
-    if (!currentUserId) return;
-    loadFriendsData();
-    loadFriendStats();
-  }, [currentUserId]);
+   useEffect(() => {
+     if (!currentUserId) return;
+     loadFriendsData();
+     loadFriendStats();
+   }, [currentUserId]);
 
-  const loadFriendsData = async () => {
-    if (!currentUserId) return;
-    setIsLoading(true);
-    try {
-      const response = await friendsService.getFriendsList();
-      if (response.success) {
-        setFriendsList(response.friends || []);
-      }
-    } catch (error) {
-      console.error('Error loading friends:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+   // Load all users when switching to search tab
+   useEffect(() => {
+     if (activeTab === 'search') {
+       setSearchQuery('');
+       loadAllUsers();
+     }
+   }, [activeTab]);
 
-  const handleSearch = async () => {
-    if (!searchQuery.trim() || !currentUserId) return;
+   // Update is_friend status in allUsers when friendsList changes
+   useEffect(() => {
+     if (allUsers.length > 0) {
+       setAllUsers(prevUsers =>
+         prevUsers.map(user => ({
+           ...user,
+           is_friend: friendsList.some(friend => friend.user_id === user.user_id)
+         }))
+       );
+     }
+   }, [friendsList]);
 
-    setIsSearching(true);
-    try {
-      const response = await friendsService.searchUsers(searchQuery, currentUserId, 20);
-      if (response.success) {
-        setSearchResults(response.results);
-      }
-    } catch (error) {
-      console.error('Error searching users:', error);
-      Alert.alert('Error', 'Failed to search users');
-    } finally {
-      setIsSearching(false);
-    }
-  };
+   // Keep searchResults in sync with allUsers when no search query
+   useEffect(() => {
+     if (allUsers.length > 0 && !searchQuery) {
+       setSearchResults(allUsers);
+     }
+   }, [allUsers, searchQuery]);
 
-  const handleAddFriend = async (friendUserId: string) => {
-    if (!currentUserId) return;
-    try {
-      const response = await friendsService.addFriend(currentUserId, friendUserId);
-      if (response.success) {
-        Alert.alert('Success', response.message);
-        // Refresh search results, friends list, and stats
-        await loadFriendsData();
-        await loadFriendStats();
-        if (searchQuery) {
-          await handleSearch();
+   const loadFriendsData = async () => {
+     if (!currentUserId) return;
+     setIsLoading(true);
+     try {
+       const response = await friendsService.getFriendsList();
+       if (response.success) {
+         setFriendsList(response.friends || []);
+       }
+     } catch (error) {
+       console.error('Error loading friends:', error);
+     } finally {
+       setIsLoading(false);
+     }
+   };
+
+    const loadAllUsers = async () => {
+      if (!currentUserId) return;
+      setIsLoadingUsers(true);
+      try {
+        const response = await friendsService.getAllUsers(currentUserId);
+        if (response.success) {
+          // Transform backend response to match UserSearchResult interface
+          const transformedUsers: UserSearchResult[] = (response.users || []).map(user => ({
+            id: user.id,
+            user_id: user.id,
+            username: user.username,
+            display_name: user.displayName,
+            avatar_url: user.avatarUrl,
+            xp: user.xp || 0,
+            level: user.level || 1,
+            streak_count: 0, // Not available from this endpoint
+            current_activity: undefined,
+            activity_started_at: undefined,
+            total_hours_today: 0, // Default to 0
+            is_friend: friendsList.some(friend => friend.user_id === user.id) // Check if already a friend
+          }));
+          setAllUsers(transformedUsers);
+          setSearchResults(transformedUsers); // Also set search results to show all users initially
         }
-      } else {
-        Alert.alert('Error', response.message);
+      } catch (error) {
+        console.error('Error loading all users:', error);
+      } finally {
+        setIsLoadingUsers(false);
       }
-    } catch (error) {
-      console.error('Error adding friend:', error);
-      Alert.alert('Error', 'Failed to add friend');
-    }
-  };
+    };
 
-  const handleRemoveFriend = async (friendUserId: string) => {
-    Alert.alert(
-      'Remove Friend',
-      'Are you sure you want to remove this friend?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: async () => {
-            if (!currentUserId) return;
-            try {
-              const response = await friendsService.removeFriend(currentUserId, friendUserId);
-              if (response.success) {
-                Alert.alert('Success', response.message);
-                await loadFriendsData();
-                await loadFriendStats();
-              } else {
-                Alert.alert('Error', response.message);
-              }
-            } catch (error) {
-              console.error('Error removing friend:', error);
-              Alert.alert('Error', 'Failed to remove friend');
-            }
-          },
-        },
-      ]
-    );
-  };
+   const handleSearch = async () => {
+     if (!searchQuery.trim() || !currentUserId) return;
+
+     setIsSearching(true);
+     try {
+       const response = await friendsService.searchUsers(searchQuery, currentUserId, 20);
+       if (response.success) {
+         setSearchResults(response.results);
+       }
+     } catch (error) {
+       console.error('Error searching users:', error);
+       Alert.alert('Error', 'Failed to search users');
+     } finally {
+       setIsSearching(false);
+     }
+   };
+
+   // Clear search and show all users when search query is empty
+   const handleSearchClear = () => {
+     setSearchQuery('');
+     setSearchResults(allUsers);
+   };
+
+   const handleAddFriend = async (friendUserId: string) => {
+     if (!currentUserId) return;
+     try {
+       const response = await friendsService.addFriend(currentUserId, friendUserId);
+       if (response.success) {
+         Alert.alert('Success', response.message);
+         // Refresh search results, friends list, stats, and all users
+         await loadFriendsData();
+         await loadFriendStats();
+         // Update the allUsers list to mark this user as friend
+         setAllUsers(prevUsers => 
+           prevUsers.map(user => 
+             user.user_id === friendUserId 
+               ? { ...user, is_friend: true }
+               : user
+           )
+         );
+         setSearchResults(prevResults => 
+           prevResults.map(user => 
+             user.user_id === friendUserId 
+               ? { ...user, is_friend: true }
+               : user
+           )
+         );
+         // If search query is active, refresh search results
+         if (searchQuery) {
+           await handleSearch();
+         }
+       } else {
+         Alert.alert('Error', response.message);
+       }
+     } catch (error) {
+       console.error('Error adding friend:', error);
+       Alert.alert('Error', 'Failed to add friend');
+     }
+   };
+
+   const handleRemoveFriend = async (friendUserId: string) => {
+     Alert.alert(
+       'Remove Friend',
+       'Are you sure you want to remove this friend?',
+       [
+         { text: 'Cancel', style: 'cancel' },
+         {
+           text: 'Remove',
+           style: 'destructive',
+           onPress: async () => {
+             if (!currentUserId) return;
+             try {
+               const response = await friendsService.removeFriend(currentUserId, friendUserId);
+               if (response.success) {
+                 Alert.alert('Success', response.message);
+                 await loadFriendsData();
+                 await loadFriendStats();
+                 // Update allUsers list to mark as not a friend
+                 setAllUsers(prevUsers =>
+                   prevUsers.map(user =>
+                     user.user_id === friendUserId
+                       ? { ...user, is_friend: false }
+                       : user
+                   )
+                 );
+                 setSearchResults(prevResults =>
+                   prevResults.map(user =>
+                     user.user_id === friendUserId
+                       ? { ...user, is_friend: false }
+                       : user
+                   )
+                 );
+               } else {
+                 Alert.alert('Error', response.message);
+               }
+             } catch (error) {
+               console.error('Error removing friend:', error);
+               Alert.alert('Error', 'Failed to remove friend');
+             }
+           },
+         },
+       ]
+     );
+   };
 
   const handleViewProfile = (friendUserId: string) => {
     // Navigate to friend profile screen
@@ -429,7 +526,7 @@ export default function FriendsScreen() {
         },
         {
           text: 'Send',
-          onPress: (message) => {
+          onPress: (message?: string) => {
             if (message && message.trim()) {
               sendMotivation(friendUserId, message.trim());
             }
@@ -499,9 +596,10 @@ export default function FriendsScreen() {
       );
     }
 
-    // Search tab
+    // Search tab - shows all users or search results
     return (
       <View style={styles.searchContainer}>
+        {/* Loading states */}
         {isSearching && (
           <View style={styles.searchLoading}>
             <ActivityIndicator size="small" color={Colors.primary} />
@@ -509,22 +607,42 @@ export default function FriendsScreen() {
           </View>
         )}
 
-        {searchResults.length > 0 && (
+        {isLoadingUsers && !searchQuery && (
+          <View style={styles.searchLoading}>
+            <ActivityIndicator size="small" color={Colors.primary} />
+            <Text style={styles.searchLoadingText}>Loading users...</Text>
+          </View>
+        )}
+
+        {/* Users list */}
+        {!isSearching && !isLoadingUsers && searchResults.length > 0 && (
           <FlatList
             data={searchResults}
             renderItem={renderSearchResult}
-            keyExtractor={(item) => item.id}
+            keyExtractor={(item) => item.user_id}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: 100 }}
           />
         )}
 
-        {searchQuery && searchResults.length === 0 && !isSearching && (
+        {/* No results state */}
+        {!isSearching && !isLoadingUsers && searchQuery && searchResults.length === 0 && (
           <View style={styles.noResults}>
             <Ionicons name="search-outline" size={48} color={Colors.textMuted} />
             <Text style={styles.noResultsText}>No users found</Text>
             <Text style={styles.noResultsSubtext}>
               Try searching with a different username or user ID
+            </Text>
+          </View>
+        )}
+
+        {/* Empty state when no users at all */}
+        {!isSearching && !isLoadingUsers && !searchQuery && allUsers.length === 0 && (
+          <View style={styles.noResults}>
+            <Ionicons name="people-outline" size={48} color={Colors.textMuted} />
+            <Text style={styles.noResultsText}>No users available</Text>
+            <Text style={styles.noResultsSubtext}>
+              Check back later for new users to connect with
             </Text>
           </View>
         )}
@@ -585,7 +703,7 @@ export default function FriendsScreen() {
             returnKeyType="search"
           />
           {searchQuery && (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
+            <TouchableOpacity onPress={handleSearchClear}>
               <Ionicons name="close-circle" size={20} color={Colors.textMuted} />
             </TouchableOpacity>
           )}

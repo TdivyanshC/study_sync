@@ -2,7 +2,7 @@
  * Friends Service - API calls for friends functionality
  */
 
-import { buildApiUrl } from '../lib/apiConfig';
+import { getBackendUrl } from '../lib/apiConfig';
 import { getAuthToken } from '../../lib/auth/tokenStorage';
 
 export interface UserSearchResult {
@@ -104,12 +104,16 @@ class FriendsService {
   private async makeRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     let fullPath;
     if (endpoint.startsWith('/api/')) {
+      // Endpoint already includes /api prefix, use as-is
       fullPath = endpoint;
     } else {
+      // All friends endpoints are under /api/friends
       const basePath = '/api/friends';
       fullPath = endpoint ? `${basePath}${endpoint}` : basePath;
     }
-    const url = buildApiUrl(fullPath);
+    // Use getBackendUrl directly to avoid double /api prefix
+    const baseUrl = getBackendUrl();
+    const url = `${baseUrl}${fullPath}`;
 
     // Get auth token from storage
     let authToken = null;
@@ -158,27 +162,61 @@ class FriendsService {
   /**
    * Search for users by username or user_id
    */
-  async searchUsers(
-    query: string,
-    currentUserId: string,
-    limit: number = 10
-  ): Promise<{
-    success: boolean;
-    query: string;
-    results: UserSearchResult[];
-    total_found: number;
-    message: string;
-  }> {
-    const params = new URLSearchParams({
-      query,
-      current_user_id: currentUserId,
-      limit: limit.toString()
-    });
+   async searchUsers(
+     query: string,
+     currentUserId: string,
+     limit: number = 10
+   ): Promise<{
+     success: boolean;
+     query: string;
+     results: UserSearchResult[];
+     total_found: number;
+     message: string;
+   }> {
+     const params = new URLSearchParams({
+       query,
+       current_user_id: currentUserId,
+       limit: limit.toString()
+     });
 
-    return this.makeRequest(`/search?${params.toString()}`, {
-      method: 'GET',
-    });
-  }
+     const response = await this.makeRequest<{
+       success: boolean;
+       query: string;
+       results: Array<{
+         user_id: string;
+         username: string;
+         display_name?: string;
+         avatar_url?: string;
+         xp: number;
+         level: number;
+         is_friend: boolean;
+       }>;
+       total_found: number;
+       message: string;
+     }>(`/search?${params.toString()}`, {
+       method: 'GET',
+     });
+
+     // Transform to UserSearchResult with defaults for missing fields
+     if (response.success && response.results) {
+       response.results = response.results.map(user => ({
+         id: user.user_id,
+         user_id: user.user_id,
+         username: user.username,
+         display_name: user.display_name,
+         avatar_url: user.avatar_url,
+         xp: user.xp,
+         level: user.level,
+         streak_count: 0, // Not provided by backend
+         current_activity: undefined,
+         activity_started_at: undefined,
+         total_hours_today: 0, // Default to 0
+         is_friend: user.is_friend
+       }));
+     }
+
+     return response as any;
+   }
 
   /**
    * Add a friend
@@ -232,21 +270,22 @@ class FriendsService {
 
   async getAllUsers(excludeUserId: string): Promise<{
     success: boolean;
-    users: any[];
+    users: Array<{
+      id: string;
+      username: string;
+      displayName?: string;
+      avatarUrl?: string;
+      xp: number;
+      level: number;
+    }>;
   }> {
-    const token = await getAuthToken();
-    const url = `https://prodify-ap46.onrender.com/api/users?exclude=${excludeUserId}`;
-    console.log('👥 Fetching users from:', url);
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      }
+    const params = new URLSearchParams({
+      exclude: excludeUserId
     });
-    const data = await response.json();
-    console.log('👥 Users response:', JSON.stringify(data));
-    return data;
+
+    return this.makeRequest(`/api/users?${params.toString()}`, {
+      method: 'GET',
+    });
   }
 
   /**
